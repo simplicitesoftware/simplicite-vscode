@@ -3,7 +3,6 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const utils = require('./utils');
-//const utils = require('./utils');
 
 const scheme = process.env.TEST_SIMPLICITE_SCHEME || 'https';
 const host = process.env.TEST_SIMPLICITE_HOST || 'gaubert.demo.simplicite.io';
@@ -24,11 +23,11 @@ const TOKEN_SAVE_PATH = '/Code/User/globalStorage/token.simplicite';
 class RequestManager {
     constructor () {
         this.app = require('simplicite').session({ url: url, debug: debug});
-        //this.itemCache.push({'obo_name': "TrnProduct" })
+        //this.itemCache.push({'obo_name': 'TrnProduct' })
         this.itemCache = new Array;
     }
 
-    authenticationWithToken () { // check at the extension start if a token is available in /Code/User/globalStorage/
+    authenticationWithToken () { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
         try {
             const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
             this.app.setAuthToken(token);
@@ -44,15 +43,15 @@ class RequestManager {
     async authenticationWithCredentials () {
         try {
             const username = await vscode.window.showInputBox({ 
-                placeHolder: "username", 
-                prompt: "Please type your username", 
-                title: "Connecting to Simplicite API"
+                placeHolder: 'username', 
+                prompt: 'Please type your username', 
+                title: 'Authenticate to Simplicite API'
             });
             if (!username) throw 'Authentication cancelled';
             const password = await vscode.window.showInputBox({
                 placeHolder: 'password',
                 prompt: 'Please type your password',
-                title: "Connecting to Simplicite API",
+                title: 'Authenticate to Simplicite API',
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
@@ -67,23 +66,36 @@ class RequestManager {
     login () {
         this.app.login().then(res => {
             this.tokenHandler(res.authtoken);
-            vscode.window.showInformationMessage('Logged in as ' + res.login);
+            console.log('login');
+            console.log(res);
+            vscode.window.showInformationMessage('Simplicite: Logged in as ');
         }).catch(err => {
             if (err.status === 401) {
                 console.log(err);
-                vscode.window.showInformationMessage(err.message, 'Sign in').then(click => {
-                    if (click = 'Sign in') {
+                vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
+                    if (click == 'Log in') {
                         this.authenticationWithCredentials();
                     }
                 })
             } else {
-                vscode.window.showInformationMessage(err.message);
+                console.log(err);
+                //vscode.window.showInformationMessage(err);
             }
         });
     }
 
+    logout () {
+        this.app.logout().then(() => {
+            vscode.window.showInformationMessage('Simplicite: Logged out');
+        }).catch(err => {
+            vscode.window.showInformationMessage(err);
+        })
+    }
+
     authenticateCommandRouter () { // Router for command authenticate
-        if (this.app.authtoken || this.app.login && this.app.password) this.login();
+        if (this.app.authtoken || this.app.login && this.app.password) {
+            vscode.window.showInformationMessage('Already connected as ' + this.app.username);
+        }
         else this.authenticationWithCredentials();
     }
 
@@ -130,10 +142,8 @@ class RequestManager {
             obj.setFieldValue(fieldScriptId, doc);
             obj.update(item, { inlineDocuments: true})
             .then(() => {
-                console.log("Object updated");
-            }).catch(err => {
-                console.log(err);
-            })
+                console.log('Object updated');
+            });
         } catch (e) {
             console.log(e);
         }

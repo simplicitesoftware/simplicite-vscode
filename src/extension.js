@@ -11,9 +11,12 @@ async function activate(context) {
 	let request = new RequestManager();
 
 	if(!request.authenticationWithToken()) { // if token does not exist, connect manually
-		await request.authenticationWithCredentials();
+		vscode.window.showInformationMessage('Sign into simplicite to activate the service', 'Sign in').then(click => {
+			if (click == 'Sign in') {
+				request.authenticationWithCredentials();
+			}
+		})
 	}
-
 
 	// check for simplicite module on the extension's activation (shortly after vscode launch)
 	// let simpliciteWorkspace = await utils.getSimpliciteModules();
@@ -31,13 +34,16 @@ async function activate(context) {
 	});
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	let authenticate = vscode.commands.registerCommand('test.authenticate', function () {	
+	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', function () {	
 		request.authenticateCommandRouter();
 	});
-	let synchronize = vscode.commands.registerCommand('test.synchronize', function () {	
+	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', function () {	
 		request.synchronize(fileList);
 	});
-	context.subscriptions.push(authenticate, synchronize); // All commands available
+	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
+		request.logout();
+	});
+	context.subscriptions.push(authenticate, synchronize, logout); // All commands available
 }
 
 

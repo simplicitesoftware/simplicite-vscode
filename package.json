@@ -11,19 +11,24 @@
 	],
 	"activationEvents": [
 		"onStartupFinished",
-		"onCommand:test.authenticate",
-		"onCommand:test.synchronize"
+		"onCommand:simplicite-vscode.authenticate",
+		"onCommand:simplicite-vscode.synchronize",
+		"onCommand:simplicite-vscode.logout"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "test.authenticate",
-				"title": "authenticate"
+				"command": "simplicite-vscode.login",
+				"title": "Simplicite: Log in"
 			},
 			{
-				"command": "test.synchronize",
-				"title": "synchronize"
+				"command": "simplicite-vscode.synchronize",
+				"title": "Simplicite: Synchronization"
+			},
+			{
+				"command": "simplicite-vscode.logout",
+				"title": "Simplicite: Log out"
 			}
 		],
 		"viewsContainers": {
