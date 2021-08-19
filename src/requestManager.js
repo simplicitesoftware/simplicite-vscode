@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const utils = require('./utils');
+const { Cache } = require('./cache');
 
 const scheme = process.env.TEST_SIMPLICITE_SCHEME || 'https';
 const host = process.env.TEST_SIMPLICITE_HOST || 'gaubert.demo.simplicite.io';
@@ -24,7 +25,7 @@ class RequestManager {
     constructor () {
         this.app = require('simplicite').session({ url: url, debug: debug});
         //this.itemCache.push({'obo_name': 'TrnProduct' })
-        this.itemCache = new Map();
+        this.cache = new Cache();
     }
 
     authenticationWithToken () { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
@@ -218,37 +219,18 @@ class RequestManager {
     }
 
     async searchForUpdate (fileName, obj, fileType) {
-        if (!this.isInCache(fileName)) {
+        if (!this.cache.isInCache(fileName)) {
             const properNameField = this.getProperNameField(fileType)   
-            let list = await obj.search({[properNameField]: fileName });
+            let list = await obj.search({[properNameField]: fileName })
             if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
-            this.itemCache.set(fileName, list[0].row_id);
+            this.cache.addPair(fileName, list[0].row_id);
         }
-        let row_id = this.getListFromCache(fileName);
+        let row_id = this.cache.getListFromCache(fileName);
         let item = await obj.getForUpdate(row_id, { inlineDocuments: true });
         return item;
     }
 
-    isInCache (fileName) {
-        this.itemCache.forEach((value, key) => {
-            if (key === fileName) {
-                return true;
-            }
-        });
-        return false;
-    }
-
-    getListFromCache (fileName) {
-        let returnValue;
-        this.itemCache.forEach((value, key) => {
-            console.log(value, key, fileName);
-            if (key === fileName) {
-                returnValue = value; 
-            }
-        });
-        if (returnValue) return returnValue;
-        throw 'Cache has malfunctionned';
-    }
+    
 
     
 }
