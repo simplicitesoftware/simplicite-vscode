@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es5",
+		"checkJs": true,  /* Typecheck .js files. */
+		"lib": [
+			"es5"
+		]
+	},
+	"exclude": [
+		"node_modules"
+	]
+}
