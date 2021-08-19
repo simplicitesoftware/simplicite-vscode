@@ -10,13 +10,17 @@ const utils = require('./utils');
 async function activate(context) {
 	let request = new RequestManager();
 
-	if(!request.authenticationWithToken()) { // if token does not exist, connect manually
+	try {
+		request.authenticationWithToken();
+	} catch (e) {
+		console.log(e);
 		vscode.window.showInformationMessage('Sign into simplicite to activate the service', 'Sign in').then(click => {
 			if (click == 'Sign in') {
 				request.authenticationWithCredentials();
 			}
 		})
 	}
+	
 
 	// check for simplicite module on the extension's activation (shortly after vscode launch)
 	// let simpliciteWorkspace = await utils.getSimpliciteModules();

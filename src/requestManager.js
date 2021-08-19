@@ -24,19 +24,18 @@ class RequestManager {
     constructor () {
         this.app = require('simplicite').session({ url: url, debug: debug});
         //this.itemCache.push({'obo_name': 'TrnProduct' })
-        this.itemCache = new Array;
+        this.itemCache = new Map();
     }
 
     authenticationWithToken () { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
         try {
-            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
+            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH, 'base64');
             this.app.setAuthToken(token);
             this.login();
             return true;
         } catch (e) {
-            this.app.setAuthToken(null);
             console.log('No Token has been found');
-            return false;
+            throw 'No Token has been found';
         }
     }
 
@@ -55,6 +54,7 @@ class RequestManager {
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
+            this.app.setAuthToken(null);
             this.app.setUsername(username);
             this.app.setPassword(password);
             this.login();
@@ -65,10 +65,8 @@ class RequestManager {
 
     login () {
         this.app.login().then(res => {
-            this.tokenHandler(res.authtoken);
-            console.log('login');
-            console.log(res);
-            vscode.window.showInformationMessage('Simplicite: Logged in as ');
+            this.saveTokenOnDisk(res.authtoken);
+            vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
         }).catch(err => {
             if (err.status === 401) {
                 console.log(err);
@@ -86,29 +84,48 @@ class RequestManager {
 
     logout () {
         this.app.logout().then(() => {
+            //this.deleteFile(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
             vscode.window.showInformationMessage('Simplicite: Logged out');
         }).catch(err => {
             vscode.window.showInformationMessage(err);
         })
     }
 
-    authenticateCommandRouter () { // Router for command authenticate
-        if (this.app.authtoken || this.app.login && this.app.password) {
-            vscode.window.showInformationMessage('Already connected as ' + this.app.username);
+    deleteFile (path) {
+        try {
+            fs.unlinkSync(path);
+        } catch (e) {
+            console.log(e);
         }
-        else this.authenticationWithCredentials();
+    }
+
+    authenticateCommandRouter () { // Router for command log in  
+        if (this.app.authtoken || this.app.login && this.app.password) {
+            vscode.window.showInformationMessage('Simplicite: Already connected as ' + this.app.username);
+        }
+        else {
+            try {
+                console.log("router --> token authentication");
+                this.authenticationWithToken();  
+            } catch (e) {
+                console.log("router --> credentials authentication");
+                this.authenticationWithCredentials();
+            }
+        }
     }
 
     // Called in method login
-    tokenHandler (token) {
+    saveTokenOnDisk (token) {
+        //this.deleteFile(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
         this.app.setPassword(null);
-        fs.writeFile(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH, token, function(err) {
-            if(err) {
-                console.log(err);
-            } else {
-                console.log('Token saved');
-            }
-        });
+        try {
+            //token.replace(/\r\n/g, "\n");
+            fs.writeFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH, token.toString('base64'));
+            //const tokenTEST = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
+            //console.log(tokenTEST.toString('base64'));
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     async synchronize (fileList) {
@@ -124,16 +141,16 @@ class RequestManager {
     // Called by synchronize
     async attachFileAndSend (file) {
         try { 
+            // get fileType and Filename
             const fileType = this.getBusinessObjectType(file);
-            let obj = this.app.getBusinessObject(fileType);
-            let item = this.handleCache(file); // get item from cache NEED TO CHANGE
             let fileName = utils.crossPlatformPath(file.path).split('/');
             fileName = fileName[fileName.length - 1].replaceAll('.java', '');
-            if (!item)  { // if not in cache then we get it from API
-                item = await this.searchForUpdate(fileName, obj, fileType); 
-                this.itemCache.push(item);
-            }
 
+            // get the item for the update
+            let obj = this.app.getBusinessObject(fileType);
+            let item = await this.searchForUpdate(fileName, obj, fileType); 
+            
+            // give the field, ex: obo_script_id, scr_file
             const fieldScriptId = this.getProperScriptField(fileType);       
             let doc = obj.getFieldDocument(fieldScriptId);
             // get the file content for setContent
@@ -201,21 +218,36 @@ class RequestManager {
     }
 
     async searchForUpdate (fileName, obj, fileType) {
-        let list = await obj.search({ [this.getProperNameField(fileType)]: fileName }) // add cache here
-        if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
-        let item = await obj.getForUpdate(list[0].row_id, { inlineDocuments: true });
+        if (!this.isInCache(fileName)) {
+            const properNameField = this.getProperNameField(fileType)   
+            let list = await obj.search({[properNameField]: fileName });
+            if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
+            this.itemCache.set(fileName, list[0].row_id);
+        }
+        let row_id = this.getListFromCache(fileName);
+        let item = await obj.getForUpdate(row_id, { inlineDocuments: true });
         return item;
     }
 
-    handleCache (currentItem) {
-        let value = false;
-        this.itemCache.forEach(iCache => {
-            if (iCache === currentItem) {
-                value = iCache;
-                return;
+    isInCache (fileName) {
+        this.itemCache.forEach((value, key) => {
+            if (key === fileName) {
+                return true;
             }
         });
-        return value;
+        return false;
+    }
+
+    getListFromCache (fileName) {
+        let returnValue;
+        this.itemCache.forEach((value, key) => {
+            console.log(value, key, fileName);
+            if (key === fileName) {
+                returnValue = value; 
+            }
+        });
+        if (returnValue) return returnValue;
+        throw 'Cache has malfunctionned';
     }
 
     
