@@ -2,6 +2,7 @@
 
 const vscode = require('vscode');
 const fs = require('fs');
+var parseString = require('xml2js').parseStringPromise;
 
 /*const urlToFilename = function (url) {
 	let value = url.split('/');
@@ -45,9 +46,13 @@ const getSimpliciteModules = async function () {
 
 const getModuleUrl = async function (moduleName, workspaceFolder) {
 	const globPatern = '**pom.xml';
-	console.log(globPatern);
 	const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
 	const pom = await findFiles(relativePattern);
+	parseString(pom).then(res => {
+		return res.project.properties[0]['simplicite.url'][0];
+	}).catch(e => {
+		console.log(e);
+	});
 }
 
 

@@ -25,20 +25,18 @@ const JSON_SAVE_PATH = '/Code/User/globalStorage/simplicite-info.json';
 
 class RequestManager {
     constructor () {
-        this.app = require('simplicite').session({ url: url, debug: debug}); // faire pour chaque objet
+        //this.app = require('simplicite').session({ url: url, debug: debug}); // faire pour chaque objet
         //this.itemCache.push({'obo_name': 'TrnProduct' })
         this.cache = new Cache();
-        
+        this.appList = new Map();
     }
 
-    
-
-    authenticationWithToken (moduleName) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
+    authenticationWithToken (moduleName, app) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
         try {
             const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
             const infoJSON = JSON.parse(token);
             for (let info of infoJSON) {
-                if (info.module === moduleName) this.app.setAuthToken(info.token);
+                if (info.module === moduleName) app.setAuthToken(info.token);
             }
         } catch (e) {
             console.log('No Token has been found');
@@ -46,7 +44,7 @@ class RequestManager {
         }
     }
 
-    async authenticationWithCredentials (moduleName) {
+    async authenticationWithCredentials (moduleName, app) {
         try {
             const username = await vscode.window.showInputBox({ 
                 placeHolder: 'username', 
@@ -61,25 +59,28 @@ class RequestManager {
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
-            this.app.setAuthToken(null);
-            this.app.setUsername(username);
-            this.app.setPassword(password);
+            app.setAuthToken(null);
+            app.setUsername(username);
+            app.setPassword(password);
         } catch (e) {
             console.log(e);
         }
     }
 
+    // need to change app, create one per project detected and STORE it
+
     async login (module) {
-        if (this.app.authtoken || this.app.login && this.app.password) {
-            vscode.window.showInformationMessage('Simplicite: Already connected as ' + this.app.username);
+        let app = require('simplicite').session({ url: module.moduleUrl });
+        if (app.authtoken || app.login && app.password) {
+            vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
             return false;
         }
         try {
-            await this.authenticationWithToken(module.moduleInfo);
+            await this.authenticationWithToken(module.moduleInfo, app);
         } catch (e) {
-            await this.authenticationWithCredentials(module.moduleInfo);
+            await this.authenticationWithCredentials(module.moduleInfo, app);
         }
-        this.app.login().then(res => {
+        app.login().then(res => {
             this.JSONGenerator(res.authtoken);
             vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
         }).catch(err => {
@@ -94,6 +95,12 @@ class RequestManager {
                 console.log(err);
                 vscode.window.showInformationMessage(err.message);
             }
+        });
+    }
+
+    handleApp (module) {
+        this.appList.forEach(app => {
+            
         });
     }
 
