@@ -5,10 +5,12 @@ const fs = require('fs');
 const utils = require('./utils');
 const { Cache } = require('./cache');
 
-const scheme = process.env.TEST_SIMPLICITE_SCHEME || 'https';
+const scheme = process.env.TEST_SIMPLICITE_SCHEME || 'https'; 
 const host = process.env.TEST_SIMPLICITE_HOST || 'gaubert.demo.simplicite.io';
 const url = scheme + '://' + host;
 const debug = false;
+
+// get those data from input
 
 const businessObjectType = new Map([
     ['adapters', 'Adapter'],
@@ -19,54 +21,66 @@ const businessObjectType = new Map([
     ['workflows', 'BPMProcess'],
 ]);
 
-const TOKEN_SAVE_PATH = '/Code/User/globalStorage/token.simplicite';
+const JSON_SAVE_PATH = '/Code/User/globalStorage/simplicite-info.json';
 
 class RequestManager {
     constructor () {
-        this.app = require('simplicite').session({ url: url, debug: debug});
+        this.app = require('simplicite').session({ url: url, debug: debug}); // faire pour chaque objet
         //this.itemCache.push({'obo_name': 'TrnProduct' })
         this.cache = new Cache();
+        
     }
 
-    authenticationWithToken () { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
+    
+
+    authenticationWithToken (moduleName) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
         try {
-            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH, 'base64');
-            this.app.setAuthToken(token);
-            this.login();
-            return true;
+            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
+            const infoJSON = JSON.parse(token);
+            for (let info of infoJSON) {
+                if (info.module === moduleName) this.app.setAuthToken(info.token);
+            }
         } catch (e) {
             console.log('No Token has been found');
             throw 'No Token has been found';
         }
     }
 
-    async authenticationWithCredentials () {
+    async authenticationWithCredentials (moduleName) {
         try {
             const username = await vscode.window.showInputBox({ 
                 placeHolder: 'username', 
-                prompt: 'Please type your username', 
-                title: 'Authenticate to Simplicite API'
+                //prompt: 'Please type your username', 
+                title: 'Authenticate to ' + moduleName + ' API'
             });
             if (!username) throw 'Authentication cancelled';
             const password = await vscode.window.showInputBox({
                 placeHolder: 'password',
-                prompt: 'Please type your password',
-                title: 'Authenticate to Simplicite API',
+                //prompt: 'Please type your password',
+                title: 'Authenticate to ' + moduleName + ' API',
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
             this.app.setAuthToken(null);
             this.app.setUsername(username);
             this.app.setPassword(password);
-            this.login();
         } catch (e) {
             console.log(e);
         }
     }
 
-    login () {
+    async login (module) {
+        if (this.app.authtoken || this.app.login && this.app.password) {
+            vscode.window.showInformationMessage('Simplicite: Already connected as ' + this.app.username);
+            return false;
+        }
+        try {
+            await this.authenticationWithToken(module.moduleInfo);
+        } catch (e) {
+            await this.authenticationWithCredentials(module.moduleInfo);
+        }
         this.app.login().then(res => {
-            this.saveTokenOnDisk(res.authtoken);
+            this.JSONGenerator(res.authtoken);
             vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
         }).catch(err => {
             if (err.status === 401) {
@@ -78,55 +92,18 @@ class RequestManager {
                 })
             } else {
                 console.log(err);
-                //vscode.window.showInformationMessage(err);
+                vscode.window.showInformationMessage(err.message);
             }
         });
     }
 
     logout () {
         this.app.logout().then(() => {
-            //this.deleteFile(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
+            fs.unlinkSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH);
             vscode.window.showInformationMessage('Simplicite: Logged out');
         }).catch(err => {
-            vscode.window.showInformationMessage(err);
+            vscode.window.showInformationMessage(err.message);
         })
-    }
-
-    deleteFile (path) {
-        try {
-            fs.unlinkSync(path);
-        } catch (e) {
-            console.log(e);
-        }
-    }
-
-    authenticateCommandRouter () { // Router for command log in  
-        if (this.app.authtoken || this.app.login && this.app.password) {
-            vscode.window.showInformationMessage('Simplicite: Already connected as ' + this.app.username);
-        }
-        else {
-            try {
-                console.log("router --> token authentication");
-                this.authenticationWithToken();  
-            } catch (e) {
-                console.log("router --> credentials authentication");
-                this.authenticationWithCredentials();
-            }
-        }
-    }
-
-    // Called in method login
-    saveTokenOnDisk (token) {
-        //this.deleteFile(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
-        this.app.setPassword(null);
-        try {
-            //token.replace(/\r\n/g, "\n");
-            fs.writeFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH, token.toString('base64'));
-            //const tokenTEST = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + TOKEN_SAVE_PATH);
-            //console.log(tokenTEST.toString('base64'));
-        } catch (e) {
-            console.log(e);
-        }
     }
 
     async synchronize (fileList) {
@@ -156,7 +133,8 @@ class RequestManager {
             let doc = obj.getFieldDocument(fieldScriptId);
             // get the file content for setContent
             const fileContent = await utils.findFiles('**/' + fileName + '.java');
-            doc.setContent(fileContent);
+            if (fileContent.length >= 2) throw 'More than one file has been found';
+            doc.setContent(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
             obj.update(item, { inlineDocuments: true})
             .then(() => {
@@ -164,9 +142,30 @@ class RequestManager {
             });
         } catch (e) {
             console.log(e);
-        }
-        
+        }   
     }
+
+    async JSONGenerator (token) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
+        let preparedJSON = [];
+        const simpliciteModules = await utils.getSimpliciteModules();
+        for (let module of simpliciteModules) {
+            module['token'] = token;
+            preparedJSON.push(module);
+        }
+        this.saveJSONOnDisk(preparedJSON);
+    }
+
+    saveJSONOnDisk (preparedJSON) {
+        try {
+            fs.writeFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, JSON.stringify(preparedJSON));
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    /*async scanModules () {
+        const simpliciteModules = await utils.getSimpliciteModules();
+    }*/
 
     getBusinessObjectType (fileName) { // Making the path into an array to find the type which should have the same place in every project: {moduleName}/src/com/simplicite/{type}/{moduleName}/{file}
         const splitFilePath = utils.crossPlatformPath(fileName.path).split('/');

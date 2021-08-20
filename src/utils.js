@@ -18,28 +18,39 @@ const findFiles = async function (globPatern) {
 	}
 	for (let file of files) {
 		try {
-			foundFile.push(fs.readFileSync(crossPlatformPath(file.path), 'base64'));
+			foundFile.push(fs.readFileSync(crossPlatformPath(file.path), { encoding: 'utf8' }));
 		} catch(err) {
 			console.log(err);
 		}
 	};
-	return foundFile[0];
+	return foundFile;
 };
 
-const getSimpliciteModules = async function () { // need to change, keeping it in case
+const getSimpliciteModules = async function () {
 	let simpliciteWorspace = new Array();
 	try {
 		for (let workspaceFolder of vscode.workspace.workspaceFolders) {
 			const globPatern = '**/module-info.json';
 			const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
 			const moduleInfo = await findFiles(relativePattern);
-			if (moduleInfo) simpliciteWorspace.push(moduleInfo);
+			if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
+			const moduleUrl = await getModuleUrl(JSON.parse(moduleInfo[0]).name, workspaceFolder);
+			if (moduleInfo) simpliciteWorspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
 		}
 	} catch (err) {
 		console.log('No workspace folder has been found yet');
 	}
 	return simpliciteWorspace;
 }
+
+const getModuleUrl = async function (moduleName, workspaceFolder) {
+	const globPatern = '**pom.xml';
+	console.log(globPatern);
+	const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
+	const pom = await findFiles(relativePattern);
+}
+
+
 
 // const verifyScriptBellowing = async function (file, simpliciteWorkspace) { // Will check if script belongs to simplicite module
 // 	const globPatern = '**/' + file;

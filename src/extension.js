@@ -10,23 +10,24 @@ const utils = require('./utils');
 async function activate(context) {
 	let request = new RequestManager();
 
-	try {
-		request.authenticationWithToken();
-	} catch (e) {
-		console.log(e);
-		vscode.window.showInformationMessage('Sign into simplicite to activate the service', 'Sign in').then(click => {
-			if (click == 'Sign in') {
-				request.authenticationWithCredentials();
-			}
-		})
+	let modules = await utils.getSimpliciteModules();
+	let modulesLength = modules.length;
+	for (let module of modules) {
+		await request.login(module);
 	}
-	
 
-	// check for simplicite module on the extension's activation (shortly after vscode launch)
-	// let simpliciteWorkspace = await utils.getSimpliciteModules();
-	// vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-	// 	simpliciteWorkspace = await utils.getSimpliciteModules();
-	// });
+	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
+		console.log(event);
+		modules = await utils.getSimpliciteModules();
+		if (event.added.length > 0 && modules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
+			modulesLength = modules.length;
+			await request.login(modules[modules.length - 1]); // We need to connect with the module informations
+		} else if (event.removed.length > 0 && modules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module
+			// if simplicite module removed then we need to adjust moduleLength
+			modulesLength = modules.length;
+		}
+		
+	})
 
 	// Operation on fileList, to get track of changes
 	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
@@ -38,8 +39,8 @@ async function activate(context) {
 	});
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', function () {	
-		request.authenticateCommandRouter();
+	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async function () {	
+		vscode.window.showInformationMessage('authenticate');
 	});
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', function () {	
 		request.synchronize(fileList);

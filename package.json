@@ -58,7 +58,7 @@
 		"vscode-test": "^1.5.2"
 	},
 	"dependencies": {
-		"simplicite": "^1.1.24",
+		"simplicite": "^1.1.26",
 		"xml2js": "^0.4.23"
 	}
 }
