@@ -4,11 +4,6 @@ const vscode = require('vscode');
 const fs = require('fs');
 var parseString = require('xml2js').parseStringPromise;
 
-/*const urlToFilename = function (url) {
-	let value = url.split('/');
-	return value[value.length - 1];
-};*/
-
 const findFiles = async function (globPatern) {	
 	let foundFile = new Array();
 	let files;
@@ -27,11 +22,11 @@ const findFiles = async function (globPatern) {
 	return foundFile;
 };
 
-const getSimpliciteModules = async function () {
+const getSimpliciteModules = async function () { // returns the list of the folders detected as simplicite modules
 	let simpliciteWorspace = new Array();
 	try {
 		for (let workspaceFolder of vscode.workspace.workspaceFolders) {
-			const globPatern = '**/module-info.json';
+			const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
 			const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
 			const moduleInfo = await findFiles(relativePattern);
 			if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
@@ -44,7 +39,7 @@ const getSimpliciteModules = async function () {
 	return simpliciteWorspace;
 }
 
-const getModuleUrl = function (workspaceFolder) {
+const getModuleUrl = function (workspaceFolder) { // searches into pom.xml and returns the simplicite's instance url
 	return new Promise(async function(resolve, reject) {
 		const globPatern = '**pom.xml';
 		const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
@@ -57,18 +52,17 @@ const getModuleUrl = function (workspaceFolder) {
 	})
 }
 
-const getModuleUrlList = function (modules) {
-	let modulesList = new Array();
-	for (let module of modules) {
-		if (!modulesList.includes(module.moduleUrl)) modulesList.push(module.moduleUrl);
-	}
-	return modulesList
-}
-
 const isUrlConnected = function (url, map) {
 	map.forEach(connectedUrl => {
 		if (connectedUrl === url) return true
 	});
+	return false;
+}
+
+const isFileInFileList = function (fileList, filePath) {
+	for (let fileListelement of fileList) {
+		if (fileListelement.filePath === filePath) return true; 
+	}
 	return false;
 }
 
@@ -88,5 +82,6 @@ module.exports = {
 	findFiles: findFiles, 
 	crossPlatformPath: crossPlatformPath,
 	getSimpliciteModules: getSimpliciteModules,
-	isUrlConnected: isUrlConnected
+	isUrlConnected: isUrlConnected,
+	isFileInFileList: isFileInFileList
 }

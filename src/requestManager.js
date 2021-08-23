@@ -48,14 +48,12 @@ class RequestManager {
     async authenticationWithCredentials (moduleName, app) {
         try {
             const username = await vscode.window.showInputBox({ 
-                placeHolder: 'username', 
-                //prompt: 'Please type your username', 
+                placeHolder: 'username',  
                 title: 'Authenticate to ' + moduleName + ' API'
             });
             if (!username) throw 'Authentication cancelled';
             const password = await vscode.window.showInputBox({
                 placeHolder: 'password',
-                //prompt: 'Please type your password',
                 title: 'Authenticate to ' + moduleName + ' API',
                 password: true
             });
@@ -68,16 +66,15 @@ class RequestManager {
         }
     }
 
-    // need to change app, create one per project detected and STORE it
-
-    login (module, moduleURLList) {
+    login (module, moduleURLList) {  
         return new Promise(async (resolve, reject) => {
-            const app = await this.handleApp(module, moduleURLList);
-            //let app = require('simplicite').session({ url: module.moduleUrl });
+             // handleApp returns the app correct instance (one for every simplicite instance)
+            const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
+            // if the user's not connected, reject
             if (app.authtoken || app.login && app.password) {
                 vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
                 reject();
-            }
+            }   
             try {
                 console.log('Connect with token');
                 await this.authenticationWithToken(module.moduleInfo, app);
@@ -87,9 +84,8 @@ class RequestManager {
             }
     
             app.login().then(async res => {
-                await this.JSONGenerator(res.authtoken);
+                await this.JSONGenerator(res.authtoken); // if logged in we write a JSON with token etc... for persistence
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
-                console.log("logged");
                 resolve();
             }).catch(err => {
                 if (err.status === 401) {
@@ -106,20 +102,23 @@ class RequestManager {
                 reject();
             });
         })
-        
-        /*this.appList.forEach(app => {
-            console.log(app);
-        });*/
     }
 
-    handleApp (module, moduleURLList) { 
+    handleApp (moduleName, moduleURL, moduleURLList) { 
         return new Promise((resolve) => {
-            if (this.appList[module.moduleInfo] === undefined && !utils.isUrlConnected(module.moduleUrl, moduleURLList)) this.appList.set(module.moduleUrl, require('simplicite').session({ url: module.moduleUrl }));
-            resolve(this.appList.get(module.moduleUrl));
+            if (this.appList[moduleName] === undefined && !utils.isUrlConnected(moduleURL, moduleURLList)) {
+                this.appList.set(moduleURL, require('simplicite').session({ url: moduleURL }));
+            }
+            resolve(this.appList.get(moduleURL));
         });
     }
 
     logout () {
+        try {
+            fs.unlinkSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH);
+        } catch (e) {
+            console.log(e);
+        }
         this.appList.forEach((app) => {
             app.logout().then(() => {
                 vscode.window.showInformationMessage('Simplicite: Logged out');        
@@ -136,7 +135,8 @@ class RequestManager {
         })*/
     }
 
-    async synchronize (fileList, app) {
+    async synchronize (fileList, module, moduleURLList) { // 
+        const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
         if (app.authtoken) {
             for (let file of fileList) {
                 await this.attachFileAndSend(file, app);

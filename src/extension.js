@@ -12,25 +12,23 @@ async function activate(context) {
 	let modules = await utils.getSimpliciteModules();
 	let modulesLength = modules.length;
 
-	try {
-		console.log(modules);
 
-		const moduleURLList = new Array();
-		for (let module of modules) { // check if moduleURL is in the list of the connected moduleUrl
+	const moduleURLList = new Array(); // Contains the urls of the instances we are connected to
+	try {
+		for (let module of modules) { // Loop on simplicite modules check if moduleURL is in the list of the connected moduleUrl
 			if (!module.isConnected && !moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
 				await request.login(module, moduleURLList);
 				module.isConnected = true;
 				moduleURLList.push(module.moduleUrl);
-			} else if (!module.isConnected && moduleURLList.includes(module.moduleUrl)) {
+			} else if (!module.isConnected && moduleURLList.includes(module.moduleUrl)) { // if not connected BUT url is in the list, then we consider it's connected
 				module.isConnected = true;
 			}
-			// console.log(module);
 		}
 	} catch (e) {
 		console.log(e);
 	}
 	
-
+	// maybe logout when simplicite's project folder is closed ?
 	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
 		console.log(event);
 		modules = await utils.getSimpliciteModules();
@@ -44,27 +42,41 @@ async function activate(context) {
 		
 	})
 
-	// Operation on fileMap, to get track of changes
+	// Operation on fileList, to get track of changes
 	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
-	const fileMap = new Array();
+	const fileList = new Array();
 	watcher.onDidChange(uri => {
-		let filePath = uri;
-		if (!fileMap.includes(filePath)) fileMap.push({ filePath: filePath, instanceUrl: '' });
-		console.log(`Change detected: ${utils.crossPlatformPath(filePath.path)}`);
+		let filePath = utils.crossPlatformPath(uri.path);
+		for (let module of modules) {
+			if (filePath.toLowerCase().includes(module.workspaceFolderPath.toLowerCase()) && !utils.isFileInFileList(fileList, filePath)) {
+				fileList.push({ filePath: filePath, instanceUrl: module.moduleUrl });
+			}
+		}
+		console.log(`Change detected: ${utils.crossPlatformPath(filePath)}`);
 	});
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async function () {	
 		vscode.window.showInformationMessage('authenticate');
 	});
-	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', function () {	
-		request.synchronize(fileMap);
+	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {	
+		for (let module of modules) {
+			for (let file of fileList) {
+				if (module.moduleUrl === file.filePath) {
+					request.synchronize(file, module, moduleURLList);		
+				}
+			}
+			console.log(fileList, module, moduleURLList);
+			//request.synchronize(fileList, module, moduleURLList);
+		}
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
 		request.logout();
 	});
 	context.subscriptions.push(authenticate, synchronize, logout); // All commands available
 }
+
+
 
 
 
