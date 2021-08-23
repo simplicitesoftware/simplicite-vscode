@@ -25,10 +25,8 @@ const JSON_SAVE_PATH = '/Code/User/globalStorage/simplicite-info.json';
 
 class RequestManager {
     constructor () {
-        //this.app = require('simplicite').session({ url: url, debug: debug}); // faire pour chaque objet
-        //this.itemCache.push({'obo_name': 'TrnProduct' })
         this.cache = new Cache();
-        this.appList = new Map();
+        this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
     }
 
     authenticationWithToken (moduleName, app) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
@@ -36,11 +34,14 @@ class RequestManager {
             const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
             const infoJSON = JSON.parse(token);
             for (let info of infoJSON) {
-                if (info.module === moduleName) app.setAuthToken(info.token);
+                if (info.moduleInfo === moduleName) app.setAuthToken(info.token);
+            }
+            if (!app.authtoken) {
+                throw 'No token has been set';
             }
         } catch (e) {
-            console.log('No Token has been found');
-            throw 'No Token has been found';
+            console.log(e);
+            throw '';
         }
     }
 
@@ -69,54 +70,76 @@ class RequestManager {
 
     // need to change app, create one per project detected and STORE it
 
-    async login (module) {
-        let app = require('simplicite').session({ url: module.moduleUrl });
-        if (app.authtoken || app.login && app.password) {
-            vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
-            return false;
-        }
-        try {
-            await this.authenticationWithToken(module.moduleInfo, app);
-        } catch (e) {
-            await this.authenticationWithCredentials(module.moduleInfo, app);
-        }
-        app.login().then(res => {
-            this.JSONGenerator(res.authtoken);
-            vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
-        }).catch(err => {
-            if (err.status === 401) {
-                console.log(err);
-                vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
-                    if (click == 'Log in') {
-                        this.authenticationWithCredentials();
-                    }
-                })
-            } else {
-                console.log(err);
-                vscode.window.showInformationMessage(err.message);
+    login (module, moduleURLList) {
+        return new Promise(async (resolve, reject) => {
+            const app = await this.handleApp(module, moduleURLList);
+            //let app = require('simplicite').session({ url: module.moduleUrl });
+            if (app.authtoken || app.login && app.password) {
+                vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
+                reject();
             }
-        });
+            try {
+                console.log('Connect with token');
+                await this.authenticationWithToken(module.moduleInfo, app);
+            } catch (e) {
+                console.log('Connect with credentials');
+                await this.authenticationWithCredentials(module.moduleInfo, app);
+            }
+    
+            app.login().then(async res => {
+                await this.JSONGenerator(res.authtoken);
+                vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
+                console.log("logged");
+                resolve();
+            }).catch(err => {
+                if (err.status === 401) {
+                    console.log(err);
+                    vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
+                        if (click == 'Log in') {
+                            this.authenticationWithCredentials();
+                        }
+                    })
+                } else {
+                    console.log(err);
+                    vscode.window.showInformationMessage(err.message);
+                }
+                reject();
+            });
+        })
+        
+        /*this.appList.forEach(app => {
+            console.log(app);
+        });*/
     }
 
-    handleApp (module) {
-        this.appList.forEach(app => {
-            
+    handleApp (module, moduleURLList) { 
+        return new Promise((resolve) => {
+            if (this.appList[module.moduleInfo] === undefined && !utils.isUrlConnected(module.moduleUrl, moduleURLList)) this.appList.set(module.moduleUrl, require('simplicite').session({ url: module.moduleUrl }));
+            resolve(this.appList.get(module.moduleUrl));
         });
     }
 
     logout () {
-        this.app.logout().then(() => {
+        this.appList.forEach((app) => {
+            app.logout().then(() => {
+                vscode.window.showInformationMessage('Simplicite: Logged out');        
+            }).catch(e => {
+                vscode.window.showInformationMessage(e.message);        
+            })
+        })
+        /*
+        app.logout().then(() => {
             fs.unlinkSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH);
             vscode.window.showInformationMessage('Simplicite: Logged out');
         }).catch(err => {
             vscode.window.showInformationMessage(err.message);
-        })
+        })*/
     }
 
-    async synchronize (fileList) {
-        if (this.app.authtoken) {
+    async synchronize (fileList, app) {
+        if (app.authtoken) {
             for (let file of fileList) {
-                await this.attachFileAndSend(file);
+                await this.attachFileAndSend(file, app);
             }
         } else {
             vscode.window.showInformationMessage('You need to be logged to synchronize your file');
@@ -124,7 +147,7 @@ class RequestManager {
     }
 
     // Called by synchronize
-    async attachFileAndSend (file) {
+    async attachFileAndSend (file, app) {
         try { 
             // get fileType and Filename
             const fileType = this.getBusinessObjectType(file);
@@ -132,7 +155,7 @@ class RequestManager {
             fileName = fileName[fileName.length - 1].replaceAll('.java', '');
 
             // get the item for the update
-            let obj = this.app.getBusinessObject(fileType);
+            let obj = app.getBusinessObject(fileType);
             let item = await this.searchForUpdate(fileName, obj, fileType); 
             
             // give the field, ex: obo_script_id, scr_file
@@ -157,6 +180,7 @@ class RequestManager {
         const simpliciteModules = await utils.getSimpliciteModules();
         for (let module of simpliciteModules) {
             module['token'] = token;
+            delete module.isConnected;
             preparedJSON.push(module);
         }
         this.saveJSONOnDisk(preparedJSON);

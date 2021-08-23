@@ -35,27 +35,42 @@ const getSimpliciteModules = async function () {
 			const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
 			const moduleInfo = await findFiles(relativePattern);
 			if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
-			const moduleUrl = await getModuleUrl(JSON.parse(moduleInfo[0]).name, workspaceFolder);
-			if (moduleInfo) simpliciteWorspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
+			const moduleUrl = await getModuleUrl(workspaceFolder);
+			if (moduleInfo) simpliciteWorspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, isConnected: false });
 		}
 	} catch (err) {
-		console.log('No workspace folder has been found yet');
+		console.log(err);
 	}
 	return simpliciteWorspace;
 }
 
-const getModuleUrl = async function (moduleName, workspaceFolder) {
-	const globPatern = '**pom.xml';
-	const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
-	const pom = await findFiles(relativePattern);
-	parseString(pom).then(res => {
-		return res.project.properties[0]['simplicite.url'][0];
-	}).catch(e => {
-		console.log(e);
-	});
+const getModuleUrl = function (workspaceFolder) {
+	return new Promise(async function(resolve, reject) {
+		const globPatern = '**pom.xml';
+		const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
+		const pom = await findFiles(relativePattern);
+		parseString(pom).then(res => {
+			resolve(res.project.properties[0]['simplicite.url'][0]);
+		}).catch(e => {
+			reject(e);
+		});
+	})
 }
 
+const getModuleUrlList = function (modules) {
+	let modulesList = new Array();
+	for (let module of modules) {
+		if (!modulesList.includes(module.moduleUrl)) modulesList.push(module.moduleUrl);
+	}
+	return modulesList
+}
 
+const isUrlConnected = function (url, map) {
+	map.forEach(connectedUrl => {
+		if (connectedUrl === url) return true
+	});
+	return false;
+}
 
 // const verifyScriptBellowing = async function (file, simpliciteWorkspace) { // Will check if script belongs to simplicite module
 // 	const globPatern = '**/' + file;
@@ -73,4 +88,5 @@ module.exports = {
 	findFiles: findFiles, 
 	crossPlatformPath: crossPlatformPath,
 	getSimpliciteModules: getSimpliciteModules,
+	isUrlConnected: isUrlConnected
 }

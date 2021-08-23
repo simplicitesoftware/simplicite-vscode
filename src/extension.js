@@ -9,12 +9,27 @@ const utils = require('./utils');
  */
 async function activate(context) {
 	let request = new RequestManager();
-
 	let modules = await utils.getSimpliciteModules();
 	let modulesLength = modules.length;
-	for (let module of modules) {
-		await request.login(module);
+
+	try {
+		console.log(modules);
+
+		const moduleURLList = new Array();
+		for (let module of modules) { // check if moduleURL is in the list of the connected moduleUrl
+			if (!module.isConnected && !moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
+				await request.login(module, moduleURLList);
+				module.isConnected = true;
+				moduleURLList.push(module.moduleUrl);
+			} else if (!module.isConnected && moduleURLList.includes(module.moduleUrl)) {
+				module.isConnected = true;
+			}
+			// console.log(module);
+		}
+	} catch (e) {
+		console.log(e);
 	}
+	
 
 	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
 		console.log(event);
@@ -29,12 +44,12 @@ async function activate(context) {
 		
 	})
 
-	// Operation on fileList, to get track of changes
+	// Operation on fileMap, to get track of changes
 	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
-	const fileList = new Array();
+	const fileMap = new Array();
 	watcher.onDidChange(uri => {
 		let filePath = uri;
-		if (!fileList.includes(filePath)) fileList.push(filePath);
+		if (!fileMap.includes(filePath)) fileMap.push({ filePath: filePath, instanceUrl: '' });
 		console.log(`Change detected: ${utils.crossPlatformPath(filePath.path)}`);
 	});
 
@@ -43,7 +58,7 @@ async function activate(context) {
 		vscode.window.showInformationMessage('authenticate');
 	});
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', function () {	
-		request.synchronize(fileList);
+		request.synchronize(fileMap);
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
 		request.logout();
