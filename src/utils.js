@@ -4,6 +4,8 @@ const vscode = require('vscode');
 const fs = require('fs');
 var parseString = require('xml2js').parseStringPromise;
 
+const JSON_SAVE_PATH = '/Code/User/globalStorage/simplicite-info.json';
+
 const findFiles = async function (globPatern) {	
 	let foundFile = new Array();
 	let files;
@@ -23,7 +25,7 @@ const findFiles = async function (globPatern) {
 };
 
 const getSimpliciteModules = async function () { // returns the list of the folders detected as simplicite modules
-	let simpliciteWorspace = new Array();
+	let simpliciteWorkspace = new Array();
 	try {
 		for (let workspaceFolder of vscode.workspace.workspaceFolders) {
 			const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
@@ -31,12 +33,21 @@ const getSimpliciteModules = async function () { // returns the list of the fold
 			const moduleInfo = await findFiles(relativePattern);
 			if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
 			const moduleUrl = await getModuleUrl(workspaceFolder);
-			if (moduleInfo) simpliciteWorspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, isConnected: false });
+			if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, isConnected: false });
+		}
+		const token = fs.readFileSync(crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8'); // get the connexion status
+		const infoJSON = JSON.parse(token);
+		for (let info of infoJSON) {
+			for (let workspace of simpliciteWorkspace) {
+				if (info.moduleInfo === workspace.moduleInfo) {
+					workspace.isConnected = info.isConnected;
+				}
+			}
 		}
 	} catch (err) {
 		console.log(err);
 	}
-	return simpliciteWorspace;
+	return simpliciteWorkspace;
 }
 
 const getModuleUrl = function (workspaceFolder) { // searches into pom.xml and returns the simplicite's instance url

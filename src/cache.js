@@ -17,7 +17,6 @@ class Cache {
     getListFromCache (fileName) {
         let returnValue;
         this.itemCache.forEach((value, key) => {
-            console.log(value, key, fileName);
             if (key === fileName) {
                 returnValue = value; 
             }

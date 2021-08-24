@@ -16,7 +16,7 @@ async function activate(context) {
 	const moduleURLList = new Array(); // Contains the urls of the instances we are connected to
 	try {
 		for (let module of modules) { // Loop on simplicite modules check if moduleURL is in the list of the connected moduleUrl
-			if (!module.isConnected && !moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
+			if (!moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
 				await request.login(module, moduleURLList);
 				module.isConnected = true;
 				moduleURLList.push(module.moduleUrl);
@@ -28,13 +28,19 @@ async function activate(context) {
 		console.log(e);
 	}
 	
+	// weird behavior, the extension development host might be responsible
 	// maybe logout when simplicite's project folder is closed ?
 	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
-		console.log(event);
 		modules = await utils.getSimpliciteModules();
 		if (event.added.length > 0 && modules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			modulesLength = modules.length;
-			await request.login(modules[modules.length - 1]); // We need to connect with the module informations
+			try {
+				await request.login(modules[modules.length - 1]); // We need to connect with the module informations
+				moduleURLList.push(modules[modules.length - 1].moduleUrl);
+			} catch(e) {
+				console.log(e);
+			}
+			
 		} else if (event.removed.length > 0 && modules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module
 			// if simplicite module removed then we need to adjust moduleLength
 			modulesLength = modules.length;
@@ -62,7 +68,7 @@ async function activate(context) {
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {	
 		for (let module of modules) {
 			for (let file of fileList) {
-				if (module.moduleUrl === file.filePath) {
+				if (module.moduleUrl === file.instanceUrl) {
 					request.synchronize(file, module, moduleURLList);		
 				}
 			}

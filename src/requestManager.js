@@ -5,13 +5,6 @@ const fs = require('fs');
 const utils = require('./utils');
 const { Cache } = require('./cache');
 
-const scheme = process.env.TEST_SIMPLICITE_SCHEME || 'https'; 
-const host = process.env.TEST_SIMPLICITE_HOST || 'gaubert.demo.simplicite.io';
-const url = scheme + '://' + host;
-const debug = false;
-
-// get those data from input
-
 const businessObjectType = new Map([
     ['adapters', 'Adapter'],
     ['objects', 'ObjectInternal'],
@@ -30,35 +23,31 @@ class RequestManager {
     }
 
     authenticationWithToken (moduleName, app) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
-        try {
-            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
-            const infoJSON = JSON.parse(token);
-            for (let info of infoJSON) {
-                if (info.moduleInfo === moduleName) app.setAuthToken(info.token);
-            }
-            if (!app.authtoken) {
-                throw 'No token has been set';
-            }
-        } catch (e) {
-            console.log(e);
-            throw '';
+        console.log('Connect with token');
+        const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
+        const infoJSON = JSON.parse(token);
+        for (let info of infoJSON) {
+            if (info.moduleInfo === moduleName) app.setAuthToken(info.token); // condition may have to change
+        }
+        if (!app.authtoken) {
+            throw 'No token has been set';
         }
     }
 
     async authenticationWithCredentials (moduleName, app) {
+        console.log('Connect with credentials');
         try {
             const username = await vscode.window.showInputBox({ 
                 placeHolder: 'username',  
-                title: 'Authenticate to ' + moduleName + ' API'
+                title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')'
             });
             if (!username) throw 'Authentication cancelled';
             const password = await vscode.window.showInputBox({
                 placeHolder: 'password',
-                title: 'Authenticate to ' + moduleName + ' API',
+                title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')',
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
-            app.setAuthToken(null);
             app.setUsername(username);
             app.setPassword(password);
         } catch (e) {
@@ -67,6 +56,7 @@ class RequestManager {
     }
 
     login (module, moduleURLList) {  
+        const self = this;
         return new Promise(async (resolve, reject) => {
              // handleApp returns the app correct instance (one for every simplicite instance)
             const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
@@ -76,23 +66,23 @@ class RequestManager {
                 reject();
             }   
             try {
-                console.log('Connect with token');
                 await this.authenticationWithToken(module.moduleInfo, app);
             } catch (e) {
-                console.log('Connect with credentials');
+                console.log(e);
                 await this.authenticationWithCredentials(module.moduleInfo, app);
             }
-    
+            self.appList.set(module.moduleURL, app);
             app.login().then(async res => {
-                await this.JSONGenerator(res.authtoken); // if logged in we write a JSON with token etc... for persistence
-                vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login);
+                await this.JSONGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
+                vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
             }).catch(err => {
                 if (err.status === 401) {
                     console.log(err);
                     vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
                         if (click == 'Log in') {
-                            this.authenticationWithCredentials();
+                            this.login(module, moduleURLList);
+                            
                         }
                     })
                 } else {
@@ -120,8 +110,8 @@ class RequestManager {
             console.log(e);
         }
         this.appList.forEach((app) => {
-            app.logout().then(() => {
-                vscode.window.showInformationMessage('Simplicite: Logged out');        
+            app.logout().then((res) => {
+                vscode.window.showInformationMessage('Simplicite: ' + res.result);        
             }).catch(e => {
                 vscode.window.showInformationMessage(e.message);        
             })
@@ -142,7 +132,7 @@ class RequestManager {
                 await this.attachFileAndSend(file, app);
             }
         } else {
-            vscode.window.showInformationMessage('You need to be logged to synchronize your file');
+            vscode.window.showInformationMessage('Simplicite: You need to be logged to synchronize your file');
         }
     }
 
@@ -175,15 +165,42 @@ class RequestManager {
         }   
     }
 
-    async JSONGenerator (token) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
-        let preparedJSON = [];
+    async JSONGenerator (token, appURL) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
+        let preparedJSON = new Array();
         const simpliciteModules = await utils.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            module['token'] = token;
-            delete module.isConnected;
-            preparedJSON.push(module);
+            if (module.moduleUrl === appURL && !module.isConnected) { // only set the token for the object coming from the same instance => same token
+                module.isConnected = true;
+                module['token'] = token;  
+                preparedJSON = preparedJSON.concat([module]);
+            } else {
+                preparedJSON = preparedJSON.concat([module]);   
+            }
+            /*    const previouslySavedData = this.checkJSONRelevance(appURL, moduleURLList);
+                previouslySavedData ?  preparedJSON = preparedJSON.concat(previouslySavedData) : console.log('No data saved');
+            */
+            
         }
+        preparedJSON = this.getTokenFromJSON(preparedJSON);
         this.saveJSONOnDisk(preparedJSON);
+    }
+
+    getTokenFromJSON (preparedJSON) {
+        try {
+            const token = fs.readFileSync(utils.crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8');
+            const infoJSON = JSON.parse(token);
+            for (let info of infoJSON) {
+                for (let prepared of preparedJSON) {
+                    if (prepared.moduleInfo === info.moduleInfo && info.token && !prepared.token) {
+                        prepared.token = info.token;
+                    }
+                }  
+            }
+            return preparedJSON;
+        } catch(e) {
+            console.log(e);
+        }
+        return preparedJSON;
     }
 
     saveJSONOnDisk (preparedJSON) {
