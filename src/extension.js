@@ -12,7 +12,6 @@ async function activate(context) {
 	let modules = await utils.getSimpliciteModules();
 	let modulesLength = modules.length;
 
-
 	const moduleURLList = new Array(); // Contains the urls of the instances we are connected to
 	try {
 		for (let module of modules) { // Loop on simplicite modules check if moduleURL is in the list of the connected moduleUrl
@@ -81,11 +80,6 @@ async function activate(context) {
 	});
 	context.subscriptions.push(authenticate, synchronize, logout); // All commands available
 }
-
-
-
-
-
 
 module.exports = {
 	activate: activate

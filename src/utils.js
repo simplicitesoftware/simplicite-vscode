@@ -4,7 +4,12 @@ const vscode = require('vscode');
 const fs = require('fs');
 var parseString = require('xml2js').parseStringPromise;
 
-const JSON_SAVE_PATH = '/Code/User/globalStorage/simplicite-info.json';
+const crossPlatformPath = function (path) {
+	if (path[0] === '/' || path[0] === '\\') path = path.slice(1);
+	return path.replaceAll('\\', '/');
+}
+
+const JSON_SAVE_PATH = crossPlatformPath(require('./constant').JSON_SAVE_PATH);
 
 const findFiles = async function (globPatern) {	
 	let foundFile = new Array();
@@ -35,7 +40,7 @@ const getSimpliciteModules = async function () { // returns the list of the fold
 			const moduleUrl = await getModuleUrl(workspaceFolder);
 			if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, isConnected: false });
 		}
-		const token = fs.readFileSync(crossPlatformPath(process.env.APPDATA) + JSON_SAVE_PATH, 'utf-8'); // get the connexion status
+		const token = fs.readFileSync(JSON_SAVE_PATH, 'utf-8'); // get the connexion status
 		const infoJSON = JSON.parse(token);
 		for (let info of infoJSON) {
 			for (let workspace of simpliciteWorkspace) {
@@ -75,17 +80,6 @@ const isFileInFileList = function (fileList, filePath) {
 		if (fileListelement.filePath === filePath) return true; 
 	}
 	return false;
-}
-
-// const verifyScriptBellowing = async function (file, simpliciteWorkspace) { // Will check if script belongs to simplicite module
-// 	const globPatern = '**/' + file;
-// 	const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
-// 	return true;
-// }
-
-const crossPlatformPath = function (path) {
-	if (path[0] === '/' || path[0] === '\\') path = path.slice(1);
-	return path.replaceAll('\\', '/');
 }
 
 module.exports = {
