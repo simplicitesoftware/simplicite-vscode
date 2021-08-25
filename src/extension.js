@@ -1,15 +1,17 @@
 'use strict';
 
 const vscode = require('vscode');
-const { RequestManager } = require('./requestManager');
+const { FileHandler } = require('./FileHandler');
+const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
 const utils = require('./utils');
 
 /**
  * @param {vscode.ExtensionContext} context
  */
 async function activate(context) {
-	let request = new RequestManager();
-	let modules = await utils.getSimpliciteModules();
+	let fileHandler = new FileHandler();
+	let request = new SimpliciteAPIManager(fileHandler);
+	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length;
 
 	const moduleURLList = new Array(); // Contains the urls of the instances we are connected to
@@ -30,7 +32,7 @@ async function activate(context) {
 	// weird behavior, the extension development host might be responsible
 	// maybe logout when simplicite's project folder is closed ?
 	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
-		modules = await utils.getSimpliciteModules();
+		modules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && modules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			modulesLength = modules.length;
 			try {
@@ -51,28 +53,33 @@ async function activate(context) {
 	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
 	const fileList = new Array();
 	watcher.onDidChange(uri => {
-		let filePath = utils.crossPlatformPath(uri.path);
+		let filePath = request.fileHandler.crossPlatformPath(uri.path);
 		for (let module of modules) {
 			if (filePath.toLowerCase().includes(module.workspaceFolderPath.toLowerCase()) && !utils.isFileInFileList(fileList, filePath)) {
 				fileList.push({ filePath: filePath, instanceUrl: module.moduleUrl });
 			}
 		}
-		console.log(`Change detected: ${utils.crossPlatformPath(filePath)}`);
+		console.log(`Change detected: ${request.fileHandler.crossPlatformPath(filePath)}`);
 	});
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async function () {	
 		vscode.window.showInformationMessage('authenticate');
 	});
-	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {	
+	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {
+		let deletedFile = new Array();
 		for (let module of modules) {
 			for (let file of fileList) {
 				if (module.moduleUrl === file.instanceUrl) {
-					request.synchronize(file, module, moduleURLList);		
+					if (await request.synchronize(file, module, moduleURLList)) {
+						deletedFile.push(fileList.indexOf(file))
+					};		
 				}
 			}
-			console.log(fileList, module, moduleURLList);
-			//request.synchronize(fileList, module, moduleURLList);
+		}
+		// delete updated files
+		for (let toDelete of deletedFile) {
+			fileList.splice(toDelete, 1);	
 		}
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	

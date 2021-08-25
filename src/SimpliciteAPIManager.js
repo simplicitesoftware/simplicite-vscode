@@ -1,27 +1,15 @@
 'use strict';
 
 const vscode = require('vscode');
-const fs = require('fs');
 const utils = require('./utils');
 const { Cache } = require('./cache');
-const JSON_SAVE_PATH = utils.crossPlatformPath(require('./constant').JSON_SAVE_PATH);
 
-const businessObjectType = new Map([
-    ['adapters', 'Adapter'],
-    ['objects', 'ObjectInternal'],
-    ['extobjects', 'ObjectExternal'],
-    ['commons', 'Script'],
-    ['dispositions', 'Disposition'],
-    ['workflows', 'BPMProcess'],
-]);
-
-
-
-class RequestManager {
-    constructor () {
+class SimpliciteAPIManager {
+    constructor (fileHandler) {
         this.cache = new Cache();
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
         this.devInfo = null;
+        this.fileHandler = fileHandler;
     }
 
     async getDevInfo (app) { // uses the first instance available to fetch the data
@@ -50,7 +38,7 @@ class RequestManager {
             this.setApp(module.moduleUrl, app);
             app.login().then(async res => {
                 if (!this.devInfo) await this.getDevInfo(app);
-                await this.JSONGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
+                await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
             }).catch(err => {
@@ -73,7 +61,7 @@ class RequestManager {
 
     authenticationWithToken (moduleName, app) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
         console.log('Connect with token');
-        const token = fs.readFileSync(JSON_SAVE_PATH, 'utf-8');
+        const token = this.fileHandler.getSimpliciteInfo();
         const infoJSON = JSON.parse(token);
         for (let info of infoJSON) {
             if (info.moduleInfo === moduleName) app.setAuthToken(info.token); // condition may have to change
@@ -106,7 +94,7 @@ class RequestManager {
 
     logout () {
         try {
-            fs.unlinkSync(JSON_SAVE_PATH);
+            this.fileHandler.deleteSimpliciteInfo();
         } catch (e) {
             console.log(e);
         }
@@ -119,57 +107,11 @@ class RequestManager {
         })
     }  
 
-    
-
-    async JSONGenerator (token, appURL) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
-        let preparedJSON = new Array();
-        const simpliciteModules = await utils.getSimpliciteModules();
-        for (let module of simpliciteModules) {
-            if (module.moduleUrl === appURL && !module.isConnected) { // only set the token for the object coming from the same instance => same token
-                module.isConnected = true;
-                module['token'] = token;  
-                preparedJSON = preparedJSON.concat([module]);
-            } else {
-                preparedJSON = preparedJSON.concat([module]);   
-            }
-        }
-        preparedJSON = this.getTokenFromJSON(preparedJSON);
-        this.saveJSONOnDisk(preparedJSON);
-    }
-
-    getTokenFromJSON (preparedJSON) {
-        try {
-            const token = fs.readFileSync(JSON_SAVE_PATH, 'utf-8');
-            const infoJSON = JSON.parse(token);
-            for (let info of infoJSON) {
-                for (let prepared of preparedJSON) {
-                    if (prepared.moduleInfo === info.moduleInfo && info.token && !prepared.token) {
-                        prepared.token = info.token;
-                    }
-                }  
-            }
-            return preparedJSON;
-        } catch(e) {
-            console.log(e);
-        }
-        return preparedJSON;
-    }
-
-    saveJSONOnDisk (preparedJSON) {
-        try {
-            fs.writeFileSync(JSON_SAVE_PATH, JSON.stringify(preparedJSON));
-        } catch (e) {
-            console.log(e);
-        }
-    }
-
-    
-
     async synchronize (file, module, moduleURLList) { // 
         const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
         // get token
         try {
-            const token = fs.readFileSync(JSON_SAVE_PATH, 'utf-8');
+            const token = this.fileHandler.getSimpliciteInfo();
             const infoJSON = JSON.parse(token);
             for (let info of infoJSON) {
                 if (info.moduleInfo === module.moduleInfo) app.setAuthToken(info.token);
@@ -179,10 +121,11 @@ class RequestManager {
             } else {
                 vscode.window.showInformationMessage('Simplicite: You need to be logged to synchronize your file');
             }
+            return true;
         } catch(e) {
             console.log(e);
+            return false;
         }
-        
         
     }
 
@@ -190,8 +133,8 @@ class RequestManager {
     async attachFileAndSend (file, app) {
         try { 
             // get fileType and Filename
-            const fileType = this.getBusinessObjectType(file);
-            let fileName = utils.crossPlatformPath(file.filePath).split('/');
+            const fileType = this.getBusinessObjectType(file.filePath);
+            let fileName = this.fileHandler.crossPlatformPath(file.filePath).split('/');
             fileName = fileName[fileName.length - 1].replaceAll('.java', '');
 
             // get the item for the update
@@ -203,15 +146,13 @@ class RequestManager {
             const fieldScriptId = this.getProperScriptField(fileType);       
             let doc = obj.getFieldDocument(fieldScriptId);
             // get the file content for setContent
-            const fileContent = await utils.findFiles('**/' + fileName + '.java');
+            const fileContent = await this.fileHandler.findFiles('**/' + fileName + '.java');
             if (fileContent.length >= 2) throw 'More than one file has been found';
             doc.setContentFromText(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
             obj.update(item, { inlineDocuments: true})
             .then(res => {
                 console.log(res[properNameField] + ' updated');
-            }).catch(e => {
-                console.log(e);
             });
         } catch (e) {
             console.log(e);
@@ -252,26 +193,22 @@ class RequestManager {
     }
 
     getProperNameField (fileType) {
-        console.log(this.devInfo.objects);
         for (let object of this.devInfo.objects) {
             if (fileType === object.object) return object.keyfield;
         }
     }
 
-    getBusinessObjectType (fileName) { // Making the path into an array to find the type which should have the same place in every project: {moduleName}/src/com/simplicite/{type}/{moduleName}/{file}
-        const splitFilePath = utils.crossPlatformPath(fileName.filePath).split('/');
-        let returnValue;
-        businessObjectType.forEach((value, key) => {
-            if (splitFilePath[splitFilePath.length - 3] === key) {
-                returnValue = value;
-            }
-        });
-        if (returnValue) return returnValue; 
+    // Change path into Java package modele to find object type with dev info
+    getBusinessObjectType (fileName) { 
+        let urlForPackageComparaison;
+        fileName.includes('/') ? urlForPackageComparaison = fileName.replaceAll('/', '.') : urlForPackageComparaison = fileName.replaceAll('\\', '.'); 
+        for (let object of this.devInfo.objects) {
+            if (urlForPackageComparaison.includes(object.package)) return object.object;
+        }
         throw 'No type has been found';
     }
-
 }
 
 module.exports = {
-    RequestManager: RequestManager,
+    SimpliciteAPIManager: SimpliciteAPIManager,
 }
