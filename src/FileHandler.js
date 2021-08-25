@@ -13,8 +13,8 @@ class FileHandler {
         let preparedJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            if (module.moduleUrl === appURL && !module.isConnected) { // only set the token for the object coming from the same instance => same token
-                module.isConnected = true;
+            if (module.moduleUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token
+                
                 module['token'] = token;  
                 preparedJSON = preparedJSON.concat([module]);
             } else {
@@ -107,16 +107,9 @@ class FileHandler {
                 const moduleInfo = await this.findFiles(relativePattern);
                 if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, isConnected: false });
+                if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl});
             }
-            const infoJSON = JSON.parse(this.getSimpliciteInfo()); // get the connexion status
-            for (let info of infoJSON) {
-                for (let workspace of simpliciteWorkspace) {
-                    if (info.moduleInfo === workspace.moduleInfo) {
-                        workspace.isConnected = info.isConnected;
-                    }
-                }
-            }
+            
         } catch (err) {
             console.log(err);
         }

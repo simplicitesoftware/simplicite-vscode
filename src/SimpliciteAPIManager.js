@@ -8,8 +8,10 @@ class SimpliciteAPIManager {
     constructor (fileHandler) {
         this.cache = new Cache();
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
+        this.moduleURLList = new Array(); // Contains the urls of the instances we are connected to
         this.devInfo = null;
         this.fileHandler = fileHandler;
+        
     }
 
     async getDevInfo (app) { // uses the first instance available to fetch the data
@@ -20,10 +22,10 @@ class SimpliciteAPIManager {
         }
     }
 
-    login (module, moduleURLList) {  
+    login (module) {  
         return new Promise(async (resolve, reject) => {
              // handleApp returns the app correct instance (one for every simplicite instance)
-            const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
+            const app = await this.handleApp(module.moduleUrl);
             // if the user's not connected, reject
             if (app.authtoken || app.login && app.password) {
                 vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
@@ -40,13 +42,14 @@ class SimpliciteAPIManager {
                 if (!this.devInfo) await this.getDevInfo(app);
                 await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
+                if (!this.moduleURLList.includes(module.moduleUrl)) this.moduleURLList.push(module.moduleUrl);
                 resolve();
             }).catch(err => {
                 if (err.status === 401) {
                     console.log(err);
                     vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
-                        if (click == 'Log in') {
-                            this.login(module, moduleURLList);
+                        if (click === 'Log in') {
+                            this.login(module);
                             
                         }
                     })
@@ -98,17 +101,28 @@ class SimpliciteAPIManager {
         } catch (e) {
             console.log(e);
         }
+        let i = 0;
         this.appList.forEach((app) => {
+            i++;
             app.logout().then((res) => {
-                vscode.window.showInformationMessage('Simplicite: ' + res.result);        
+                vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
                 vscode.window.showInformationMessage(e.message);        
             })
         })
+        this.appList = new Map();
+        this.moduleURLList = new Array();
     }  
 
-    async synchronize (file, module, moduleURLList) { // 
-        const app = await this.handleApp(module.moduleInfo, module.moduleUrl, moduleURLList);
+    async synchronizeHandler (fileList, modules) { // 
+        try {
+            const notConnectedModule = this.beforeSynchronization(fileList);
+            this.bindFileWithModule(fileList);
+        } catch(e) {
+            console.log(e);
+        }
+        
+        /*const app = await this.handleApp(module.moduleUrl);
         // get token
         try {
             const token = this.fileHandler.getSimpliciteInfo();
@@ -125,8 +139,48 @@ class SimpliciteAPIManager {
         } catch(e) {
             console.log(e);
             return false;
+        }   */
+    }
+
+    beforeSynchronization (fileList) {
+        if (fileList.length === 0) {
+            throw 'No file has changed';
+        } else if (this.moduleURLList.length === 0) {
+            throw 'No module connected';
+        } else {
+            return this.checkModuleConnexion(fileList);
         }
-        
+    }
+
+    checkModuleConnexion (fileList) {
+        let notConnectedModule = new Array();
+        for (let file of fileList) {
+            if (!this.moduleURLList.includes(file.instanceUrl) && !notConnectedModule.includes(file.instanceUrl)) {
+                notConnectedModule.push(file.instanceUrl);
+            }
+        }
+        return notConnectedModule;
+    }
+
+    bindFileWithModule (fileList) {
+        let fileModule = new Map();
+        for (let file of fileList) {
+            if (this.moduleURLList.includes(file.instanceUrl)) {
+                fileModule.set({
+
+                })
+            }
+        }
+    }
+
+    connectedInstance () {
+        for (let url of this.moduleURLList) {
+            vscode.window.showInformationMessage('Simplicite: you are connected to: ' + url);     
+        }
+    }
+
+    async synchronize (file, module) {
+
     }
 
     // Called by synchronize
@@ -171,9 +225,9 @@ class SimpliciteAPIManager {
         return item;
     }
     
-    handleApp (moduleName, moduleURL, moduleURLList) { 
+    handleApp (moduleURL) { 
         return new Promise((resolve) => {
-            if (this.appList[moduleName] === undefined && !utils.isUrlConnected(moduleURL, moduleURLList)) {
+            if (this.appList[moduleURL] === undefined) {
                 this.appList.set(moduleURL, require('simplicite').session({ url: moduleURL }));
             }
             resolve(this.appList.get(moduleURL));

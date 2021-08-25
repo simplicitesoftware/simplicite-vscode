@@ -13,7 +13,8 @@
 		"onStartupFinished",
 		"onCommand:simplicite-vscode.authenticate",
 		"onCommand:simplicite-vscode.synchronize",
-		"onCommand:simplicite-vscode.logout"
+		"onCommand:simplicite-vscode.logout",
+		"onCommand:simplicite-vscode.connectedInstance"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
@@ -29,6 +30,10 @@
 			{
 				"command": "simplicite-vscode.logout",
 				"title": "Simplicite: Log out"
+			},
+			{
+				"command": "simplicite-vscode.connectedInstance",
+				"title": "Simplicite: Get list of connected instance"
 			}
 		],
 		"viewsContainers": {
