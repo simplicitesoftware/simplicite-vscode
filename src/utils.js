@@ -21,7 +21,7 @@ const findFiles = async function (globPatern) {
 	}
 	for (let file of files) {
 		try {
-			foundFile.push(fs.readFileSync(crossPlatformPath(file.path), { encoding: 'utf8' }));
+			foundFile.push(fs.readFileSync(crossPlatformPath(file.path), { encoding: 'utf-8' }));
 		} catch(err) {
 			console.log(err);
 		}

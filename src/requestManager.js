@@ -196,7 +196,8 @@ class RequestManager {
 
             // get the item for the update
             let obj = app.getBusinessObject(fileType);
-            let item = await this.searchForUpdate(fileName, obj, fileType); 
+            const properNameField = this.getProperNameField(fileType);
+            let item = await this.searchForUpdate(fileName, obj, properNameField); 
             
             // give the field, ex: obo_script_id, scr_file
             const fieldScriptId = this.getProperScriptField(fileType);       
@@ -204,11 +205,11 @@ class RequestManager {
             // get the file content for setContent
             const fileContent = await utils.findFiles('**/' + fileName + '.java');
             if (fileContent.length >= 2) throw 'More than one file has been found';
-            doc.setContent(fileContent[0]);
+            doc.setContentFromText(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
             obj.update(item, { inlineDocuments: true})
-            .then(() => {
-                console.log('Object updated');
+            .then(res => {
+                console.log(res[properNameField] + ' updated');
             }).catch(e => {
                 console.log(e);
             });
@@ -217,11 +218,11 @@ class RequestManager {
         }   
     }
 
-    async searchForUpdate (fileName, obj, fileType) {
+    async searchForUpdate (fileName, obj, properNameField) {
         if (!this.cache.isInCache(fileName)) {
-            const properNameField = this.getProperNameField(fileType)   
             let list = await obj.search({[properNameField]: fileName })
             if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
+            if (list.length === 0) throw 'No object has been returned';
             this.cache.addPair(fileName, list[0].row_id);
         }
         let row_id = this.cache.getListFromCache(fileName);
@@ -244,7 +245,9 @@ class RequestManager {
 
     getProperScriptField (fileType) {
         for (let object of this.devInfo.objects) {
-            if (fileType === object.object) return object.field;
+            if (fileType === object.object) {
+                return object.sourcefield;
+            }
         }
     }
 
