@@ -1,7 +1,6 @@
 'use strict';
 
 const vscode = require('vscode');
-const utils = require('./utils');
 const { Cache } = require('./cache');
 
 class SimpliciteAPIManager {
@@ -14,68 +13,67 @@ class SimpliciteAPIManager {
         
     }
 
-    async getDevInfo (app) { // uses the first instance available to fetch the data
-        try {
-            this.devInfo = await app.getDevInfo();
-        } catch(e) {
-            console.log(e);
+    async loginHandler (modules) {
+        if (modules.length > 0) {
+            for (let module of modules) {
+                try {
+                    await this.login(module);
+                } catch (e) {
+                    vscode.window.showInformationMessage(e);
+                }
+            }
+        } else {
+            vscode.window.showInformationMessage('Simplicite: No Simplicite module has been found'); 
         }
     }
 
     login (module) {  
         return new Promise(async (resolve, reject) => {
-             // handleApp returns the app correct instance (one for every simplicite instance)
-            const app = await this.handleApp(module.moduleUrl);
-            // if the user's not connected, reject
-            if (app.authtoken || app.login && app.password) {
-                vscode.window.showInformationMessage('Simplicite: Already connected as ' + app.username);
-                reject();
-            }   
-            try {
-                await this.authenticationWithToken(module.moduleInfo, app);
-            } catch (e) {
-                console.log(e);
-                await this.authenticationWithCredentials(module.moduleInfo, app);
+            //if (this.moduleURLList.includes(module.moduleUrl)) reject('Simplicite: ' + module.moduleUrl + ' already connected');
+             
+            const app = await this.handleApp(module.moduleUrl); // handleApp returns the app correct instance (one for every simplicite instance)
+            if (app.authtoken || app.login && app.password) { // if the user's already connected, reject
+                return reject();
+            }      
+            if (!this.authenticationWithToken(module.moduleInfo, app)) {
+                try {
+                    await this.authenticationWithCredentials(module.moduleInfo, app)
+                } catch (e) {
+                    return reject('Simplicite: ' + e);
+                }
             }
-            this.setApp(module.moduleUrl, app);
+            
             app.login().then(async res => {
                 if (!this.devInfo) await this.getDevInfo(app);
                 await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
+                this.moduleURLList.push(module.moduleUrl);
+                this.setApp(module.moduleUrl, app);
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
-                if (!this.moduleURLList.includes(module.moduleUrl)) this.moduleURLList.push(module.moduleUrl);
                 resolve();
             }).catch(err => {
-                if (err.status === 401) {
-                    console.log(err);
-                    vscode.window.showInformationMessage(err.message, 'Log in').then(click => {
-                        if (click === 'Log in') {
-                            this.login(module);
-                            
-                        }
-                    })
-                } else {
-                    console.log(err);
-                    vscode.window.showInformationMessage(err.message);
-                }
-                reject();
+                app.setPassword(null);
+                app.setUsername(null);
+                return reject(err.message);
             });
         })
     }
 
-    authenticationWithToken (moduleName, app) { // check at the extension start if a token is available in process.env.APPDATA + /Code/User/globalStorage/
-        console.log('Connect with token');
-        const token = this.fileHandler.getSimpliciteInfo();
-        const infoJSON = JSON.parse(token);
-        for (let info of infoJSON) {
-            if (info.moduleInfo === moduleName) app.setAuthToken(info.token); // condition may have to change
-        }
-        if (!app.authtoken) {
-            throw 'No token has been set';
-        }
+    authenticationWithToken (moduleName, app) { // check if a token is available in process.env.APPDATA + /Code/User/globalStorage/simplicite-info.json  
+        try {
+            const token = this.fileHandler.getSimpliciteInfo();
+            const infoJSON = JSON.parse(token);
+            for (let info of infoJSON) {
+                if (info.moduleInfo === moduleName && info.token) {
+                    app.setAuthToken(info.token);
+                    return true
+                }
+            }
+        } catch(e) {
+            return false;
+        }     
     }
 
     async authenticationWithCredentials (moduleName, app) {
-        console.log('Connect with credentials');
         try {
             const username = await vscode.window.showInputBox({ 
                 placeHolder: 'username',  
@@ -88,129 +86,120 @@ class SimpliciteAPIManager {
                 password: true
             });
             if (!password) throw 'Authentication cancelled';
-            app.setUsername(username);
             app.setPassword(password);
+            app.setUsername(username);
         } catch (e) {
-            console.log(e);
+            throw e;
         }
     }
 
     logout () {
-        try {
-            this.fileHandler.deleteSimpliciteInfo();
-        } catch (e) {
-            console.log(e);
-        }
-        let i = 0;
+        this.fileHandler.deleteSimpliciteInfo();
         this.appList.forEach((app) => {
-            i++;
             app.logout().then((res) => {
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
                 vscode.window.showInformationMessage(e.message);        
             })
         })
+        if (this.appList.size === 0) vscode.window.showInformationMessage('Simplicite: You are not connected to any module');
         this.appList = new Map();
         this.moduleURLList = new Array();
-    }  
-
-    async synchronizeHandler (fileList, modules) { // 
+    }
+    
+    async specificLogout({ moduleInfo, moduleUrl }) {
         try {
-            const notConnectedModule = this.beforeSynchronization(fileList);
-            this.bindFileWithModule(fileList);
-        } catch(e) {
-            console.log(e);
+            const app = await this.handleApp(moduleUrl);
+            app.logout().then((res) => {
+                this.fileHandler.deleteModuleJSON(moduleInfo);
+                this.appList.delete(moduleUrl);
+                const index = this.moduleURLList.indexOf(moduleUrl);
+                this.moduleURLList.splice(index, 1);
+                vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
+            }).catch(e => {
+                if (e.status === 401) {
+                    vscode.window.showInformationMessage('Simplicite: You are not connected');
+                } else {
+                    vscode.window.showInformationMessage(e.message);
+                }
+            });
+        } catch (e) {
+            vscode.window.showInformationMessage(e.message);
         }
+    }
+
+    async synchronizeHandler (fileList) { // 
+        return new Promise(async (resolve, reject) => {
+            try {
+                this.beforeSynchronization(fileList);
+                const fileModule = this.bindFileWithModule(fileList);
+                for (let connectedModule of this.moduleURLList) {
+                    const app = await this.handleApp(connectedModule);
+                    for (let filePath of fileModule[connectedModule]) {
+                        await this.attachFileAndSend(filePath, app);
+                    }
+                }
+                resolve();
+            } catch(e) {
+                return reject(e);
+            }
+        });
         
-        /*const app = await this.handleApp(module.moduleUrl);
-        // get token
-        try {
-            const token = this.fileHandler.getSimpliciteInfo();
-            const infoJSON = JSON.parse(token);
-            for (let info of infoJSON) {
-                if (info.moduleInfo === module.moduleInfo) app.setAuthToken(info.token);
-            }
-            if (app.authtoken) {        
-                await this.attachFileAndSend(file, app);
-            } else {
-                vscode.window.showInformationMessage('Simplicite: You need to be logged to synchronize your file');
-            }
-            return true;
-        } catch(e) {
-            console.log(e);
-            return false;
-        }   */
     }
 
     beforeSynchronization (fileList) {
         if (fileList.length === 0) {
-            throw 'No file has changed';
+            throw 'Simplicite: No file has changed';
         } else if (this.moduleURLList.length === 0) {
-            throw 'No module connected';
-        } else {
-            return this.checkModuleConnexion(fileList);
-        }
-    }
-
-    checkModuleConnexion (fileList) {
-        let notConnectedModule = new Array();
-        for (let file of fileList) {
-            if (!this.moduleURLList.includes(file.instanceUrl) && !notConnectedModule.includes(file.instanceUrl)) {
-                notConnectedModule.push(file.instanceUrl);
-            }
-        }
-        return notConnectedModule;
+            throw 'Simplicite: No module connected';
+        };
     }
 
     bindFileWithModule (fileList) {
-        let fileModule = new Map();
-        for (let file of fileList) {
-            if (this.moduleURLList.includes(file.instanceUrl)) {
-                fileModule.set({
-
-                })
+        let fileModule = {};
+        for (let {instanceUrl, filePath} of fileList) {
+            if (this.moduleURLList.includes(instanceUrl)) { 
+                fileModule[instanceUrl] ? fileModule[instanceUrl].push(filePath) : fileModule[instanceUrl] = [filePath];                 
             }
         }
-    }
-
-    connectedInstance () {
-        for (let url of this.moduleURLList) {
-            vscode.window.showInformationMessage('Simplicite: you are connected to: ' + url);     
-        }
-    }
-
-    async synchronize (file, module) {
-
+        return fileModule;
     }
 
     // Called by synchronize
-    async attachFileAndSend (file, app) {
-        try { 
-            // get fileType and Filename
-            const fileType = this.getBusinessObjectType(file.filePath);
-            let fileName = this.fileHandler.crossPlatformPath(file.filePath).split('/');
-            fileName = fileName[fileName.length - 1].replaceAll('.java', '');
+    async attachFileAndSend (filePath, app) {
+        return new Promise(async (resolve, reject) => {
+            try { 
+                // get fileType and Filename
+                const fileType = this.getBusinessObjectType(filePath);
+                let fileName = this.fileHandler.crossPlatformPath(filePath).split('/');
+                fileName = fileName[fileName.length - 1].replaceAll('.java', '');
+    
+                // get the item for the update
+                let obj = app.getBusinessObject(fileType);
+                const properNameField = this.getProperNameField(fileType);
+                let item = await this.searchForUpdate(fileName, obj, properNameField); 
+                
+                // give the field, ex: obo_script_id, scr_file
+                const fieldScriptId = this.getProperScriptField(fileType);       
+                let doc = obj.getFieldDocument(fieldScriptId);
 
-            // get the item for the update
-            let obj = app.getBusinessObject(fileType);
-            const properNameField = this.getProperNameField(fileType);
-            let item = await this.searchForUpdate(fileName, obj, properNameField); 
-            
-            // give the field, ex: obo_script_id, scr_file
-            const fieldScriptId = this.getProperScriptField(fileType);       
-            let doc = obj.getFieldDocument(fieldScriptId);
-            // get the file content for setContent
-            const fileContent = await this.fileHandler.findFiles('**/' + fileName + '.java');
-            if (fileContent.length >= 2) throw 'More than one file has been found';
-            doc.setContentFromText(fileContent[0]);
-            obj.setFieldValue(fieldScriptId, doc);
-            obj.update(item, { inlineDocuments: true})
-            .then(res => {
-                console.log(res[properNameField] + ' updated');
-            });
-        } catch (e) {
-            console.log(e);
-        }   
+                // get the file content for setContent
+                const fileContent = await this.fileHandler.findFiles('**/' + fileName + '.java');
+                if (fileContent.length >= 2) throw 'More than one file has been found';
+                doc.setContentFromText(fileContent[0]);
+                obj.setFieldValue(fieldScriptId, doc);
+                obj.update(item, { inlineDocuments: true})
+                .then(res => {
+                    console.log(res[properNameField] + ' updated');
+                    resolve();
+                });
+            } catch (e) {
+                vscode.window.showInformationMessage(e.message);
+                console.log(e);
+                return reject();
+            }   
+        })
+        
     }
 
     async searchForUpdate (fileName, obj, properNameField) {
@@ -227,8 +216,8 @@ class SimpliciteAPIManager {
     
     handleApp (moduleURL) { 
         return new Promise((resolve) => {
-            if (this.appList[moduleURL] === undefined) {
-                this.appList.set(moduleURL, require('simplicite').session({ url: moduleURL }));
+            if (this.appList.get(moduleURL) === undefined) {
+                this.setApp(moduleURL, require('simplicite').session({ url: moduleURL }));
             }
             resolve(this.appList.get(moduleURL));
         });
@@ -260,6 +249,23 @@ class SimpliciteAPIManager {
             if (urlForPackageComparaison.includes(object.package)) return object.object;
         }
         throw 'No type has been found';
+    }
+    
+    async getDevInfo (app) { // uses the first instance available to fetch the data
+        try {
+            this.devInfo = await app.getDevInfo();
+        } catch(e) {
+            console.log(e);
+        }
+    }
+
+    connectedInstance () {
+        if (this.moduleURLList.length === 0) {
+            vscode.window.showInformationMessage('Simplicite: No connected instance');     
+        }
+        for (let url of this.moduleURLList) {
+            vscode.window.showInformationMessage('Simplicite: You are connected to: ' + url);     
+        }
     }
 }
 

@@ -12,18 +12,10 @@ async function activate(context) {
 	let fileHandler = new FileHandler();
 	let request = new SimpliciteAPIManager(fileHandler);
 	let modules = await request.fileHandler.getSimpliciteModules();
-	let modulesLength = modules.length;
+	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
-	try {
-		for (let module of modules) { // Loop on simplicite modules check if moduleURL is in the list of the connected moduleUrl
-			if (!request.moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
-				await request.login(module);
-			}
-		}
-	} catch (e) {
-		console.log(e);
-	}
-	
+	await request.loginHandler(modules);
+		
 	// check when workspace are being added
 	// weird behavior, the extension development host might be responsible
 	// maybe logout when simplicite's project folder is closed ?
@@ -46,7 +38,7 @@ async function activate(context) {
 
 	// Operation on fileList, to get track of changes
 	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
-	const fileList = new Array();
+	let fileList = new Array();
 	watcher.onDidChange(uri => {
 		let filePath = request.fileHandler.crossPlatformPath(uri.path);
 		for (let module of modules) {
@@ -59,30 +51,16 @@ async function activate(context) {
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async () => {	
-		for (let module of modules) { // Loop on simplicite modules check if moduleURL is in the list of the connected moduleUrl
-			if (!request.moduleURLList.includes(module.moduleUrl)) { // if module not connected need to check if url has been connected with another module
-				await request.login(module);
-			}
-		}
+		await request.loginHandler(modules);
 	});	
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {
-		
-		await request.synchronizeHandler(fileList, modules)
-					
-		// for (let module of modules) {
-		// 	for (let file of fileList) {
-		// 		if (module.moduleUrl === file.instanceUrl) {
-		// 			if (await request.synchronize(file, module, request.moduleURLList)) {
-		// 				deletedFile.push(fileList.indexOf(file))
-		// 			}		
-		// 		}
-		// 	}
-		// }
-		
-		// delete updated files
-		// for (let toDelete of deletedFile) {
-		// 	fileList.splice(toDelete, 1);	
-		// }
+		try {
+			await request.synchronizeHandler(fileList);
+			fileList = new Array();
+		} catch (e) {
+			if (e.message === undefined) vscode.window.showInformationMessage(e);
+			else vscode.window.showInformationMessage(e.message);
+		}
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
 		request.logout();
@@ -90,7 +68,10 @@ async function activate(context) {
 	let connectedInstance = vscode.commands.registerCommand('simplicite-vscode.connectedInstance', function () {	
 		request.connectedInstance();
 	});
-	context.subscriptions.push(authenticate, synchronize, logout, connectedInstance); // All commands available
+	let logoutFromModule = vscode.commands.registerCommand('simplicite-vscode.logoutFromModule', async function () {	
+		await request.specificLogout({moduleInfo: 'Demo', moduleUrl: 'https://gaubert.demo.simplicite.io'});
+	});
+	context.subscriptions.push(authenticate, synchronize, logout, connectedInstance, logoutFromModule); // All commands available
 }
 
 module.exports = {

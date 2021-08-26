@@ -38,7 +38,7 @@ class FileHandler {
             }
             return preparedJSON;
         } catch(e) {
-            console.log(e);
+            console.log(e.message);
         }
         return preparedJSON;
     }
@@ -47,7 +47,7 @@ class FileHandler {
         try {
             fs.writeFileSync(this.JSON_SAVE_PATH, JSON.stringify(preparedJSON));
         } catch (e) {
-            console.log(e);
+            console.log(e.message);
         }
     }
 
@@ -55,9 +55,25 @@ class FileHandler {
         try {
             fs.unlinkSync(this.JSON_SAVE_PATH);
         } catch (e) {
-            if (e.code === 'ENOENT') throw e.message;
-            throw e;
+            console.log(e.message);
         }
+    }
+
+    deleteModuleJSON (moduleInfo) {
+        let simpliciteInfo = this.getSimpliciteInfo();
+        try {
+            simpliciteInfo = JSON.parse(simpliciteInfo);
+            let newInfo = [];
+            for (let moduleJSON of simpliciteInfo) {
+                if (moduleJSON['moduleInfo'] !== moduleInfo) {
+                    newInfo.push(moduleJSON);
+                }
+            }
+            this.saveSimpliciteInfoOnDisk(newInfo);
+        } catch (e) {
+            throw e.message;
+        }
+        
     }
 
     getSimpliciteInfo () {
@@ -92,7 +108,7 @@ class FileHandler {
             try {
                 foundFile.push(this.readFileSync(this.crossPlatformPath(file.path), { encoding: 'utf8' }));
             } catch(err) {
-                console.log(err);
+                console.log(err.message);
             }
         };
         return foundFile;
@@ -111,7 +127,7 @@ class FileHandler {
             }
             
         } catch (err) {
-            console.log(err);
+            console.log(err.message);
         }
         return simpliciteWorkspace;
     }
