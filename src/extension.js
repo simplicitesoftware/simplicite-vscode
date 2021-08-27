@@ -5,6 +5,7 @@ const { FileHandler } = require('./FileHandler');
 const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
 const utils = require('./utils');
 
+
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -36,18 +37,25 @@ async function activate(context) {
 		
 	})
 
+	//const git = simpleGit(options);
+
 	// Operation on fileList, to get track of changes
-	const watcher = vscode.workspace.createFileSystemWatcher('**/src/**');
+	const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
 	let fileList = new Array();
-	watcher.onDidChange(uri => {
+	watcher.onDidChange((uri) => setTimeout( // need to wait for git to update its status
+		async () => {
 		let filePath = request.fileHandler.crossPlatformPath(uri.path);
 		for (let module of modules) {
-			if (filePath.toLowerCase().includes(module.workspaceFolderPath.toLowerCase()) && !utils.isFileInFileList(fileList, filePath)) {
-				fileList.push({ filePath: filePath, instanceUrl: module.moduleUrl });
+			const diffSummary = await module.simpleGit.diffSummary();
+			for (let {file} of diffSummary.files) {
+				if (file.search('.java')) fileList.push({ filePath: file, instanceUrl: module.moduleUrl});
+				
 			}
 		}
 		console.log(`Change detected: ${request.fileHandler.crossPlatformPath(filePath)}`);
-	});
+		}
+		, 500)
+	);
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async () => {	
@@ -69,7 +77,16 @@ async function activate(context) {
 		request.connectedInstance();
 	});
 	let logoutFromModule = vscode.commands.registerCommand('simplicite-vscode.logoutFromModule', async function () {	
-		await request.specificLogout({moduleInfo: 'Demo', moduleUrl: 'https://gaubert.demo.simplicite.io'});
+		try {
+            const moduleName = await vscode.window.showInputBox({ 
+                placeHolder: 'module name',  
+                title: 'Simplicite: Type the name of the module'
+            });
+            if (!moduleName) throw 'Simplicite: Action canceled';
+			await request.specificLogout(modules, moduleName);
+        } catch (e) {
+            vscode.window.showInformationMessage(e.message ? e.message : e);
+        }
 	});
 	context.subscriptions.push(authenticate, synchronize, logout, connectedInstance, logoutFromModule); // All commands available
 }

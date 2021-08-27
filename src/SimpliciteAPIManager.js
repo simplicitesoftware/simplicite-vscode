@@ -2,6 +2,7 @@
 
 const vscode = require('vscode');
 const { Cache } = require('./cache');
+const utils = require('./utils');
 
 class SimpliciteAPIManager {
     constructor (fileHandler) {
@@ -97,27 +98,29 @@ class SimpliciteAPIManager {
         this.fileHandler.deleteSimpliciteInfo();
         this.appList.forEach((app) => {
             app.logout().then((res) => {
+                this.appList = new Map();
+                this.moduleURLList = new Array();
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
                 vscode.window.showInformationMessage(e.message);        
             })
         })
         if (this.appList.size === 0) vscode.window.showInformationMessage('Simplicite: You are not connected to any module');
-        this.appList = new Map();
-        this.moduleURLList = new Array();
+        
     }
     
-    async specificLogout({ moduleInfo, moduleUrl }) {
+    async specificLogout(modules, moduleName) {
         try {
+            const moduleUrl = utils.getModuleUrlFromName(modules, moduleName);
             const app = await this.handleApp(moduleUrl);
             app.logout().then((res) => {
-                this.fileHandler.deleteModuleJSON(moduleInfo);
+                this.fileHandler.deleteModuleJSON(moduleName);
                 this.appList.delete(moduleUrl);
                 const index = this.moduleURLList.indexOf(moduleUrl);
                 this.moduleURLList.splice(index, 1);
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
-                if (e.status === 401) {
+                if (e.status === 401 || e.code === 'ECONNREFUSED') {
                     vscode.window.showInformationMessage('Simplicite: You are not connected');
                 } else {
                     vscode.window.showInformationMessage(e.message);
@@ -133,6 +136,7 @@ class SimpliciteAPIManager {
             try {
                 this.beforeSynchronization(fileList);
                 const fileModule = this.bindFileWithModule(fileList);
+                console.log(this.moduleURLList);
                 for (let connectedModule of this.moduleURLList) {
                     const app = await this.handleApp(connectedModule);
                     for (let filePath of fileModule[connectedModule]) {
@@ -156,12 +160,15 @@ class SimpliciteAPIManager {
     }
 
     bindFileWithModule (fileList) {
+        let flag = false;
         let fileModule = {};
         for (let {instanceUrl, filePath} of fileList) {
             if (this.moduleURLList.includes(instanceUrl)) { 
                 fileModule[instanceUrl] ? fileModule[instanceUrl].push(filePath) : fileModule[instanceUrl] = [filePath];                 
+                flag = true;
             }
         }
+        if (!flag) throw 'Simplicite: Module not connected, check the connected instances';
         return fileModule;
     }
 

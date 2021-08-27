@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 var parseString = require('xml2js').parseStringPromise;
+const simpleGit = require('simple-git/promise');
 
 class FileHandler {
     constructor () {
@@ -123,7 +124,7 @@ class FileHandler {
                 const moduleInfo = await this.findFiles(relativePattern);
                 if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl});
+                if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, simpleGit: simpleGit(this.crossPlatformPath(workspaceFolder.uri.path))});
             }
             
         } catch (err) {
