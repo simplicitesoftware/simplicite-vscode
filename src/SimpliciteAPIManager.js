@@ -10,8 +10,7 @@ class SimpliciteAPIManager {
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
         this.moduleURLList = new Array(); // Contains the urls of the instances we are connected to
         this.devInfo = null;
-        this.fileHandler = fileHandler;
-        
+        this.fileHandler = fileHandler;    
     }
 
     async loginHandler (modules) {
@@ -40,16 +39,11 @@ class SimpliciteAPIManager {
     }
 
     login (module, app) {
-        return new Promise(async (resolve, reject) => {            
-            // if (app.authtoken || app.login && app.password) { // if the user's already connected, reject
-            //     console.log('Already connected');
-            //     return reject();
-            // }            
-            
+        return new Promise(async (resolve, reject) => {                            
             app.login().then(async res => {
                 if (!this.devInfo) await this.getDevInfo(app);
                 await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with token etc... for persistence
-                this.moduleURLList.push(module.moduleUrl);
+                if (!this.moduleURLList.includes(module.moduleUrl)) this.moduleURLList.push(module.moduleUrl);
                 this.setApp(module.moduleUrl, app);
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
@@ -149,15 +143,14 @@ class SimpliciteAPIManager {
             } catch(e) {
                 return reject(e);
             }
-        });
-        
+        });    
     }
 
     beforeSynchronization (fileList) {
-        if (fileList.length === 0) {
-            throw 'Simplicite: No file has changed';
-        } else if (this.moduleURLList.length === 0) {
+        if (this.moduleURLList.length === 0) {
             throw 'Simplicite: No module connected';
+        } else if (fileList.length === 0) {
+            throw 'Simplicite: No file has changed';
         };
     }
 

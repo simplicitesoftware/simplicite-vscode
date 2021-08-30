@@ -14,6 +14,7 @@ async function activate(context) {
 	let request = new SimpliciteAPIManager(fileHandler);
 	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
+	let fileList = new Array();
 
 	await request.loginHandler(modules);
 		
@@ -41,9 +42,9 @@ async function activate(context) {
 
 	// Operation on fileList, to get track of changes
 	const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
-	let fileList = new Array();
 	watcher.onDidChange((uri) => setTimeout( // need to wait for git to update its status
 		async () => {
+		fileList = new Array();
 		let filePath = request.fileHandler.crossPlatformPath(uri.path);
 		for (let module of modules) {
 			const diffSummary = await module.simpleGit.diffSummary();
