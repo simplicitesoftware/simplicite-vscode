@@ -48,8 +48,7 @@ async function activate(context) {
 		for (let module of modules) {
 			const diffSummary = await module.simpleGit.diffSummary();
 			for (let {file} of diffSummary.files) {
-				if (file.search('.java')) fileList.push({ filePath: file, instanceUrl: module.moduleUrl});
-				
+				if (file.search('.java')) fileList.push({ filePath: file, instanceUrl: module.moduleUrl});	
 			}
 		}
 		console.log(`Change detected: ${request.fileHandler.crossPlatformPath(filePath)}`);

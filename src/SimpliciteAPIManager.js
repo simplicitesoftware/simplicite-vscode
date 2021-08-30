@@ -18,7 +18,7 @@ class SimpliciteAPIManager {
         if (modules.length > 0) {
             for (let module of modules) {
                 try {
-                    await this.login(module);
+                    await this.loginTokenOrCredentials(module);
                 } catch (e) {
                     vscode.window.showInformationMessage(e);
                 }
@@ -28,21 +28,23 @@ class SimpliciteAPIManager {
         }
     }
 
-    login (module) {  
-        return new Promise(async (resolve, reject) => {
-            //if (this.moduleURLList.includes(module.moduleUrl)) reject('Simplicite: ' + module.moduleUrl + ' already connected');
-             
-            const app = await this.handleApp(module.moduleUrl); // handleApp returns the app correct instance (one for every simplicite instance)
-            if (app.authtoken || app.login && app.password) { // if the user's already connected, reject
-                return reject();
-            }      
-            if (!this.authenticationWithToken(module.moduleInfo, app)) {
-                try {
-                    await this.authenticationWithCredentials(module.moduleInfo, app)
-                } catch (e) {
-                    return reject('Simplicite: ' + e);
-                }
-            }
+    async loginTokenOrCredentials (module) {
+        const app = await this.handleApp(module.moduleUrl); // handleApp returns the app correct instance (one for every simplicite instance)
+        try {
+            this.authenticationWithToken(module.moduleInfo, app);
+            await this.login(module, app);
+        } catch (e) {
+            await this.authenticationWithCredentials(module.moduleInfo, app);
+            await this.login(module, app);
+        }
+    }
+
+    login (module, app) {
+        return new Promise(async (resolve, reject) => {            
+            // if (app.authtoken || app.login && app.password) { // if the user's already connected, reject
+            //     console.log('Already connected');
+            //     return reject();
+            // }            
             
             app.login().then(async res => {
                 if (!this.devInfo) await this.getDevInfo(app);
@@ -52,6 +54,7 @@ class SimpliciteAPIManager {
                 vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
             }).catch(err => {
+                app.setAuthToken(null);
                 app.setPassword(null);
                 app.setUsername(null);
                 return reject(err.message);
@@ -66,11 +69,10 @@ class SimpliciteAPIManager {
             for (let info of infoJSON) {
                 if (info.moduleInfo === moduleName && info.token) {
                     app.setAuthToken(info.token);
-                    return true
                 }
             }
         } catch(e) {
-            return false;
+            throw e;
         }     
     }
 
