@@ -15,7 +15,8 @@
 		"onCommand:simplicite-vscode.synchronize",
 		"onCommand:simplicite-vscode.logout",
 		"onCommand:simplicite-vscode.connectedInstance",
-		"onCommand:simplicite-vscode.logoutFromModule"
+		"onCommand:simplicite-vscode.logoutFromModule",
+		"onCommand:simplicite-vscode.logInModule"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
@@ -39,7 +40,12 @@
 			{
 				"command": "simplicite-vscode.logoutFromModule",
 				"title": "Simplicite: Log out from a specific module"
+			},
+			{
+				"command": "simplicite-vscode.logInModule",
+				"title": "Simplicite: Log into a specific module"
 			}
+			
 		],
 		"viewsContainers": {
 			"activitybar": [

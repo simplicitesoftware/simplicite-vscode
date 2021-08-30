@@ -8,14 +8,15 @@ const simpleGit = require('simple-git/promise');
 class FileHandler {
     constructor () {
         this.JSON_SAVE_PATH = this.crossPlatformPath(require('./constant').JSON_SAVE_PATH);
+        this.fileList = new Array();
     }
 
     async simpliciteInfoGenerator (token, appURL) { // generates a JSON [{"projet": "...", "module": "...", "token": "...", "isConnected": "..."}]
         let preparedJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            if (module.moduleUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token
-                
+            delete module.simpleGit;
+            if (module.moduleUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
                 module['token'] = token;  
                 preparedJSON = preparedJSON.concat([module]);
             } else {
@@ -122,13 +123,13 @@ class FileHandler {
                 const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                 const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
                 const moduleInfo = await this.findFiles(relativePattern);
-                if (moduleInfo.length >= 2) throw 'More than two modules has been found with the same name';
+                //if (moduleInfo.length >= 2) console.log('Warning: More than two modules has been found with the same name');
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, simpleGit: simpleGit(this.crossPlatformPath(workspaceFolder.uri.path))});
+                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, simpleGit: simpleGit(this.crossPlatformPath(workspaceFolder.uri.path))});
             }
             
         } catch (err) {
-            console.log(err.message);
+            console.log(err);
         }
         return simpliciteWorkspace;
     }
@@ -144,6 +145,41 @@ class FileHandler {
                 reject(e);
             });
         })
+    }
+
+    async setfileList (modules) {
+        try {
+            this.fileList = new Array();
+            for (let module of modules) {
+                const diffSummary = await module.simpleGit.diffSummary();
+                for (let {file} of diffSummary.files) {
+                    if (file.search('.java') !== -1) this.fileList.push({ filePath: file, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath});	
+                }
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    }
+//workspaceFolderPath: 'D:/repo/Github/SimpliciteSharing/DemoVueJS'
+    async handleGit (modules) {
+        for (let module of modules) {
+            try {
+                await module.simpleGit.add(this.getOnlyFilesPath(module.workspaceFolderPath));
+                const commitMessage = 'test made the ' + Date();
+                console.log(commitMessage);
+                //await module.simpleGit.commit(commitMessage);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+    }
+
+    getOnlyFilesPath (workspaceFolderPath) {
+        let filesPath = new Array();
+        for (let file of this.fileList) {
+            if (workspaceFolderPath === file.workspaceFolderPath) filesPath.push(file.filePath);
+        }
+        return filesPath;
     }
 
     crossPlatformPath (path) {

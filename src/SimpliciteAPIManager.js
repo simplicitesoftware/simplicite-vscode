@@ -127,18 +127,25 @@ class SimpliciteAPIManager {
         }
     }
 
-    async synchronizeHandler (fileList) { // 
+    async synchronizeHandler (modules) { // 
         return new Promise(async (resolve, reject) => {
             try {
-                this.beforeSynchronization(fileList);
-                const fileModule = this.bindFileWithModule(fileList);
+                await this.fileHandler.setfileList(modules);
+                this.beforeSynchronization(this.fileHandler.fileList);
+                const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
                 console.log(this.moduleURLList);
                 for (let connectedModule of this.moduleURLList) {
                     const app = await this.handleApp(connectedModule);
                     for (let filePath of fileModule[connectedModule]) {
-                        await this.attachFileAndSend(filePath, app);
+                        try {
+                            await this.attachFileAndSend(filePath, app);
+                        } catch (e) {
+                            console.log(e);
+                        }
                     }
                 }
+                this.fileHandler.handleGit(modules);
+                this.fileHandler.fileList = new Array();
                 resolve();
             } catch(e) {
                 return reject(e);
