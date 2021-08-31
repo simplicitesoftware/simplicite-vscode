@@ -1,5 +1,6 @@
 {
 	"name": "simplicite-vscode",
+	"publisher": "simpliciteExtensionTest",
 	"displayName": "simplicite-vscode",
 	"description": "Making life easier for simplicite's designers in an IDE environment",
 	"version": "0.0.1",
@@ -45,17 +46,7 @@
 				"command": "simplicite-vscode.logInModule",
 				"title": "Simplicite: Log into a specific module"
 			}
-			
-		],
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "package-explorer",
-					"title": "Package Explorer",
-					"icon": "resources/index.jpeg"
-				}
-			]
-		}
+		]
 	},
 	"scripts": {
 		"lint": "eslint .",
@@ -77,5 +68,9 @@
 		"simple-git": "^2.45.0",
 		"simplicite": "^1.1.26",
 		"xml2js": "^0.4.23"
+	},
+	"repository": {  
+		"type": "git",
+		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
 	}
 }
