@@ -106,7 +106,7 @@ class FileHandler {
         }
         for (let file of files) {
             try {
-                foundFile.push(this.readFileSync(this.crossPlatformPath(file.path), 'utf8' ));
+                foundFile.push(this.readFileSync(this.crossPlatformPath(file.fsPath), 'utf8' ));
             } catch(err) {
                 console.log(err.message);
             }
@@ -147,17 +147,21 @@ class FileHandler {
     }
 
     async setfileList (modules) {
-        try {
-            this.fileList = new Array();
-            for (let module of modules) {
-                const diffSummary = await module.simpleGit.diffSummary();
-                for (let {file} of diffSummary.files) {
-                    if (file.search('.java') !== -1) this.fileList.push({ filePath: file, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath});	
+        return new Promise(async (resolve, reject) => {
+            try {
+                this.fileList = new Array();
+                for (let module of modules) {
+                    const diffSummary = await module.simpleGit.diffSummary();
+                    for (let {file} of diffSummary.files) {
+                        if (file.search('.java') !== -1) this.fileList.push({ filePath: file, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath});	
+                    }
                 }
+                resolve();
+            } catch (e) {
+                console.log(e);
+                reject();
             }
-        } catch (e) {
-            console.log(e);
-        }
+        })
     }
 //workspaceFolderPath: 'D:/repo/Github/SimpliciteSharing/DemoVueJS'
     async handleGit (modules) {

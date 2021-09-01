@@ -16,8 +16,12 @@ async function activate(context) {
 	await request.fileHandler.setfileList(modules);
 	await request.loginHandler(modules);
 	
+
+	const setFileListCallback = async function (modules) {
+		async () => setTimeout(await request.fileHandler.setfileList(modules), 100);
+	}
 	const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
-    watcher.onDidChange(async () => setTimeout(await request.fileHandler.setfileList(modules), 100));   // need to wait for git to update its status
+    watcher.onDidChange(async () => await setFileListCallback(modules));   // need to wait for git to update its status
 
 	// check when workspace are being added
 	// weird behavior, the extension development host might be responsible
@@ -77,18 +81,20 @@ async function activate(context) {
             if (!moduleName) throw 'Simplicite: Action canceled';
 			let flag = false;
 			for (let module of modules) {
-				if (module.moduleInfo === moduleName) {
+				if (module.moduleInfo.toLowerCase() === moduleName.toLowerCase()) {
 					await request.loginTokenOrCredentials(module);
 					flag = true;
 				}
-				if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
 			}
+			if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
         } catch (e) {
             vscode.window.showInformationMessage(e.message ? e.message : e);
         }
 	});
 	context.subscriptions.push(authenticate, synchronize, logout, connectedInstance, logoutFromModule, logInModule); // All commands available
 }
+
+
 
 module.exports = {
 	activate: activate
