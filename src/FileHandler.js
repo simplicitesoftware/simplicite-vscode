@@ -146,16 +146,20 @@ class FileHandler {
         })
     }
 
-    async setfileList (modules) {
+    async setfileList (modules, uri) {
         return new Promise(async (resolve, reject) => {
             try {
-                this.fileList = new Array();
                 for (let module of modules) {
-                    const diffSummary = await module.simpleGit.diffSummary();
-                    for (let {file} of diffSummary.files) {
-                        if (file.search('.java') !== -1) this.fileList.push({ filePath: file, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath});	
+                    const filePath = this.crossPlatformPath(uri.path);
+                    if (filePath.search(module.workspaceFolderPath) !== -1) {
+                        const fileObject = { filePath: filePath, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath};
+                        if (!this.isFileInFileList(filePath)) {
+                            this.fileList.push(fileObject);
+                            console.log(`Change detected on ${filePath}`);
+                        }
                     }
                 }
+                console.log(this.fileList);
                 resolve();
             } catch (e) {
                 console.log(e);
@@ -163,8 +167,14 @@ class FileHandler {
             }
         })
     }
-//workspaceFolderPath: 'D:/repo/Github/SimpliciteSharing/DemoVueJS'
-    async handleGit (modules) {
+
+    isFileInFileList (filePath) {
+        for (let fileListelement of this.fileList) {
+            if (fileListelement.filePath === filePath) return true; 
+        }
+        return false;
+    }
+    /*async handleGit (modules) {
         for (let module of modules) {
             try {
                 await module.simpleGit.add(this.getOnlyFilesPath(module.workspaceFolderPath));
@@ -175,7 +185,7 @@ class FileHandler {
                 console.log(e);
             }
         }
-    }
+    }*/
 
     getOnlyFilesPath (workspaceFolderPath) {
         let filesPath = new Array();

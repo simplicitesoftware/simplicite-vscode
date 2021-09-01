@@ -76,13 +76,13 @@ class SimpliciteAPIManager {
                 placeHolder: 'username',  
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')'
             });
-            if (!username) throw 'Authentication cancelled';
+            if (!username) throw 'Simplicite: Authentication cancelled';
             const password = await vscode.window.showInputBox({
                 placeHolder: 'password',
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')',
                 password: true
             });
-            if (!password) throw 'Authentication cancelled';
+            if (!password) throw 'Simplicite: Authentication cancelled';
             app.setPassword(password);
             app.setUsername(username);
         } catch (e) {
@@ -127,10 +127,9 @@ class SimpliciteAPIManager {
         }
     }
 
-    async synchronizeHandler (modules) { // 
+    async synchronizeHandler () { // 
         return new Promise(async (resolve, reject) => {
             try {
-                await this.fileHandler.setfileList(modules);
                 this.beforeSynchronization(this.fileHandler.fileList);
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
                 for (let connectedModule of this.moduleURLList) {
@@ -144,7 +143,6 @@ class SimpliciteAPIManager {
                         }
                     }
                 }
-                this.fileHandler.handleGit(modules);
                 this.fileHandler.fileList = new Array();
                 resolve();
             } catch(e) {

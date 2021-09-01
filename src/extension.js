@@ -13,15 +13,14 @@ async function activate(context) {
 	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
-	await request.fileHandler.setfileList(modules);
-	await request.loginHandler(modules);
-	
+	// const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
+    // watcher.onDidChange(async (uri) => await request.fileHandler.setfileList(modules, uri));
 
-	const setFileListCallback = async function (modules) {
-		async () => setTimeout(await request.fileHandler.setfileList(modules), 100);
-	}
-	const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
-    watcher.onDidChange(async () => await setFileListCallback(modules));   // need to wait for git to update its status
+	const watcher = vscode.workspace.onDidSaveTextDocument(async (event) => {
+		if (event.uri.path.search('.java') !== -1) await request.fileHandler.setfileList(modules, event.uri);
+	})
+
+	await request.loginHandler(modules);
 
 	// check when workspace are being added
 	// weird behavior, the extension development host might be responsible
@@ -43,15 +42,16 @@ async function activate(context) {
 	});
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	let authenticate = vscode.commands.registerCommand('simplicite-vscode.login', async () => {	
+	let loginAllModules = vscode.commands.registerCommand('simplicite-vscode.login', async () => {	
 		await request.loginHandler(modules);
 	});	
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {
 		try {
-			await request.synchronizeHandler(modules);
+			await request.synchronizeHandler();
+			vscode.window.showInformationMessage('Simplicite: Successfully applied changes');
 		} catch (e) {
-			if (e.message === undefined) vscode.window.showInformationMessage(e);
-			else vscode.window.showInformationMessage(e.message);
+			if (e.message === undefined) vscode.window.showErrorMessage(e);
+			else vscode.window.showErrorMessage(e.message);
 		}
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
@@ -91,7 +91,7 @@ async function activate(context) {
             vscode.window.showInformationMessage(e.message ? e.message : e);
         }
 	});
-	context.subscriptions.push(authenticate, synchronize, logout, connectedInstance, logoutFromModule, logInModule); // All commands available
+	context.subscriptions.push(loginAllModules, synchronize, logout, connectedInstance, logoutFromModule, logInModule); // All commands available
 }
 
 
