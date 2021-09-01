@@ -133,9 +133,9 @@ class SimpliciteAPIManager {
                 await this.fileHandler.setfileList(modules);
                 this.beforeSynchronization(this.fileHandler.fileList);
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
-                console.log(this.moduleURLList);
                 for (let connectedModule of this.moduleURLList) {
                     const app = await this.handleApp(connectedModule);
+                    if (!fileModule[connectedModule]) continue; 
                     for (let filePath of fileModule[connectedModule]) {
                         try {
                             await this.attachFileAndSend(filePath, app);

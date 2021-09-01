@@ -31,7 +31,7 @@ async function activate(context) {
 		if (event.added.length > 0 && modules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			modulesLength = modules.length;
 			try {
-				await request.login(modules[modules.length - 1]); // We need to connect with the module informations
+				await request.loginTokenOrCredentials(modules[modules.length - 1]); // We need to connect with the module informations
 			} catch(e) {
 				console.log(e);
 			}

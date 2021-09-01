@@ -169,7 +169,7 @@ class FileHandler {
             try {
                 await module.simpleGit.add(this.getOnlyFilesPath(module.workspaceFolderPath));
                 const commitMessage = 'test made the ' + Date();
-                console.log(commitMessage);
+                //console.log(commitMessage);
                 //await module.simpleGit.commit(commitMessage);
             } catch (e) {
                 console.log(e);
