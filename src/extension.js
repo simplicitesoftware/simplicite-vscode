@@ -81,7 +81,7 @@ async function activate(context) {
             if (!moduleName) throw 'Simplicite: Action canceled';
 			let flag = false;
 			for (let module of modules) {
-				if (module.moduleInfo.toLowerCase() === moduleName.toLowerCase()) {
+				if (module.moduleInfo === moduleName) {
 					await request.loginTokenOrCredentials(module);
 					flag = true;
 				}
