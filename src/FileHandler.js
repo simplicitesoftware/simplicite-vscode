@@ -89,14 +89,12 @@ class FileHandler {
 
     readFileSync (path, encoding) {
         try {
-            return fs.readFileSync(path, encoding ? encoding : 'utf8');
+            return fs.readFileSync(path, encoding ? { encoding: encoding } : { encoding: 'utf8' });
         } catch (e) {
             if (e.code === 'ENOENT') throw e.message;
             throw e;
         }
-    }
-
-    
+    } 
 
     async findFiles (globPatern) {	
         let foundFile = new Array();
@@ -108,7 +106,7 @@ class FileHandler {
         }
         for (let file of files) {
             try {
-                foundFile.push(this.readFileSync(this.crossPlatformPath(file.path), { encoding: 'utf8' }));
+                foundFile.push(this.readFileSync(this.crossPlatformPath(file.path), 'utf8' ));
             } catch(err) {
                 console.log(err.message);
             }
@@ -124,12 +122,13 @@ class FileHandler {
                 const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
                 const moduleInfo = await this.findFiles(relativePattern);
                 //if (moduleInfo.length >= 2) console.log('Warning: More than two modules has been found with the same name');
+                if (moduleInfo.length === 0) throw 'No module found';
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
                 if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, simpleGit: simpleGit(this.crossPlatformPath(workspaceFolder.uri.path))});
             }
             
-        } catch (err) {
-            console.log(err);
+        } catch (e) {
+            console.log(e.message ? e.message : e);
         }
         return simpliciteWorkspace;
     }
