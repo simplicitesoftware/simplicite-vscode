@@ -1,10 +1,14 @@
-let JSON_SAVE_PATH;
+let TOKEN_SAVE_PATH;
+let FILES_SAVE_PATH;
 if (process.platform === 'win32'){
-    JSON_SAVE_PATH = process.env.APPDATA + '/Code/User/globalStorage/simplicite-info.json';
+    TOKEN_SAVE_PATH = process.env.APPDATA + '/Code/User/globalStorage/simplicite-info.json';
+    FILES_SAVE_PATH = process.env.APPDATA + '/Code/User/globalStorage/simplicite-files.json';
 } else {
-    JSON_SAVE_PATH = '/home/.vscode/simplicite-info.json';
+    TOKEN_SAVE_PATH = '/home/.vscode/simplicite-info.json';
+    FILES_SAVE_PATH = '/home/.vscode/simplicite-files.json';
 } 
 
 module.exports = {
-    JSON_SAVE_PATH: JSON_SAVE_PATH
+    TOKEN_SAVE_PATH: TOKEN_SAVE_PATH,
+    FILES_SAVE_PATH: FILES_SAVE_PATH
 }

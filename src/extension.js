@@ -13,12 +13,11 @@ async function activate(context) {
 	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
-	// const watcher = vscode.workspace.createFileSystemWatcher('**/*.java');
-    // watcher.onDidChange(async (uri) => await request.fileHandler.setfileList(modules, uri));
-
-	const watcher = vscode.workspace.onDidSaveTextDocument(async (event) => {
+	vscode.workspace.onDidSaveTextDocument(async (event) => {
 		if (event.uri.path.search('.java') !== -1) await request.fileHandler.setfileList(modules, event.uri);
 	})
+
+	request.fileHandler.getModifiedFilesOnStart();
 
 	await request.loginHandler(modules);
 
@@ -91,7 +90,10 @@ async function activate(context) {
             vscode.window.showInformationMessage(e.message ? e.message : e);
         }
 	});
-	context.subscriptions.push(loginAllModules, synchronize, logout, connectedInstance, logoutFromModule, logInModule); // All commands available
+	let changedFileList =  vscode.commands.registerCommand('simplicite-vscode.changedFileList', async function () {
+		console.log(request.fileHandler.fileList);
+	});
+	context.subscriptions.push(loginAllModules, synchronize, logout, connectedInstance, logoutFromModule, logInModule, changedFileList); // All commands available
 }
 
 

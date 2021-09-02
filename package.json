@@ -17,7 +17,8 @@
 		"onCommand:simplicite-vscode.logout",
 		"onCommand:simplicite-vscode.connectedInstance",
 		"onCommand:simplicite-vscode.logoutFromModule",
-		"onCommand:simplicite-vscode.logInModule"
+		"onCommand:simplicite-vscode.logInModule",
+		"onCommand::simplicite-vscode.changedFileList"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
@@ -45,6 +46,10 @@
 			{
 				"command": "simplicite-vscode.logInModule",
 				"title": "Simplicite: Log into a specific module"
+			},
+			{
+				"command": "simplicite-vscode.changedFileList",
+				"title": "Simplicite: See the list of modified files"
 			}
 		]
 	},

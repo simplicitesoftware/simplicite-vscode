@@ -3,11 +3,11 @@
 const vscode = require('vscode');
 const fs = require('fs');
 var parseString = require('xml2js').parseStringPromise;
-const simpleGit = require('simple-git/promise');
 
 class FileHandler {
     constructor () {
-        this.JSON_SAVE_PATH = this.crossPlatformPath(require('./constant').JSON_SAVE_PATH);
+        this.TOKEN_SAVE_PATH = this.crossPlatformPath(require('./constant').TOKEN_SAVE_PATH);
+        this.FILES_SAVE_PATH = this.crossPlatformPath(require('./constant').FILES_SAVE_PATH);
         this.fileList = new Array();
     }
 
@@ -15,7 +15,6 @@ class FileHandler {
         let preparedJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            delete module.simpleGit;
             if (module.moduleUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
                 module['token'] = token;  
                 preparedJSON = preparedJSON.concat([module]);
@@ -24,12 +23,12 @@ class FileHandler {
             }
         }
         preparedJSON = this.getTokenFromSimpliciteInfo(preparedJSON);
-        this.saveSimpliciteInfoOnDisk(preparedJSON);
+        this.saveJSONOnDisk(preparedJSON, this.TOKEN_SAVE_PATH);
     }
 
     getTokenFromSimpliciteInfo (preparedJSON) {
         try {
-            const token = fs.readFileSync(this.JSON_SAVE_PATH, 'utf8');
+            const token = fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8');
             const infoJSON = JSON.parse(token);
             for (let info of infoJSON) {
                 for (let prepared of preparedJSON) {
@@ -45,9 +44,9 @@ class FileHandler {
         return preparedJSON;
     }
 
-    saveSimpliciteInfoOnDisk (preparedJSON) {
+    saveJSONOnDisk (preparedJSON, path) {
         try {
-            fs.writeFileSync(this.JSON_SAVE_PATH, JSON.stringify(preparedJSON));
+            fs.writeFileSync(path, JSON.stringify(preparedJSON));
         } catch (e) {
             console.log(e.message);
         }
@@ -55,7 +54,7 @@ class FileHandler {
 
     deleteSimpliciteInfo () {
         try {
-            fs.unlinkSync(this.JSON_SAVE_PATH);
+            fs.unlinkSync(this.TOKEN_SAVE_PATH);
         } catch (e) {
             console.log(e.message);
         }
@@ -71,7 +70,7 @@ class FileHandler {
                     newInfo.push(moduleJSON);
                 }
             }
-            this.saveSimpliciteInfoOnDisk(newInfo);
+            this.saveJSONOnDisk(newInfo, this.TOKEN_SAVE_PATH);
         } catch (e) {
             throw e.message;
         }
@@ -80,7 +79,7 @@ class FileHandler {
 
     getSimpliciteInfo () {
         try {
-            return fs.readFileSync(this.JSON_SAVE_PATH, 'utf8');
+            return fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8');
         } catch (e) {
             if (e.code === 'ENOENT') throw e.message;
             throw e;
@@ -89,7 +88,7 @@ class FileHandler {
 
     readFileSync (path, encoding) {
         try {
-            return fs.readFileSync(path, encoding ? { encoding: encoding } : { encoding: 'utf8' });
+            return fs.readFileSync(path, encoding ? encoding : 'utf8');
         } catch (e) {
             if (e.code === 'ENOENT') throw e.message;
             throw e;
@@ -124,7 +123,7 @@ class FileHandler {
                 //if (moduleInfo.length >= 2) console.log('Warning: More than two modules has been found with the same name');
                 if (moduleInfo.length === 0) throw 'No module found';
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl, simpleGit: simpleGit(this.crossPlatformPath(workspaceFolder.uri.path))});
+                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
             }
             
         } catch (e) {
@@ -151,7 +150,10 @@ class FileHandler {
             try {
                 for (let module of modules) {
                     const filePath = this.crossPlatformPath(uri.path);
-                    if (filePath.search(module.workspaceFolderPath) !== -1) {
+                    const filePathLowerCase = filePath;
+                    const workspaceLowerCase = module.workspaceFolderPath;
+
+                    if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
                         const fileObject = { filePath: filePath, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath};
                         if (!this.isFileInFileList(filePath)) {
                             this.fileList.push(fileObject);
@@ -160,6 +162,7 @@ class FileHandler {
                     }
                 }
                 console.log(this.fileList);
+                this.saveModifiedFiles();
                 resolve();
             } catch (e) {
                 console.log(e);
@@ -168,24 +171,36 @@ class FileHandler {
         })
     }
 
+    saveModifiedFiles () {
+        let preparedJSON = new Array();
+        for (let file of this.fileList) {
+            preparedJSON.push(file);
+        }
+        this.saveJSONOnDisk(preparedJSON, this.FILES_SAVE_PATH);
+    }
+
+    getModifiedFilesOnStart () {
+        try {
+            this.fileList = require(this.FILES_SAVE_PATH);
+        } catch (e) {
+            console.log('simplicite-file.json not found');
+        }
+    }
+
+    readModifiedFiles () {
+        try {
+            return this.readFileSync(this.FILES_SAVE_PATH);
+        } catch (e) {
+            throw e.message;
+        }
+    }
+
     isFileInFileList (filePath) {
         for (let fileListelement of this.fileList) {
             if (fileListelement.filePath === filePath) return true; 
         }
         return false;
     }
-    /*async handleGit (modules) {
-        for (let module of modules) {
-            try {
-                await module.simpleGit.add(this.getOnlyFilesPath(module.workspaceFolderPath));
-                const commitMessage = 'test made the ' + Date();
-                //console.log(commitMessage);
-                //await module.simpleGit.commit(commitMessage);
-            } catch (e) {
-                console.log(e);
-            }
-        }
-    }*/
 
     getOnlyFilesPath (workspaceFolderPath) {
         let filesPath = new Array();
