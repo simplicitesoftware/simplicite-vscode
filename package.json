@@ -73,9 +73,6 @@
 		"simplicite": "^1.1.26",
 		"xml2js": "^0.4.23"
 	},
-	"extensionDependencies": [
-		"redhat.java"
-	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
