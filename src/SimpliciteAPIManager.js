@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const { Cache } = require('./cache');
 const utils = require('./utils');
+const { BarItem } = require('./BarItem');
 
 class SimpliciteAPIManager {
     constructor (fileHandler) {
@@ -11,6 +12,7 @@ class SimpliciteAPIManager {
         this.moduleURLList = new Array(); // Contains the urls of the instances we are connected to
         this.devInfo = null;
         this.fileHandler = fileHandler;    
+        this.barItem = new BarItem(vscode, 'Simplicité');
     }
 
     async loginHandler (modules) {
@@ -18,6 +20,7 @@ class SimpliciteAPIManager {
             for (let module of modules) {
                 try {
                     await this.loginTokenOrCredentials(module);
+                    this.barItem.show(this.fileHandler.fileList, modules, this.moduleURLList);
                 } catch (e) {
                     vscode.window.showInformationMessage(e);
                 }
@@ -106,14 +109,16 @@ class SimpliciteAPIManager {
     }
     
     async specificLogout(modules, moduleName) {
+        const self = this;
         try {
             const moduleUrl = utils.getModuleUrlFromName(modules, moduleName);
             const app = await this.handleApp(moduleUrl);
             app.logout().then((res) => {
-                this.fileHandler.deleteModuleJSON(moduleName);
-                this.appList.delete(moduleUrl);
-                const index = this.moduleURLList.indexOf(moduleUrl);
-                this.moduleURLList.splice(index, 1);
+                self.fileHandler.deleteModuleJSON(moduleName);
+                self.appList.delete(moduleUrl);
+                const index = self.moduleURLList.indexOf(moduleUrl);
+                self.moduleURLList.splice(index, 1);
+                this.barItem.show(this.fileHandler.fileList, modules, this.moduleURLList);
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
@@ -143,6 +148,7 @@ class SimpliciteAPIManager {
                         }
                     }
                 }
+                this.fileHandler.deleteModifiedFiles();
                 this.fileHandler.fileList = new Array();
                 resolve();
             } catch(e) {

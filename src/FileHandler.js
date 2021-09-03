@@ -195,6 +195,14 @@ class FileHandler {
         }
     }
 
+    deleteModifiedFiles () {
+        try {
+            fs.unlinkSync(this.FILES_SAVE_PATH);
+        } catch (e) {
+            console.log(e.message);
+        }
+    }
+
     isFileInFileList (filePath) {
         for (let fileListelement of this.fileList) {
             if (fileListelement.filePath === filePath) return true; 

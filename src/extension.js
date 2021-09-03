@@ -14,13 +14,18 @@ async function activate(context) {
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
 	vscode.workspace.onDidSaveTextDocument(async (event) => {
-		if (event.uri.path.search('.java') !== -1) await request.fileHandler.setfileList(modules, event.uri);
+		if (event.uri.path.search('.java') !== -1) {
+			await request.fileHandler.setfileList(modules, event.uri);
+			request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
+		}
 	})
 
 	request.fileHandler.getModifiedFilesOnStart();
 
-	await request.loginHandler(modules);
+	request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 
+	await request.loginHandler(modules);
+	
 	// check when workspace are being added
 	// weird behavior, the extension development host might be responsible
 	// maybe logout when simplicite's project folder is closed ?
@@ -43,6 +48,7 @@ async function activate(context) {
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	let loginAllModules = vscode.commands.registerCommand('simplicite-vscode.login', async () => {	
 		await request.loginHandler(modules);
+		request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 	});	
 	let synchronize = vscode.commands.registerCommand('simplicite-vscode.synchronize', async function () {
 		try {
@@ -52,9 +58,11 @@ async function activate(context) {
 			if (e.message === undefined) vscode.window.showErrorMessage(e);
 			else vscode.window.showErrorMessage(e.message);
 		}
+		request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 	});
 	let logout = vscode.commands.registerCommand('simplicite-vscode.logout', function () {	
 		request.logout();
+		request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 	});
 	let connectedInstance = vscode.commands.registerCommand('simplicite-vscode.connectedInstance', function () {	
 		request.connectedInstance();
@@ -70,6 +78,7 @@ async function activate(context) {
         } catch (e) {
             vscode.window.showInformationMessage(e.message ? e.message : e);
         }
+		
 	});
 	let logInModule = vscode.commands.registerCommand('simplicite-vscode.logInModule', async function () {	
 		try {
@@ -89,14 +98,13 @@ async function activate(context) {
         } catch (e) {
             vscode.window.showInformationMessage(e.message ? e.message : e);
         }
+		request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 	});
 	let changedFileList =  vscode.commands.registerCommand('simplicite-vscode.changedFileList', async function () {
 		console.log(request.fileHandler.fileList);
 	});
 	context.subscriptions.push(loginAllModules, synchronize, logout, connectedInstance, logoutFromModule, logInModule, changedFileList); // All commands available
 }
-
-
 
 module.exports = {
 	activate: activate
