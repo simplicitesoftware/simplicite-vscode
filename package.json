@@ -12,8 +12,8 @@
 	],
 	"activationEvents": [
 		"onStartupFinished",
-		"onCommand:simplicite-vscode.authenticate",
-		"onCommand:simplicite-vscode.synchronize",
+		"onCommand:simplicite-vscode.logIn",
+		"onCommand:simplicite-vscode.applyChanges",
 		"onCommand:simplicite-vscode.logout",
 		"onCommand:simplicite-vscode.connectedInstance",
 		"onCommand:simplicite-vscode.logoutFromModule",
@@ -24,23 +24,23 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "simplicite-vscode.login",
-				"title": "Simplicite: Log in"
+				"command": "simplicite-vscode.logIn",
+				"title": "Simplicite: Log into detected module(s)"
 			},
 			{
-				"command": "simplicite-vscode.synchronize",
-				"title": "Simplicite: Synchronization"
+				"command": "simplicite-vscode.applyChanges",
+				"title": "Simplicite: Apply change(s)"
 			},
 			{
-				"command": "simplicite-vscode.logout",
+				"command": "simplicite-vscode.logOut",
 				"title": "Simplicite: Log out"
 			},
 			{
 				"command": "simplicite-vscode.connectedInstance",
-				"title": "Simplicite: Get list of connected instance"
+				"title": "Simplicite: Get the list of connected instance(s)"
 			},
 			{
-				"command": "simplicite-vscode.logoutFromModule",
+				"command": "simplicite-vscode.logOutFromModule",
 				"title": "Simplicite: Log out from a specific module"
 			},
 			{
@@ -49,7 +49,7 @@
 			},
 			{
 				"command": "simplicite-vscode.changedFileList",
-				"title": "Simplicite: See the list of modified files"
+				"title": "Simplicite: Get the list of modified file(s)"
 			}
 		]
 	},

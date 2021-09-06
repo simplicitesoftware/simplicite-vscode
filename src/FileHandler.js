@@ -161,7 +161,6 @@ class FileHandler {
                         }
                     }
                 }
-                console.log(this.fileList);
                 this.saveModifiedFiles();
                 resolve();
             } catch (e) {

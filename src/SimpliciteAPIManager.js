@@ -2,16 +2,16 @@
 
 const vscode = require('vscode');
 const { Cache } = require('./cache');
-const utils = require('./utils');
 const { BarItem } = require('./BarItem');
+const { FileHandler } = require('./FileHandler');
 
 class SimpliciteAPIManager {
-    constructor (fileHandler) {
+    constructor () {
         this.cache = new Cache();
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
         this.moduleURLList = new Array(); // Contains the urls of the instances we are connected to
         this.devInfo = null;
-        this.fileHandler = fileHandler;    
+        this.fileHandler = new FileHandler();  
         this.barItem = new BarItem(vscode, 'Simplicité');
     }
 
@@ -22,11 +22,11 @@ class SimpliciteAPIManager {
                     await this.loginTokenOrCredentials(module);
                     this.barItem.show(this.fileHandler.fileList, modules, this.moduleURLList);
                 } catch (e) {
-                    vscode.window.showInformationMessage(e);
+                    vscode.window.showErrorMessage(e.message ? e.message : e);
                 }
             }
         } else {
-            vscode.window.showInformationMessage('Simplicite: No Simplicite module has been found'); 
+            vscode.window.showInformationMessage('Simplicite: No Simplicite module has been found');
         }
     }
 
@@ -76,7 +76,7 @@ class SimpliciteAPIManager {
     async authenticationWithCredentials (moduleName, app) {
         try {
             const username = await vscode.window.showInputBox({ 
-                placeHolder: 'username',  
+                placeHolder: 'username',
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')'
             });
             if (!username) throw 'Simplicite: Authentication cancelled';
@@ -101,17 +101,16 @@ class SimpliciteAPIManager {
                 this.moduleURLList = new Array();
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
-                vscode.window.showInformationMessage(e.message);        
+                vscode.window.showErrorMessage(e.message ? e.message : e);        
             })
         })
-        if (this.appList.size === 0) vscode.window.showInformationMessage('Simplicite: You are not connected to any module');
-        
+        if (this.appList.size === 0) vscode.window.showInformationMessage('Simplicite: You are not connected to any module');       
     }
     
     async specificLogout(modules, moduleName) {
         const self = this;
         try {
-            const moduleUrl = utils.getModuleUrlFromName(modules, moduleName);
+            const moduleUrl = this.getModuleUrlFromName(modules, moduleName);
             const app = await this.handleApp(moduleUrl);
             app.logout().then((res) => {
                 self.fileHandler.deleteModuleJSON(moduleName);
@@ -122,20 +121,20 @@ class SimpliciteAPIManager {
                 vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
-                    vscode.window.showInformationMessage('Simplicite: You are not connected');
+                    vscode.window.showErrorMessage(`Simplicite: You are not connected to ${moduleName}`);
                 } else {
-                    vscode.window.showInformationMessage(e.message);
+                    vscode.window.showErrorMessage(e.message);
                 }
             });
         } catch (e) {
-            vscode.window.showInformationMessage(e.message);
+            vscode.window.showErrorMessage(e.message);
         }
     }
 
-    async synchronizeHandler () { // 
+    async applyChangesHandler () { // 
         return new Promise(async (resolve, reject) => {
             try {
-                this.beforeSynchronization(this.fileHandler.fileList);
+                this.beforeApply(this.fileHandler.fileList);
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
                 for (let connectedModule of this.moduleURLList) {
                     const app = await this.handleApp(connectedModule);
@@ -144,7 +143,8 @@ class SimpliciteAPIManager {
                         try {
                             await this.attachFileAndSend(filePath, app);
                         } catch (e) {
-                            console.log(e);
+                            vscode.window.showErrorMessage(`Error sending ${filePath} \n ${e.message ? e.message : e}`);
+                            console.log(`Error in attachFileAndSend: ${e}`);
                         }
                     }
                 }
@@ -157,7 +157,7 @@ class SimpliciteAPIManager {
         });    
     }
 
-    beforeSynchronization (fileList) {
+    beforeApply (fileList) {
         if (this.moduleURLList.length === 0) {
             throw 'Simplicite: No module connected';
         } else if (fileList.length === 0) {
@@ -207,9 +207,7 @@ class SimpliciteAPIManager {
                     resolve();
                 });
             } catch (e) {
-                vscode.window.showInformationMessage(e.message);
-                console.log(e);
-                return reject();
+                return reject(e);
             }   
         })
         
@@ -269,6 +267,14 @@ class SimpliciteAPIManager {
             this.devInfo = await app.getDevInfo();
         } catch(e) {
             console.log(e);
+        }
+    }
+
+    getModuleUrlFromName (modules, moduleName) {
+        for (let module of modules) {
+            if (module.moduleInfo === moduleName) {
+                return module.moduleUrl;
+            }
         }
     }
 
