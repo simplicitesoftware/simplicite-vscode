@@ -136,6 +136,7 @@ class SimpliciteAPIManager {
             try {
                 this.beforeApply(this.fileHandler.fileList);
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
+                let numberOfErrors = 0;
                 for (let connectedModule of this.moduleURLList) {
                     const app = await this.handleApp(connectedModule);
                     if (!fileModule[connectedModule]) continue; 
@@ -145,11 +146,18 @@ class SimpliciteAPIManager {
                         } catch (e) {
                             vscode.window.showErrorMessage(`Error sending ${filePath} \n ${e.message ? e.message : e}`);
                             console.log(`Error in attachFileAndSend: ${e}`);
+                            numberOfErrors++;
                         }
                     }
                 }
-                this.fileHandler.deleteModifiedFiles();
-                this.fileHandler.fileList = new Array();
+                const fileListLength = this.fileHandler.fileList.length
+                if (numberOfErrors === fileListLength) {
+                    vscode.window.showInformationMessage('Simplicite: cannot apply any change');
+                } else {
+                    vscode.window.showInformationMessage(`Simplicite: changed ${fileListLength - numberOfErrors} files over ${fileListLength}`);
+                    this.fileHandler.deleteModifiedFiles();
+                    this.fileHandler.fileList = new Array();
+                }
                 resolve();
             } catch(e) {
                 return reject(e);

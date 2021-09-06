@@ -51,7 +51,6 @@ async function activate(context) {
 	const applyChanges = vscode.commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
 			await request.applyChangesHandler();
-			vscode.window.showInformationMessage('Simplicite: Successfully applied changes');
 		} catch (e) {
 			vscode.window.showErrorMessage(e.message ? e.message : e);
 		}
