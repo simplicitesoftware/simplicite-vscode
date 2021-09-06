@@ -14,9 +14,9 @@
 		"onStartupFinished",
 		"onCommand:simplicite-vscode.logIn",
 		"onCommand:simplicite-vscode.applyChanges",
-		"onCommand:simplicite-vscode.logout",
+		"onCommand:simplicite-vscode.logOut",
 		"onCommand:simplicite-vscode.connectedInstance",
-		"onCommand:simplicite-vscode.logoutFromModule",
+		"onCommand:simplicite-vscode.logOutFromModule",
 		"onCommand:simplicite-vscode.logInModule",
 		"onCommand::simplicite-vscode.changedFileList"
 	],
