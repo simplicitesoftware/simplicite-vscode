@@ -4,6 +4,11 @@ const vscode = require('vscode');
 const { Cache } = require('./cache');
 const { BarItem } = require('./BarItem');
 const { FileHandler } = require('./FileHandler');
+const { crossPlatformPath } = require('./utils');
+const { AppHandler, File } = require('./class/classIndex');
+
+// ide_ + objectName
+// CodeCompile
 
 class SimpliciteAPIManager {
     constructor () {
@@ -149,6 +154,7 @@ class SimpliciteAPIManager {
                             numberOfErrors++;
                         }
                     }
+                    await this.triggerBackendCompilation(app);
                 }
                 const fileListLength = this.fileHandler.fileList.length
                 if (numberOfErrors === fileListLength) {
@@ -163,6 +169,17 @@ class SimpliciteAPIManager {
                 return reject(e);
             }
         });    
+    }
+
+    async triggerBackendCompilation (app) {
+        try {
+            let obj = app.getBusinessObject('Script', 'ide_Script');
+            const res = await obj.action('CodeCompile', 0);
+            vscode.window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
+        } catch (e) {
+            vscode.window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
+        }
+        
     }
 
     beforeApply (fileList) {
@@ -192,11 +209,11 @@ class SimpliciteAPIManager {
             try { 
                 // get fileType and Filename
                 const fileType = this.getBusinessObjectType(filePath);
-                let fileName = this.fileHandler.crossPlatformPath(filePath).split('/');
+                let fileName = crossPlatformPath(filePath).split('/');
                 fileName = fileName[fileName.length - 1].replaceAll('.java', '');
     
                 // get the item for the update
-                let obj = app.getBusinessObject(fileType);
+                let obj = app.getBusinessObject(fileType, 'ide_' + fileType);
                 const properNameField = this.getProperNameField(fileType);
                 let item = await this.searchForUpdate(fileName, obj, properNameField); 
                 
@@ -211,14 +228,14 @@ class SimpliciteAPIManager {
                 obj.setFieldValue(fieldScriptId, doc);
                 obj.update(item, { inlineDocuments: true})
                 .then(res => {
-                    console.log(res[properNameField] + ' updated');
                     resolve();
-                });
+                }).catch((e) => {
+                    throw e;
+                })
             } catch (e) {
                 return reject(e);
             }   
-        })
-        
+        })   
     }
 
     async searchForUpdate (fileName, obj, properNameField) {
@@ -233,18 +250,7 @@ class SimpliciteAPIManager {
         return item;
     }
     
-    handleApp (moduleURL) { 
-        return new Promise((resolve) => {
-            if (this.appList.get(moduleURL) === undefined) {
-                this.setApp(moduleURL, require('simplicite').session({ url: moduleURL }));
-            }
-            resolve(this.appList.get(moduleURL));
-        });
-    }
-
-    setApp (moduleURL, app) {
-        this.appList.set(moduleURL, app);
-    }
+    
 
     getProperScriptField (fileType) {
         for (let object of this.devInfo.objects) {
@@ -293,6 +299,33 @@ class SimpliciteAPIManager {
         for (let url of this.moduleURLList) {
             vscode.window.showInformationMessage('Simplicite: You are connected to: ' + url);     
         }
+    }
+
+    compileJava () {
+        // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
+        return new Promise(async (resolve, reject) => {
+            try {
+                const status = await vscode.commands.executeCommand('java.workspace.compile', false) 
+                switch (status) {
+                    case 0:
+                        vscode.window.showErrorMessage('Simplicite: Compilation failed');
+                        reject();
+                        break;
+                    case 1:
+                        vscode.window.showInformationMessage('Simplicite: Compilation succeeded');
+                        resolve();
+                        break;
+                    case 3:
+                        vscode.window.showErrorMessage('Simplicite: Compilation cancelled');
+                        reject();
+                        break;
+                }
+            } catch(e) {
+                vscode.window.showErrorMessage(`Simplicite: An error occured during the compilation `);
+                console.log(e);
+                reject();
+            }
+        })
     }
 }
 

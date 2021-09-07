@@ -2,12 +2,14 @@
 
 const vscode = require('vscode');
 const fs = require('fs');
+const { File } = require('./class/File');
 var parseString = require('xml2js').parseStringPromise;
+const { crossPlatformPath } = require('./utils');
 
 class FileHandler {
     constructor () {
-        this.TOKEN_SAVE_PATH = this.crossPlatformPath(require('./constant').TOKEN_SAVE_PATH);
-        this.FILES_SAVE_PATH = this.crossPlatformPath(require('./constant').FILES_SAVE_PATH);
+        this.TOKEN_SAVE_PATH = crossPlatformPath(require('./constant').TOKEN_SAVE_PATH);
+        this.FILES_SAVE_PATH = crossPlatformPath(require('./constant').FILES_SAVE_PATH);
         this.fileList = new Array();
     }
 
@@ -105,7 +107,7 @@ class FileHandler {
         }
         for (let file of files) {
             try {
-                foundFile.push(this.readFileSync(this.crossPlatformPath(file.fsPath), 'utf8' ));
+                foundFile.push(this.readFileSync(crossPlatformPath(file.fsPath), 'utf8' ));
             } catch(err) {
                 console.log(err.message);
             }
@@ -123,7 +125,7 @@ class FileHandler {
                 //if (moduleInfo.length >= 2) console.log('Warning: More than two modules has been found with the same name');
                 if (moduleInfo.length === 0) throw 'No module found';
                 const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: this.crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
+                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
             }
             
         } catch (e) {
@@ -149,7 +151,7 @@ class FileHandler {
         return new Promise(async (resolve, reject) => {
             try {
                 for (let module of modules) {
-                    const filePath = this.crossPlatformPath(uri.path);
+                    const filePath = crossPlatformPath(uri.path);
                     const filePathLowerCase = filePath;
                     const workspaceLowerCase = module.workspaceFolderPath;
 
@@ -217,11 +219,6 @@ class FileHandler {
         return filesPath;
     }
 
-    crossPlatformPath (path) {
-        if (process.platform !== 'win32') return path;
-        if (path[0] === '/' || path[0] === '\\') path = path.slice(1);
-        return path.replaceAll('\\', '/');
-    }
 }
 
 module.exports = {

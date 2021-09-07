@@ -11,7 +11,7 @@ async function activate(context) {
 	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
-	console.log(vscode.workspace.getConfiguration('simplicite-vscode').get('onSaveApply'));
+	//vscode.workspace.getConfiguration('simplicite-vscode').get('onSaveApply');
 
 	vscode.workspace.onDidSaveTextDocument(async (event) => {
 		if (event.uri.path.search('.java') !== -1) {
@@ -102,12 +102,12 @@ async function activate(context) {
         }
 		request.barItem.show(request.fileHandler.fileList, modules, request.moduleURLList);
 	});
-
-	const changedFileList =  vscode.commands.registerCommand('simplicite-vscode.changedFileList', async function () {
-		console.log(request.fileHandler.fileList);
+	const compileWorkspace = vscode.commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
+		await request.compileJava();
 	});
 
-	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInModule, changedFileList); // All commands available
+
+	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInModule, compileWorkspace); // All commands available
 }
 
 module.exports = {
