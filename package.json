@@ -25,11 +25,11 @@
 		"commands": [
 			{
 				"command": "simplicite-vscode.logIn",
-				"title": "Simplicite: Log into detected module(s)"
+				"title": "Simplicite: Log into detected modules"
 			},
 			{
 				"command": "simplicite-vscode.applyChanges",
-				"title": "Simplicite: Apply change(s)"
+				"title": "Simplicite: Apply changes"
 			},
 			{
 				"command": "simplicite-vscode.logOut",
@@ -37,7 +37,7 @@
 			},
 			{
 				"command": "simplicite-vscode.connectedInstance",
-				"title": "Simplicite: Get the list of connected instance(s)"
+				"title": "Simplicite: Get the list of connected instances"
 			},
 			{
 				"command": "simplicite-vscode.logOutFromModule",
@@ -49,9 +49,19 @@
 			},
 			{
 				"command": "simplicite-vscode.changedFileList",
-				"title": "Simplicite: Get the list of modified file(s)"
+				"title": "Simplicite: Get the list of modified files"
 			}
-		]
+		],
+		"configuration": {
+			"title": "general_behavior",
+			"properties": {
+				"simplicite-vscode.onSaveApply": {
+					"type": "boolean",
+					"default": false,
+					"description": "Apply your changes whenever you save a java file"
+			  	}
+			}
+		}
 	},
 	"scripts": {
 		"lint": "eslint .",

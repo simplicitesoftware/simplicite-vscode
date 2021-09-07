@@ -19,11 +19,11 @@ From now on, you can edit your java files and run the command: `Simplicite: Appl
 ## Available commands
 * `Simplicite: Log into detected modules`: manually connects to all detected modules.
 * `Simplicite: Log into a specific module`: asks for the name of the module you want to log in (name of the folder).
-* `Simplicite: Log out from all modules`: disconnects all the modules, you will need to manually reconnect after doing this command.
+* `Simplicite: Log out from all modules`: disconnects all the modules. You will need to manually reconnect after doing this command.
 * `Simplicite: Log out from a specific module`: asks for the name of the module you want to log out (name of the folder). 
-* `Simplicite: Apply change(s)`: loads the java files into their modules, you need to be connected to do so.
-* `Simplicite: Get the list of connected instance(s)`: gives you the list of the connected instance(s).
-* `Simplicite: Get the list of modified file(s)`: gives you the list of modified java files.
+* `Simplicite: Apply changes`: loads the java files into their modules You need to be connected to do so.
+* `Simplicite: Get the list of connected instances`: gives you the list of the connected instances.
+* `Simplicite: Get the list of modified files`: gives you the list of modified java files.
 
 ---
 
@@ -41,7 +41,7 @@ Incoming
 
 ## Release Notes
 
-### 1.0.0
+### 0.0.1
 
 Initial release
 

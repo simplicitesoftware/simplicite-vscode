@@ -11,6 +11,8 @@ async function activate(context) {
 	let modules = await request.fileHandler.getSimpliciteModules();
 	let modulesLength = modules.length; // useful to compare module change on onDidChangeWorkspaceFolders
 
+	console.log(vscode.workspace.getConfiguration('simplicite-vscode').get('onSaveApply'));
+
 	vscode.workspace.onDidSaveTextDocument(async (event) => {
 		if (event.uri.path.search('.java') !== -1) {
 			await request.fileHandler.setfileList(modules, event.uri);
