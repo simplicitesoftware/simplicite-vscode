@@ -12,7 +12,7 @@ This extension provides an easy way to edit the java files of one or multiple si
 Simply add your modules into the vscode workspace. Then authenticate yourself using the credentials of **each simplicite instance** you need to log in.
 Opening the same workspace will **automatically connect you**.
 
-From now on, you can edit your java files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).\
+From now on, you can edit your java files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).
 
 *NB: the extension only works with java files*
 
