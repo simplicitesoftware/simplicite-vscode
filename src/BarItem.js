@@ -1,21 +1,22 @@
 'use strict';
 
+const { window, MarkdownString,} = require('vscode');
+
 class BarItem {
-    constructor (vscode, name) {
-        this.vscode = vscode;
-        this.barItem = this.vscode.window.createStatusBarItem(2);
+    constructor (name) {
+        this.barItem = window.createStatusBarItem(2);
         this.barItem.text = name;
     }
 
-    show (fileList, modules, moduleURLList) {
-        this.barItem.tooltip = new this.vscode.MarkdownString(this.markdownGenerator(fileList, modules, moduleURLList));
+    show (fileList, modules, connectedInstancesUrl) {
+        this.barItem.tooltip = new MarkdownString(this.markdownGenerator(fileList, modules, connectedInstancesUrl));
         this.barItem.show();
     }
     
-    markdownGenerator (fileList, modules, moduleURLList) {
+    markdownGenerator (fileList, modules, connectedInstancesUrl) {
         return this.fileListMarkdown(fileList) + '\n\n---\n\n' 
-        + this.URLmodulesMarkdown(modules, moduleURLList) + '\n\n---\n\n' 
-        + this.modulesMarkdown(modules, moduleURLList);
+        + this.URLmodulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n' 
+        + this.modulesMarkdown(modules, connectedInstancesUrl);
     }
 
     fileListMarkdown (fileList) {
@@ -27,10 +28,10 @@ class BarItem {
         return fileMarkdown;
     }
 
-    URLmodulesMarkdown (modules, moduleURLList) {
+    URLmodulesMarkdown (modules, connectedInstancesUrl) {
         let moduleMarkdown = 'Connected Simplicite\'s instances and their corresponding modules:\n\n';
-        if (moduleURLList.length === 0) return moduleMarkdown + '- none\n\n';
-        for (let url of moduleURLList) {
+        if (connectedInstancesUrl.length === 0) return moduleMarkdown + '- none\n\n';
+        for (let url of connectedInstancesUrl) {
             moduleMarkdown += url + ':\n';
             for (let module of modules) {
                 if (url === module.moduleUrl) {
@@ -41,17 +42,17 @@ class BarItem {
         return moduleMarkdown;
     } 
 
-    modulesMarkdown (modules, moduleURLList) {
+    modulesMarkdown (modules, connectedInstancesUrl) {
         if (modules.length === 0) return '';
         let moduleMarkdown = '';
         let firstTime = false;
         for (let module of modules) {
-            if (!moduleURLList.includes(module.moduleUrl)) {
+            if (!connectedInstancesUrl.includes(module.getInstanceUrl())) {
                 if (!firstTime) {
                     moduleMarkdown += 'Disconnected modules:\n\n';
                     firstTime = true;
                 } 
-                moduleMarkdown += '- ' + module.moduleInfo + '\n\n';
+                moduleMarkdown += '- ' + module.getName() + '\n\n';
             } 
         }
 

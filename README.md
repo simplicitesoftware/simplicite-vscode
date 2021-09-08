@@ -19,13 +19,13 @@ From now on, you can edit your java files and run the command: `Simplicite: Appl
 ---
 
 ## Available commands
-* `Simplicite: Log into detected modules`: manually connects to all detected modules.
-* `Simplicite: Log into a specific module`: asks for the name of the module you want to log in (name of the folder).
-* `Simplicite: Log out from all modules`: disconnects all the modules. You will need to manually reconnect after doing this command.
-* `Simplicite: Log out from a specific module`: asks for the name of the module you want to log out (name of the folder). 
+* `Simplicite: Log into detected instances`: connects to the instances that have been detected in the modules contained in the workspace.
+* `Simplicite: Log into a specific instance`: expects the url of your instance or the name of the module related to this instance.
+* `Simplicite: Log out from all instances`: disconnects all the instances. You will need to manually reconnect after doing this command.
+* `Simplicite: Log out from a specific instance`: asks for the name of the module you want to log out (name of the folder). 
 * `Simplicite: Apply changes`: loads the java files into their modules You need to be connected to do so.
 * `Simplicite: Get the list of connected instances`: gives you the list of the connected instances.
-* `Simplicite: Get the list of modified files`: gives you the list of modified java files.
+* `Simplicite: Compile the java code in your current workspace`: executes the command of the [vscode-java extension](https://github.com/redhat-developer/vscode-java).
 
 ---
 

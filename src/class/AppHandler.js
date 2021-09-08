@@ -1,6 +1,6 @@
 'use strict';
 
-export default class AppHandler {
+class AppHandler {
     constructor () {
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
     }
@@ -16,4 +16,16 @@ export default class AppHandler {
         this.appList.set(moduleURL, app);
     }
 
+    getAppList () {
+        return this.appList;
+    }
+
+    setAppList (appList) {
+        this.appList = appList;
+    }
+
+}
+
+module.exports = {
+    AppHandler: AppHandler
 }

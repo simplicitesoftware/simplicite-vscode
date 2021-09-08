@@ -23,8 +23,7 @@
 		"onCommand:simplicite-vscode.logOut",
 		"onCommand:simplicite-vscode.connectedInstance",
 		"onCommand:simplicite-vscode.logOutFromModule",
-		"onCommand:simplicite-vscode.logInModule",
-		"onCommand::simplicite-vscode.changedFileList",
+		"onCommand:simplicite-vscode.logOutFromInstance",
 		"onCommand::simplicite-vscode.compileWorkspace"
 	],
 	"main": "./src/extension.js",
@@ -32,7 +31,7 @@
 		"commands": [
 			{
 				"command": "simplicite-vscode.logIn",
-				"title": "Simplicite: Log into detected modules"
+				"title": "Simplicite: Log into detected instances"
 			},
 			{
 				"command": "simplicite-vscode.applyChanges",
@@ -47,16 +46,12 @@
 				"title": "Simplicite: Get the list of connected instances"
 			},
 			{
-				"command": "simplicite-vscode.logOutFromModule",
-				"title": "Simplicite: Log out from a specific module"
+				"command": "simplicite-vscode.logOutFromInstance",
+				"title": "Simplicite: Log out from a specific instance"
 			},
 			{
-				"command": "simplicite-vscode.logInModule",
-				"title": "Simplicite: Log into a specific module"
-			},
-			{
-				"command": "simplicite-vscode.changedFileList",
-				"title": "Simplicite: Get the list of modified files"
+				"command": "simplicite-vscode.logInInstance",
+				"title": "Simplicite: Log into a specific instance"
 			},
 			{
 				"command": "simplicite-vscode.compileWorkspace",

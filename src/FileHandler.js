@@ -2,7 +2,7 @@
 
 const vscode = require('vscode');
 const fs = require('fs');
-const { File } = require('./class/File');
+const { File, Module } = require('./class/classIndex');
 var parseString = require('xml2js').parseStringPromise;
 const { crossPlatformPath } = require('./utils');
 
@@ -13,42 +13,41 @@ class FileHandler {
         this.fileList = new Array();
     }
 
-    async simpliciteInfoGenerator (token, appURL) { // generates a JSON [{"projet": "...", "module": "...", "token": "...", "isConnected": "..."}]
-        let preparedJSON = new Array();
+    async simpliciteInfoGenerator (token, appURL) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
+        let toBeWrittenJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            if (module.moduleUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
-                module['token'] = token;  
-                preparedJSON = preparedJSON.concat([module]);
+            if (module.getInstanceUrl() === appURL && !module.getToken()) { // only set the token for the object coming from the same instance => same token 
+                module.setToken(token); 
+                toBeWrittenJSON = toBeWrittenJSON.concat([module]);
             } else {
-                preparedJSON = preparedJSON.concat([module]);   
+                toBeWrittenJSON = toBeWrittenJSON.concat([module]);   
             }
         }
-        preparedJSON = this.getTokenFromSimpliciteInfo(preparedJSON);
-        this.saveJSONOnDisk(preparedJSON, this.TOKEN_SAVE_PATH);
+        toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
+        this.saveJSONOnDisk(toBeWrittenJSON, this.TOKEN_SAVE_PATH);
     }
 
-    getTokenFromSimpliciteInfo (preparedJSON) {
+    getTokenFromSimpliciteInfo (toBeWrittenJSON) {
         try {
-            const token = fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8');
-            const infoJSON = JSON.parse(token);
-            for (let info of infoJSON) {
-                for (let prepared of preparedJSON) {
-                    if (prepared.moduleInfo === info.moduleInfo && info.token && !prepared.token) {
-                        prepared.token = info.token;
+            const parsedJson = this.getSimpliciteInfoContent();
+            for (let diskInfo of parsedJson) {
+                for (let preparedModule of toBeWrittenJSON) {
+                    if (preparedModule.getName() === diskInfo.name && diskInfo.token && !preparedModule.getToken()) {
+                        preparedModule.setToken(diskInfo.token);
                     }
                 }
             }
-            return preparedJSON;
+            return toBeWrittenJSON;
         } catch(e) {
             console.log(e.message);
         }
-        return preparedJSON;
+        return toBeWrittenJSON;
     }
 
-    saveJSONOnDisk (preparedJSON, path) {
+    saveJSONOnDisk (toBeWrittenJSON, path) {
         try {
-            fs.writeFileSync(path, JSON.stringify(preparedJSON));
+            fs.writeFileSync(path, JSON.stringify(toBeWrittenJSON));
         } catch (e) {
             console.log(e.message);
         }
@@ -62,26 +61,24 @@ class FileHandler {
         }
     }
 
-    deleteModuleJSON (moduleInfo) {
-        let simpliciteInfo = this.getSimpliciteInfo();
+    deleteInstanceJSON (instanceUrl) {
+        let moduleArray = this.getSimpliciteInfoContent();
         try {
-            simpliciteInfo = JSON.parse(simpliciteInfo);
             let newInfo = [];
-            for (let moduleJSON of simpliciteInfo) {
-                if (moduleJSON['moduleInfo'] !== moduleInfo) {
-                    newInfo.push(moduleJSON);
+            for (let module of moduleArray) {
+                if (module.instanceUrl !== instanceUrl) {
+                    newInfo.push(module);
                 }
             }
             this.saveJSONOnDisk(newInfo, this.TOKEN_SAVE_PATH);
         } catch (e) {
-            throw e.message;
+            throw e;
         }
-        
     }
 
-    getSimpliciteInfo () {
+    getSimpliciteInfoContent () {
         try {
-            return fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8');
+            return JSON.parse(fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8'));
         } catch (e) {
             if (e.code === 'ENOENT') throw e.message;
             throw e;
@@ -115,26 +112,24 @@ class FileHandler {
         return foundFile;
     };
 
-    async getSimpliciteModules () { // returns the list of the folders detected as simplicite modules
-        let simpliciteWorkspace = new Array();
+    async getSimpliciteModules () { // returns array of module objects
+        let modules = new Array();
         try {
             for (let workspaceFolder of vscode.workspace.workspaceFolders) {
                 const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                 const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
-                const moduleInfo = await this.findFiles(relativePattern);
-                //if (moduleInfo.length >= 2) console.log('Warning: More than two modules has been found with the same name');
-                if (moduleInfo.length === 0) throw 'No module found';
-                const moduleUrl = await this.getModuleUrl(workspaceFolder);
-                if (moduleInfo[0]) simpliciteWorkspace.push({ moduleInfo: JSON.parse(moduleInfo[0]).name, workspaceFolder: workspaceFolder.name, workspaceFolderPath: crossPlatformPath(workspaceFolder.uri.path), moduleUrl: moduleUrl });
+                const modulePom = await this.findFiles(relativePattern);
+                if (modulePom.length === 0) throw 'No module found';
+                const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
+                if (modulePom[0]) modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl));
             }
-            
         } catch (e) {
             console.log(e.message ? e.message : e);
         }
-        return simpliciteWorkspace;
+        return modules;
     }
 
-    getModuleUrl (workspaceFolder) { // searches into pom.xml and returns the simplicite's instance url
+    getModuleInstanceUrl (workspaceFolder) { // searches into pom.xml and returns the simplicite's instance url
         return new Promise(async (resolve, reject) => {
             const globPatern = '**pom.xml';
             const relativePattern = new vscode.RelativePattern(workspaceFolder, globPatern);
@@ -147,23 +142,22 @@ class FileHandler {
         })
     }
 
-    async setfileList (modules, uri) {
+    async setFileList (modules, uri) {
         return new Promise(async (resolve, reject) => {
             try {
                 for (let module of modules) {
                     const filePath = crossPlatformPath(uri.path);
                     const filePathLowerCase = filePath;
-                    const workspaceLowerCase = module.workspaceFolderPath;
-
+                    const workspaceLowerCase = module.getWorkspaceFolderPath();
                     if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
-                        const fileObject = { filePath: filePath, instanceUrl: module.moduleUrl, workspaceFolderPath: module.workspaceFolderPath};
+                        const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath());
                         if (!this.isFileInFileList(filePath)) {
-                            this.fileList.push(fileObject);
+                            this.fileList.push(file);
                             console.log(`Change detected on ${filePath}`);
                         }
                     }
                 }
-                this.saveModifiedFiles();
+                this.saveJSONOnDisk(this.fileList, this.FILES_SAVE_PATH);
                 resolve();
             } catch (e) {
                 console.log(e);
@@ -172,17 +166,13 @@ class FileHandler {
         })
     }
 
-    saveModifiedFiles () {
-        let preparedJSON = new Array();
-        for (let file of this.fileList) {
-            preparedJSON.push(file);
-        }
-        this.saveJSONOnDisk(preparedJSON, this.FILES_SAVE_PATH);
-    }
-
     getModifiedFilesOnStart () {
         try {
-            this.fileList = require(this.FILES_SAVE_PATH);
+            const JSONContent = require(this.FILES_SAVE_PATH);
+            for (let content of JSONContent) {
+                this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
+            }
+            console.log(this.fileList);
         } catch (e) {
             console.log('simplicite-file.json not found');
         }
@@ -206,7 +196,7 @@ class FileHandler {
 
     isFileInFileList (filePath) {
         for (let fileListelement of this.fileList) {
-            if (fileListelement.filePath === filePath) return true; 
+            if (fileListelement.getFilePath() === filePath) return true; 
         }
         return false;
     }
@@ -214,7 +204,7 @@ class FileHandler {
     getOnlyFilesPath (workspaceFolderPath) {
         let filesPath = new Array();
         for (let file of this.fileList) {
-            if (workspaceFolderPath === file.workspaceFolderPath) filesPath.push(file.filePath);
+            if (workspaceFolderPath === file.getWorkspaceFolderPath()) filesPath.push(file.getFilePath());
         }
         return filesPath;
     }

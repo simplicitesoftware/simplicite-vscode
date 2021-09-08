@@ -1,6 +1,6 @@
 'use strict';
 
-export default class File  {
+class File  {
     constructor (filePath, instanceUrl, workspaceFolderPath) {
         this.filePath = filePath;
         this.instanceUrl = instanceUrl;
@@ -29,4 +29,8 @@ export default class File  {
         return this.workspaceFolderPath;
     }
 
+}
+
+module.exports = {
+    File: File
 }
