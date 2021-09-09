@@ -9,7 +9,10 @@ if (process.platform === 'win32'){
     FILES_SAVE_PATH = process.env.HOME + '/.vscode/extensions/simplicite-files.json';
 } 
 
+const extensionId = 'simpliciteExtensionTest.simplicite-vscode';
+
 module.exports = {
     TOKEN_SAVE_PATH: TOKEN_SAVE_PATH,
-    FILES_SAVE_PATH: FILES_SAVE_PATH
+    FILES_SAVE_PATH: FILES_SAVE_PATH,
+    extensionId: extensionId,
 }

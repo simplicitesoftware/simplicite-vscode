@@ -67,7 +67,15 @@
 					"description": "Apply your changes whenever you save a java file"
 			  	}
 			}
-		}
+		},
+		"keybindings": [
+			{
+				"command": "simplicite-vscode.showSimpliciteCommands",
+				"key": "ctrl+alt+s",
+				"mac": "⌘⌥s",
+				"linux": "ctrl+alt+s"
+			}
+		]
 	},
 	"scripts": {
 		"lint": "eslint .",

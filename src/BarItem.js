@@ -1,11 +1,32 @@
 'use strict';
 
-const { window, MarkdownString,} = require('vscode');
+const { window, MarkdownString, commands, extensions } = require('vscode');
+const { extensionId } = require('./constant');
 
 class BarItem {
     constructor (name) {
         this.barItem = window.createStatusBarItem(2);
         this.barItem.text = name;
+    }
+
+    async init (context) {
+        const commandId = 'simplicite-vscode.showSimpliciteCommands';
+        context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
+        this.barItem.command = commandId;
+    }
+
+    async quickPickEntry () { // entry point called by command
+        const simpliciteExtension = extensions.getExtension(extensionId);
+        const commandList = simpliciteExtension.packageJSON.contributes.commands;
+        const commandQuickPick = this.commandListQuickPick(commandList);
+        const target = await window.showQuickPick(commandQuickPick);
+        if (target) {
+            try {
+                await commands.executeCommand(target.commandId);
+            } catch (e) {
+                console.log(e.message ? e.message : 'Error occured while executing command');
+            }
+        }
     }
 
     show (fileList, modules, connectedInstancesUrl) {
@@ -62,6 +83,14 @@ class BarItem {
     fileName (filePath) {
         const fileList = filePath.split('/');
         if (fileList[fileList.length - 1].includes('.java') !== -1) return fileList[fileList.length - 1]
+    }
+
+    commandListQuickPick (commandList) {
+        const preparedList = new Array();
+        for (let command of commandList) {
+            preparedList.push({ label: command.title, commandId: command.command });
+        }
+        return preparedList;
     }
 
 }

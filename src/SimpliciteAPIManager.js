@@ -1,6 +1,6 @@
 'use strict';
 
-const vscode = require('vscode');
+const { window, commands } = require('vscode');
 const { Cache } = require('./Cache');
 const { BarItem } = require('./BarItem');
 const { FileHandler } = require('./FileHandler');
@@ -21,7 +21,8 @@ class SimpliciteAPIManager {
         this.moduleHandler = new ModuleHandler();
     }
 
-    async init () {
+    async init (context) {
+        await this.barItem.init(context);
         await this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules());
     }
 
@@ -32,11 +33,11 @@ class SimpliciteAPIManager {
                     await this.loginTokenOrCredentials(module);
                     this.barItem.show(this.fileHandler.fileList, this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
                 } catch (e) {
-                    vscode.window.showErrorMessage(`e`);
+                    window.showErrorMessage(`${e}`);
                 }
             }
         } else {
-            vscode.window.showInformationMessage('Simplicite: No Simplicite module has been found');
+            window.showInformationMessage('Simplicite: No Simplicite module has been found');
         }
     }
 
@@ -62,7 +63,7 @@ class SimpliciteAPIManager {
                 await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
                 this.moduleHandler.spreadToken(moduleInstanceUrl, res.authtoken);
                 this.appHandler.setApp(moduleInstanceUrl, app);
-                vscode.window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
+                window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
             }).catch(err => {
                 app.setAuthToken(null);
@@ -88,12 +89,12 @@ class SimpliciteAPIManager {
 
     async authenticationWithCredentials (moduleName, app) {
         try {
-            const username = await vscode.window.showInputBox({ 
+            const username = await window.showInputBox({ 
                 placeHolder: 'username',
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')'
             });
             if (!username) throw '';
-            const password = await vscode.window.showInputBox({
+            const password = await window.showInputBox({
                 placeHolder: 'password',
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')',
                 password: true
@@ -112,12 +113,12 @@ class SimpliciteAPIManager {
             app.logout().then((res) => {
                 this.appHandler.setAppList(new Map());
                 this.moduleHandler.spreadToken(app.parameters.url, null);
-                vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
+                window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
-                vscode.window.showErrorMessage(e.message ? e.message : e);        
+                window.showErrorMessage(e.message ? e.message : e);        
             })
         })
-        if (this.appHandler.getAppList().size === 0) vscode.window.showInformationMessage('Simplicite: You are not connected to any module');       
+        if (this.appHandler.getAppList().size === 0) window.showInformationMessage('Simplicite: You are not connected to any module');       
     }
     
     async specificLogout(moduleName) {
@@ -129,16 +130,16 @@ class SimpliciteAPIManager {
                 this.appHandler.getAppList().delete(instanceUrl);
                 this.moduleHandler.spreadToken(instanceUrl, null);
                 this.barItem.show(this.fileHandler.fileList, this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
-                vscode.window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
+                window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
-                    vscode.window.showInformationMessage(`Simplicite: You are not connected to ${moduleName}`);
+                    window.showInformationMessage(`Simplicite: You are not connected to ${moduleName}`);
                 } else {
-                    vscode.window.showErrorMessage(`${e}`);
+                    window.showErrorMessage(`${e}`);
                 }
             });
         } catch (e) {
-            vscode.window.showErrorMessage(`${e}`);
+            window.showErrorMessage(`${e}`);
         }
     }
 
@@ -155,7 +156,7 @@ class SimpliciteAPIManager {
                         try {
                             await this.attachFileAndSend(filePath, app);
                         } catch (e) {
-                            vscode.window.showErrorMessage(`Simplicite: Error sending ${filePath} \n ${e.message ? e.message : e}`);
+                            window.showErrorMessage(`Simplicite: Error sending ${filePath} \n ${e.message ? e.message : e}`);
                             console.log(`Error in attachFileAndSend: ${e}`);
                             numberOfErrors++;
                         }
@@ -164,9 +165,9 @@ class SimpliciteAPIManager {
                 }
                 const fileListLength = this.fileHandler.fileList.length
                 if (numberOfErrors === fileListLength) {
-                    vscode.window.showInformationMessage('Simplicite: Cannot apply any change');
+                    window.showInformationMessage('Simplicite: Cannot apply any change');
                 } else {
-                    vscode.window.showInformationMessage(`Simplicite: Changed ${fileListLength - numberOfErrors} files over ${fileListLength}`);
+                    window.showInformationMessage(`Simplicite: Changed ${fileListLength - numberOfErrors} files over ${fileListLength}`);
                     this.fileHandler.deleteModifiedFiles();
                     this.fileHandler.fileList = new Array();
                 }
@@ -181,9 +182,9 @@ class SimpliciteAPIManager {
         try {
             let obj = app.getBusinessObject('Script', 'ide_Script');
             const res = await obj.action('CodeCompile', 0);
-            vscode.window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
+            window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
         } catch (e) {
-            vscode.window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
+            window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
         }
         
     }
@@ -292,10 +293,10 @@ class SimpliciteAPIManager {
 
     connectedInstance () {
         if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
-            vscode.window.showInformationMessage('Simplicite: No connected instance');     
+            window.showInformationMessage('Simplicite: No connected instance');     
         }
         for (let url of this.moduleHandler.getConnectedInstancesUrl()) {
-            vscode.window.showInformationMessage('Simplicite: You are connected to: ' + url);     
+            window.showInformationMessage('Simplicite: You are connected to: ' + url);     
         }
     }
 
@@ -303,23 +304,23 @@ class SimpliciteAPIManager {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
         return new Promise(async (resolve, reject) => {
             try {
-                const status = await vscode.commands.executeCommand('java.workspace.compile', false) 
+                const status = await commands.executeCommand('java.workspace.compile', false) 
                 switch (status) {
                     case 0:
-                        vscode.window.showErrorMessage('Simplicite: Compilation failed');
+                        window.showErrorMessage('Simplicite: Compilation failed');
                         reject();
                         break;
                     case 1:
-                        vscode.window.showInformationMessage('Simplicite: Compilation succeeded');
+                        window.showInformationMessage('Simplicite: Compilation succeeded');
                         resolve();
                         break;
                     case 3:
-                        vscode.window.showErrorMessage('Simplicite: Compilation cancelled');
+                        window.showErrorMessage('Simplicite: Compilation cancelled');
                         reject();
                         break;
                 }
             } catch(e) {
-                vscode.window.showErrorMessage(`Simplicite: An error occured during the compilation `);
+                window.showErrorMessage(`Simplicite: An error occured during the compilation `);
                 console.log(e);
                 reject();
             }
