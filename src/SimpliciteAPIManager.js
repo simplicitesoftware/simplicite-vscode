@@ -1,6 +1,6 @@
 'use strict';
 
-const { window, commands } = require('vscode');
+const { window, commands, workspace } = require('vscode');
 const { Cache } = require('./Cache');
 const { BarItem } = require('./BarItem');
 const { FileHandler } = require('./FileHandler');
@@ -146,8 +146,14 @@ class SimpliciteAPIManager {
     async applyChangesHandler () { // AJOUTER SETTINGS SKIP_LOCAL_COMPILATION
         return new Promise(async (resolve, reject) => {
             try {
-                await this.compileJava('Cannot apply changes with compilation errors (you can disable the compilation step in the settings)');
                 this.beforeApply(this.fileHandler.fileList);
+                if (!workspace.getConfiguration('simplicite-vscode').get('disableCompilation')) {
+                    await this.compileJava(
+                        { 
+                            message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',
+                            button: 'Settings'
+                        });
+                }  
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
                 let numberOfErrors = 0;
                 for (let connectedModule of this.moduleHandler.getConnectedInstancesUrl()) {
@@ -321,14 +327,29 @@ class SimpliciteAPIManager {
                         break;
                 }
             } catch(e) {
-                const message = 'Simplicite: An error occured during the compilation. ' + (customMessage ? customMessage : '');
-                console.log(message);
-                window.showErrorMessage(message);
-                console.log(e);
-                reject();
+                if (customMessage) {
+                    window.showErrorMessage('Simplicite: An error occured during the compilation. ' + customMessage.message, customMessage.button).then(click => {
+                        if (click === "Settings") {
+                            openSettings();
+                        }
+                    });
+                } else {
+                    window.showErrorMessage('Simplicite: An error occured during the compilation.');
+                    console.log(e);
+                }
+                reject(e);
             }
         })
     }
+}
+
+function openSettings () {
+    try {
+        commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteextensiontest.simplicite-vscode');
+    } catch(e) {
+        console.log(e);
+    }
+    
 }
 
 module.exports = {

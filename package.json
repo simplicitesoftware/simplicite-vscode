@@ -59,21 +59,20 @@
 			}
 		],
 		"configuration": {
-			"title": "general_behavior",
 			"properties": {
-				"simplicite-vscode.onSaveApply": {
+				"simplicite-vscode.disableCompilation": {
 					"type": "boolean",
 					"default": false,
-					"description": "Apply your changes whenever you save a java file"
+					"description": "Disable local compilation before applying changes"
 			  	}
 			}
 		},
 		"keybindings": [
 			{
 				"command": "simplicite-vscode.showSimpliciteCommands",
-				"key": "ctrl+shift+space",
-				"mac": "⌘+shift+space",
-				"linux": "ctrl+alt+s"
+				"key": "Ctrl+Shift+space",
+				"mac": "Ctrl+Shift+space",
+				"linux": "Ctrl+Shift+space"
 			}
 		]
 	},

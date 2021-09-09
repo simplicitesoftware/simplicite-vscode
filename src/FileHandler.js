@@ -40,7 +40,7 @@ class FileHandler {
             }
             return toBeWrittenJSON;
         } catch(e) {
-            console.log(e.message);
+            console.log('Token not found');
         }
         return toBeWrittenJSON;
     }
@@ -172,7 +172,6 @@ class FileHandler {
             for (let content of JSONContent) {
                 this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
-            console.log(this.fileList);
         } catch (e) {
             console.log('simplicite-file.json not found');
         }

@@ -17,7 +17,7 @@ async function activate(context) {
 		try {
 			await request.applyChangesHandler();
 		} catch (e) {
-			vscode.window.showErrorMessage(e.message ? e.message : e);
+			console.log(e);
 		}
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
@@ -65,12 +65,15 @@ async function activate(context) {
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 	const compileWorkspace = vscode.commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
-		await request.compileJava();
+		try {
+			await request.compileJava();
+		} catch (e) {
+			console.log(e);
+		}
+		
 	});
 
 	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace); // All commands available
-
-
 	let request = new SimpliciteAPIManager();
 	await request.init(context); // all the asynchronous affectation happens there
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
@@ -96,7 +99,7 @@ async function activate(context) {
 			try {
 				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1]); // We need to connect with the module informations
 			} catch(e) {
-				console.log(e);
+				console.log(e ? e : '');
 			}
 		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module
 			await request.specificLogout(event.removed[0].name);
