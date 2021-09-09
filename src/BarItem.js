@@ -1,7 +1,7 @@
 'use strict';
 
 const { window, MarkdownString, commands, extensions } = require('vscode');
-const { extensionId } = require('./constant');
+const { EXTENSION_ID } = require('./constant');
 
 class BarItem {
     constructor (name) {
@@ -16,7 +16,7 @@ class BarItem {
     }
 
     async quickPickEntry () { // entry point called by command
-        const simpliciteExtension = extensions.getExtension(extensionId);
+        const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
         const commandList = simpliciteExtension.packageJSON.contributes.commands;
         const commandQuickPick = this.commandListQuickPick(commandList);
         const target = await window.showQuickPick(commandQuickPick);

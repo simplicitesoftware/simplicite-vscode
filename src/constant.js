@@ -1,18 +1,28 @@
+const fs = require('fs');
+
 let TOKEN_SAVE_PATH;
 let FILES_SAVE_PATH;
 
 if (process.platform === 'win32'){
-    TOKEN_SAVE_PATH = process.env.APPDATA + '/Code/User/globalStorage/simplicite-info.json';
-    FILES_SAVE_PATH = process.env.APPDATA + '/Code/User/globalStorage/simplicite-files.json';
+    const dir = process.env.APPDATA + '/Code/User/';
+    if (!fs.existsSync(dir + 'simplicite/')) {
+        fs.mkdirSync(dir + 'simplicite/');
+    }
+    TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
+    FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
 } else {
-    TOKEN_SAVE_PATH = process.env.HOME + '/.vscode/extensions/simplicite-info.json';
-    FILES_SAVE_PATH = process.env.HOME + '/.vscode/extensions/simplicite-files.json';
+    const dir = process.env.HOME + '/.config/Code/User/';
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
+    FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
 } 
 
-const extensionId = 'simpliciteExtensionTest.simplicite-vscode';
+const EXTENSION_ID = 'simpliciteExtensionTest.simplicite-vscode';
 
 module.exports = {
     TOKEN_SAVE_PATH: TOKEN_SAVE_PATH,
     FILES_SAVE_PATH: FILES_SAVE_PATH,
-    extensionId: extensionId,
+    EXTENSION_ID: EXTENSION_ID,
 }
