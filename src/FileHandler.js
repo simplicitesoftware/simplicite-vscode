@@ -2,7 +2,7 @@
 
 const vscode = require('vscode');
 const fs = require('fs');
-const { File, Module } = require('./class/classIndex');
+const { File, Module } = require('./classIndex');
 var parseString = require('xml2js').parseStringPromise;
 const { crossPlatformPath } = require('./utils');
 

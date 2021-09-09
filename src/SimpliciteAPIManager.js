@@ -5,7 +5,7 @@ const { Cache } = require('./Cache');
 const { BarItem } = require('./BarItem');
 const { FileHandler } = require('./FileHandler');
 const { crossPlatformPath } = require('./utils');
-const { AppHandler } = require('./class/classIndex');
+const { AppHandler } = require('./classIndex');
 const { ModuleHandler } = require('./ModuleHandler');
 
 // ide_ + objectName
