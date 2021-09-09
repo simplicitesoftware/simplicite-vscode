@@ -71,8 +71,8 @@
 		"keybindings": [
 			{
 				"command": "simplicite-vscode.showSimpliciteCommands",
-				"key": "ctrl+alt+s",
-				"mac": "⌘⌥s",
+				"key": "ctrl+shift+space",
+				"mac": "⌘+shift+space",
 				"linux": "ctrl+alt+s"
 			}
 		]

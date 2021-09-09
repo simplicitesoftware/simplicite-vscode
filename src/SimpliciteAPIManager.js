@@ -143,9 +143,10 @@ class SimpliciteAPIManager {
         }
     }
 
-    async applyChangesHandler () { // 
+    async applyChangesHandler () { // AJOUTER SETTINGS SKIP_LOCAL_COMPILATION
         return new Promise(async (resolve, reject) => {
             try {
+                await this.compileJava('Cannot apply changes with compilation errors (you can disable the compilation step in the settings)');
                 this.beforeApply(this.fileHandler.fileList);
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
                 let numberOfErrors = 0;
@@ -300,7 +301,7 @@ class SimpliciteAPIManager {
         }
     }
 
-    compileJava () {
+    compileJava (customMessage) {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
         return new Promise(async (resolve, reject) => {
             try {
@@ -320,7 +321,9 @@ class SimpliciteAPIManager {
                         break;
                 }
             } catch(e) {
-                window.showErrorMessage(`Simplicite: An error occured during the compilation `);
+                const message = 'Simplicite: An error occured during the compilation. ' + (customMessage ? customMessage : '');
+                console.log(message);
+                window.showErrorMessage(message);
                 console.log(e);
                 reject();
             }
