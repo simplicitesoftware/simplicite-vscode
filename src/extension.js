@@ -1,19 +1,20 @@
 'use strict';
 
-const vscode = require('vscode');
+const { window, languages, commands, workspace, ExtensionContext, DocumentSemanticTokensProvider, SemanticTokensBuilder, Position, Range, SemanticTokensLegend } = require('vscode');
 const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
+//const { CompletionHandler } = require('./CompletionHandler');
 
 /**
- * @param {vscode.ExtensionContext} context
+ * @param {ExtensionContext} context
  */
 async function activate(context) {
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	const loginAllModules = vscode.commands.registerCommand('simplicite-vscode.logIn', async () => {	
+	const loginAllModules = commands.registerCommand('simplicite-vscode.logIn', async () => {	
 		await request.loginHandler();
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 
-	const applyChanges = vscode.commands.registerCommand('simplicite-vscode.applyChanges', async function () {
+	const applyChanges = commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
 			await request.applyChangesHandler();
 		} catch (e) {
@@ -22,31 +23,31 @@ async function activate(context) {
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 
-	const logout = vscode.commands.registerCommand('simplicite-vscode.logOut', function () {	
+	const logout = commands.registerCommand('simplicite-vscode.logOut', function () {	
 		request.logout();
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 
-	const connectedInstance = vscode.commands.registerCommand('simplicite-vscode.connectedInstance', function () {	
+	const connectedInstance = commands.registerCommand('simplicite-connectedInstance', function () {	
 		request.connectedInstance();
 	});
 
-	const logoutFromModule = vscode.commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
+	const logoutFromModule = commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
-            const moduleName = await vscode.window.showInputBox({ 
+            const moduleName = await window.showInputBox({ 
                 placeHolder: 'module name',  
                 title: 'Simplicite: Type the name of the module'
             });
             if (!moduleName) throw 'Simplicite: Action canceled';
 			await request.specificLogout(moduleName);
         } catch (e) {
-            vscode.window.showInformationMessage(e.message ? e.message : e);
+            window.showInformationMessage(e.message ? e.message : e);
         }
 	});
 
-	const logInInstance = vscode.commands.registerCommand('simplicite-vscode.logInInstance', async function () {	
+	const logInInstance = commands.registerCommand('simplicite-vscode.logInInstance', async function () {	
 		try {
-            const moduleName = await vscode.window.showInputBox({ 
+            const moduleName = await window.showInputBox({ 
                 placeHolder: 'module name',  
                 title: 'Simplicite: Type the name of the module'
             });
@@ -60,11 +61,11 @@ async function activate(context) {
 			}
 			if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
         } catch (e) {
-            vscode.window.showInformationMessage(e.message ? e.message : e);
+            window.showInformationMessage(e.message ? e.message : e);
         }
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
-	const compileWorkspace = vscode.commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
+	const compileWorkspace = commands.registerCommand('simplicite-compileWorkspace', async function () {
 		try {
 			await request.compileJava();
 		} catch (e) {
@@ -73,12 +74,60 @@ async function activate(context) {
 		
 	});
 
+	// const tokenTypes = ['class', 'interface', 'enum', 'function', 'variable'];
+	// const tokenModifiers = ['declaration', 'documentation'];
+	// const legend = new SemanticTokensLegend(tokenTypes, tokenModifiers);
+	// const selector = { language: 'java', scheme: 'file' };
+	// const provider = {
+	// 	provideDocumentSemanticTokens(document) {
+	// 		// analyze the document and return semantic tokens
+		
+	// 		const tokensBuilder = new SemanticTokensBuilder(legend);
+	// 		// on line 1, characters 1-5 are a class declaration
+	// 		tokensBuilder.push(
+	// 		new Range(new Position(1, 1), new Position(1, 5)),
+	// 			'class',
+	// 			['declaration']
+	// 			);
+	// 		request.test(tokensBuilder.build());
+	// 		return tokensBuilder.build();
+	// 	}
+	// }
+	// languages.registerDocumentSemanticTokensProvider(selector, provider, legend);
+
+	
+
+// 	const tokenTypes = new Map();
+// 	const tokenModifiers = new Map();
+	
+// 	const legend = (function () {
+// 		const tokenTypesLegend = [
+// 			'comment', 'string', 'keyword', 'number', 'regexp', 'operator', 'namespace',
+// 			'type', 'struct', 'class', 'interface', 'enum', 'typeParameter', 'function',
+// 			'method', 'macro', 'variable', 'parameter', 'property', 'label'
+// 		];
+// 		tokenTypesLegend.forEach((tokenType, index) => tokenTypes.set(tokenType, index));
+	
+// 		const tokenModifiersLegend = [
+// 			'declaration', 'documentation', 'readonly', 'static', 'abstract', 'deprecated',
+// 			'modification', 'async'
+// 		];
+// 		tokenModifiersLegend.forEach((tokenModifier, index) => tokenModifiers.set(tokenModifier, index));
+	
+// 		return new SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
+// 	})();
+// 
+// 	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider({ language: 'semanticLanguage'}, new CompletionHandler(tokenTypes, tokenModifiers), legend));
+
+	
+
+
 	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace); // All commands available
 	let request = new SimpliciteAPIManager();
 	await request.init(context); // all the asynchronous affectation happens there
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
 
-	vscode.workspace.onDidSaveTextDocument(async (event) => {
+	workspace.onDidSaveTextDocument(async (event) => {
 		if (event.uri.path.search('.java') !== -1) {
 			await request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
 			request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
@@ -91,7 +140,7 @@ async function activate(context) {
 	await request.loginHandler();
 	request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	
-	vscode.workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
+	workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module

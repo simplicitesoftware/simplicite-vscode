@@ -8,9 +8,6 @@ const { crossPlatformPath } = require('./utils');
 const { AppHandler } = require('./classIndex');
 const { ModuleHandler } = require('./ModuleHandler');
 
-// ide_ + objectName
-// CodeCompile
-
 class SimpliciteAPIManager {
     constructor () {
         this.cache = new Cache();
@@ -55,7 +52,7 @@ class SimpliciteAPIManager {
             }
         }
     }
-
+    /** */
     login (moduleInstanceUrl, app) {
         return new Promise(async (resolve, reject) => {                            
             app.login().then(async res => {
@@ -254,7 +251,7 @@ class SimpliciteAPIManager {
 
     async searchForUpdate (fileName, obj, properNameField) {
         if (!this.cache.isInCache(fileName)) {
-            let list = await obj.search({[properNameField]: fileName })
+            let list = await obj.search({[properNameField]: fileName });
             if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
             if (list.length === 0) throw 'No object has been returned';
             this.cache.addPair(fileName, list[0].row_id);
@@ -341,6 +338,7 @@ class SimpliciteAPIManager {
             }
         })
     }
+
 }
 
 function openSettings () {
@@ -348,8 +346,7 @@ function openSettings () {
         commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteextensiontest.simplicite-vscode');
     } catch(e) {
         console.log(e);
-    }
-    
+    }   
 }
 
 module.exports = {
