@@ -58,6 +58,12 @@
 				"title": "Simplicite: Compile the java code in your current workspace"
 			}
 		],
+		"capabilities" : {
+			"completionProvider" : {
+				"resolveProvider": "true",
+				"triggerCharacters": ["'", "\""]
+			}
+		},
 		"configuration": {
 			"properties": {
 				"simplicite-vscode.disableCompilation": {

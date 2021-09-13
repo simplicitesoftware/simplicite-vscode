@@ -1,85 +1,82 @@
 'use strict';
 
 const vscode = require('vscode');
+const { crossPlatformPath } = require('./utils');
 
-
+const triggerFunctions = ['getField', 'getFieldValue', 'setFieldValue'];
 
 class CompletionHandler {
-    constructor (tokenTypes, tokenModifiers) {
-        this.tokenTypes = tokenTypes;
-        this.tokenModifiers = tokenModifiers
+    constructor (request) {
+		this.request = request;
+        this.template = { scheme: 'file', language: 'java' };
+		this.currentPagePath = crossPlatformPath(vscode.window.activeTextEditor.document.uri.path);
+		this.currentWorkspace = this.getWorkspaceFromFileUri(vscode.window.activeTextEditor.document.uri);
+		this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
+		this.completionItemList = this.request.getBusinessObjectFields(this.currentPagePath, this.instanceUrl);
+		this.activeEditorListener();	
     }
 
-    async provideDocumentSemanticTokens(document) {
-		const allTokens = this._parseText(document.getText());
-		const builder = new vscode.SemanticTokensBuilder();
-		allTokens.forEach((token) => {
-			builder.push(token.line, token.startCharacter, token.length, this._encodeTokenType(token.tokenType), this._encodeTokenModifiers(token.tokenModifiers));
-		});
-        
-		return builder.build();
-	}
-
-    _encodeTokenType(tokenType) {
-		if (this.tokenTypes.has(tokenType)) {
-			return this.tokenTypes.get(tokenType);
-		} else if (tokenType === 'notInLegend') {
-			return this.tokenTypes.size + 2;
+    provideCompletionItems(document, position) {
+        const linePrefix = document.lineAt(position).text.substr(0, position.character);
+        if (linePrefix === -1) {
+          return []
+        }
+		let myitem = (text) => {
+			let item = new vscode.CompletionItem(text, vscode.CompletionItemKind.Text);
+			item.range = new vscode.Range(position, position);
+			return item;
 		}
-		return 0;
-	}
 
-	_encodeTokenModifiers(strTokenModifiers) {
-		let result = 0;
-		for (let i = 0; i < strTokenModifiers.length; i++) {
-			const tokenModifier = strTokenModifiers[i];
-			if (this.tokenModifiers.has(tokenModifier)) {
-				result = result | (1 << this.tokenModifiers.get(tokenModifier));
-			} else if (tokenModifier === 'notInLegend') {
-				result = result | (1 << this.tokenModifiers.size + 2);
+		if (linePrefix.split('(').length > 2) {
+			console.log(linePrefix.split('('));
+		}
+	
+		const cleanPrefix = linePrefix.replace('(', '').replace('\t', '').replace('\'', '').replace('"', '');
+		console.log(cleanPrefix);
+		for (let functionName of triggerFunctions) {
+			if (functionName === cleanPrefix) {
+				console.log('implement completion');
+				return this.completionItemList;
 			}
 		}
-		return result;
+    }
+
+	activeEditorListener () {
+		const listener = vscode.window.onDidChangeActiveTextEditor(event => {
+			if (event !== undefined) {
+				if (event.document.uri.path.includes('.java')) {
+					this.currentPagePath = crossPlatformPath(event.document.fileName);
+					this.currentWorkspace = this.getWorkspaceFromFileUri(event.document.uri);
+					this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
+					this.completionItemList = this.request.getBusinessObjectFields(this.currentPagePath, this.instanceUrl);
+				} else {
+					this.currentPagePath = undefined;
+					this.currentWorkspace = undefined;
+					this.instanceUrl = undefined;
+				}			
+			}
+		})
 	}
 
-	_parseText(text) {
-		const r = [];
-		const lines = text.split(/\r\n|\r|\n/);
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			let currentOffset = 0;
-			do {
-				const openOffset = line.indexOf('[', currentOffset);
-				if (openOffset === -1) {
-					break;
-				}
-				const closeOffset = line.indexOf(']', openOffset);
-				if (closeOffset === -1) {
-					break;
-				}
-				const tokenData = this._parseTextToken(line.substring(openOffset + 1, closeOffset));
-				r.push({
-					line: i,
-					startCharacter: openOffset + 1,
-					length: closeOffset - openOffset - 1,
-					tokenType: tokenData.tokenType,
-					tokenModifiers: tokenData.tokenModifiers
-				});
-				currentOffset = closeOffset;
-			} while (true);
+	getWorkspaceFromFileUri (uri) {
+		try {
+			const workspace = vscode.workspace.getWorkspaceFolder(uri);
+			return crossPlatformPath(workspace.uri.path);
+		} catch (e) {
+			console.log(e);
 		}
-		return r;
 	}
 
-	_parseTextToken(text) {
-		const parts = text.split('.');
-		return {
-			tokenType: parts[0],
-			tokenModifiers: parts.slice(1)
-		};
-	}
+	/*getFileNameFromPath (filePath) {
+		try {
+			const decomposedPath = filePath.split('/');
+			return decomposedPath[decomposedPath.length - 1].replace('.java', '');
+		} catch (e) {
+			console.log(e);
+		}
+	}*/
 }
 
-module.exports = {
-    CompletionHandler: CompletionHandler,
+module.exports = { 
+    CompletionHandler: CompletionHandler
 }

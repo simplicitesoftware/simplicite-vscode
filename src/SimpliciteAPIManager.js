@@ -1,6 +1,6 @@
 'use strict';
 
-const { window, commands, workspace } = require('vscode');
+const { window, commands, workspace, RelativePattern } = require('vscode');
 const { Cache } = require('./Cache');
 const { BarItem } = require('./BarItem');
 const { FileHandler } = require('./FileHandler');
@@ -247,6 +247,19 @@ class SimpliciteAPIManager {
                 return reject(e);
             }   
         })   
+    }
+
+    async getBusinessObjectFields (filePath, connectedInstance) {
+        try {
+            const app = await this.appHandler.getApp(connectedInstance);
+            const fileType = this.getBusinessObjectType(filePath);
+            let obj = app.getBusinessObject(fileType, 'ide_' + fileType);
+            const fields = obj.getFields();
+            return fields;
+        } catch (e) {
+            console.log(e);
+        }
+        
     }
 
     async searchForUpdate (fileName, obj, properNameField) {

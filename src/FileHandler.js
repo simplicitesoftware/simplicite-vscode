@@ -207,7 +207,7 @@ class FileHandler {
         }
         return filesPath;
     }
-
+    
 }
 
 module.exports = {

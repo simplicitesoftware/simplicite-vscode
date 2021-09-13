@@ -47,6 +47,19 @@ class ModuleHandler {
             }
         }
     }
+
+    getModuleUrlFromWorkspacePath (workspacePath) {
+        try {
+            for (let module of this.modules) {
+                if (module.getWorkspaceFolderPath() === workspacePath) {
+                    return module.getInstanceUrl();
+                }
+            }
+        } catch (e) {
+            console.log(e);
+        }
+        
+    }
 }
 
 module.exports = {
