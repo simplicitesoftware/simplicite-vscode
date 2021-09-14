@@ -1,7 +1,10 @@
 const fs = require('fs');
+const vscode = require('vscode');
 
 let TOKEN_SAVE_PATH;
 let FILES_SAVE_PATH;
+
+vscode.window.showInformationMessage(`${process.env.appName}`);
 
 if (process.platform === 'win32'){
     const dir = process.env.APPDATA + '/Code/User/';
