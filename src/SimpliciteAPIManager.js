@@ -18,8 +18,8 @@ class SimpliciteAPIManager {
         this.moduleHandler = new ModuleHandler();
     }
 
-    async init (context) {
-        await this.barItem.init(context);
+    async init (context, request) {
+        await this.barItem.init(context, request);
         await this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules());
     }
 

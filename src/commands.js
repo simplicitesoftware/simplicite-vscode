@@ -55,12 +55,25 @@ const logInInstanceCommand = function (request) {
             });
             if (!moduleName) throw 'Simplicite: Action canceled';
 			let flag = false;
-			for (let module of request.moduleHandler.getModules()) {
-				if (module.getName() === moduleName) {
-					await request.loginTokenOrCredentials(module);
-					flag = true;
-				}
-			}
+            let module;
+            try {
+                console.log(request.moduleHandler.getConnectedInstancesUrl());
+                for (let moduleLoop of request.moduleHandler.getModules()) {
+                    if (moduleLoop.getInstanceUrl() === moduleName) {
+                        module = moduleLoop;
+                        flag = true;
+                    }
+                }
+                if (module === undefined) throw '';
+            } catch (e) {
+                for (let moduleLoop of request.moduleHandler.getModules()) {
+                    if (moduleLoop.getName() === moduleName) {
+                        module = moduleLoop;
+                        flag = true;
+                    }
+                }
+            }
+			await request.loginTokenOrCredentials(module);
 			if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
         } catch (e) {
             window.showInformationMessage(e.message ? e.message : e);
