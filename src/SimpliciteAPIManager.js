@@ -118,9 +118,19 @@ class SimpliciteAPIManager {
         if (this.appHandler.getAppList().size === 0) window.showInformationMessage('Simplicite: You are not connected to any module');       
     }
     
-    async specificLogout(moduleName) {
+    async specificLogout(input) {
         try {
-            const instanceUrl = this.moduleHandler.getModuleUrlFromName(moduleName);
+            let instanceUrl;
+            try {
+                instanceUrl = this.moduleHandler.getModuleUrlFromName(input);
+            } catch (e) {}
+            if (this.moduleHandler.getConnectedInstancesUrl().length !== 0) {
+                for (let connectedInstance of this.moduleHandler.getConnectedInstancesUrl()) {
+                    if (connectedInstance === input) {
+                        instanceUrl = connectedInstance;
+                    }
+                }
+            } 
             const app = await this.appHandler.getApp(instanceUrl);
             app.logout().then((res) => {
                 this.fileHandler.deleteInstanceJSON(instanceUrl);
@@ -130,7 +140,7 @@ class SimpliciteAPIManager {
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
-                    window.showInformationMessage(`Simplicite: You are not connected to ${moduleName}`);
+                    window.showInformationMessage(`Simplicite: You are not connected to ${input}`);
                 } else {
                     window.showErrorMessage(`${e}`);
                 }
@@ -248,7 +258,7 @@ class SimpliciteAPIManager {
     }
 
     async getBusinessObjectFields (filePath, connectedInstance) {
-        try {
+        /*try {
             let fileType;
             let fileName;
             let properNameField;
@@ -261,7 +271,7 @@ class SimpliciteAPIManager {
             return fields;
         } catch (e) {
             console.log(e);
-        }
+        }*/
     }
 
     operationsBeforeObjectManipulation (filePath) {
