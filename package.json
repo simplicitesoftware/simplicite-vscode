@@ -30,33 +30,33 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "simplicite-vscode.logIn",
-				"title": "Simplicite: Log into detected instances"
-			},
-			{
 				"command": "simplicite-vscode.applyChanges",
 				"title": "Simplicite: Apply changes"
 			},
 			{
-				"command": "simplicite-vscode.logOut",
-				"title": "Simplicite: Log out"
+				"command": "simplicite-vscode.compileWorkspace",
+				"title": "Simplicite: Compile java code in current workspace"
 			},
 			{
-				"command": "simplicite-vscode.connectedInstance",
-				"title": "Simplicite: Get the list of connected instances"
-			},
-			{
-				"command": "simplicite-vscode.logOutFromInstance",
-				"title": "Simplicite: Log out from a specific instance"
+				"command": "simplicite-vscode.logIn",
+				"title": "Simplicite: Log into detected instances"
 			},
 			{
 				"command": "simplicite-vscode.logInInstance",
-				"title": "Simplicite: Log into a specific instance"
+				"title": "Simplicite: Log into specific instance"
 			},
 			{
-				"command": "simplicite-vscode.compileWorkspace",
-				"title": "Simplicite: Compile the java code in your current workspace"
-			}
+				"command": "simplicite-vscode.logOut",
+				"title": "Simplicite: Log out from all instances"
+			},
+			{
+				"command": "simplicite-vscode.logOutFromInstance",
+				"title": "Simplicite: Log out from specific instance"
+			},
+			{
+				"command": "simplicite-vscode.connectedInstance",
+				"title": "Simplicite: Get list of connected instances"
+			}	
 		],
 		"capabilities" : {
 			"completionProvider" : {
