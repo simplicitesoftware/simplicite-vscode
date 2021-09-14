@@ -1,5 +1,6 @@
 'use strict';
 
+const { throws } = require('assert');
 const { window, MarkdownString, commands, extensions } = require('vscode');
 const { EXTENSION_ID } = require('./constant');
 
@@ -7,9 +8,11 @@ class BarItem {
     constructor (name) {
         this.barItem = window.createStatusBarItem(2);
         this.barItem.text = name;
+        this.request = undefined;
     }
 
-    async init (context) {
+    async init (context, request) {
+        this.request = request
         const commandId = 'simplicite-vscode.showSimpliciteCommands';
         context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
         this.barItem.command = commandId;
@@ -22,7 +25,7 @@ class BarItem {
         const target = await window.showQuickPick(commandQuickPick);
         if (target) {
             try {
-                await commands.executeCommand(target.commandId);
+                await commands.executeCommand(target.commandId, this.request);
             } catch (e) {
                 console.log(e.message ? e.message : 'Error occured while executing command');
             }
