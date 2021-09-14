@@ -34,12 +34,12 @@ const connectedInstanceCommand = function (request) {
 const logoutFromModuleCommand = function (request) {
     return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
-            const moduleName = await window.showInputBox({ 
+            const input = await window.showInputBox({ 
                 placeHolder: 'module name',  
                 title: 'Simplicite: Type the name of the module'
             });
-            if (!moduleName) throw 'Simplicite: Action canceled';
-			await request.specificLogout(moduleName);
+            if (!input) throw 'Simplicite: Action canceled';
+			await request.specificLogout(input);
         } catch (e) {
             window.showInformationMessage(e.message ? e.message : e);
         }
@@ -70,7 +70,7 @@ const logInInstanceCommand = function (request) {
 }
 
 const compileWorkspaceCommand = function (request) {
-    return commands.registerCommand('simplicite-compileWorkspace', async function () {
+    return commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
 		try {
 			await request.compileJava();
 		} catch (e) {
