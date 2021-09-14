@@ -219,15 +219,13 @@ class SimpliciteAPIManager {
         return new Promise(async (resolve, reject) => {
             try { 
                 // get fileType and Filename
-                const fileType = this.getBusinessObjectType(filePath);
-                let fileName = crossPlatformPath(filePath).split('/');
-                fileName = fileName[fileName.length - 1].replaceAll('.java', '');
-    
+                let fileType;
+                let fileName;
+                let properNameField;
+                ({ fileType, fileName, properNameField } = this.operationsBeforeObjectManipulation(filePath));
                 // get the item for the update
                 let obj = app.getBusinessObject(fileType, 'ide_' + fileType);
-                const properNameField = this.getProperNameField(fileType);
                 let item = await this.searchForUpdate(fileName, obj, properNameField); 
-                
                 // give the field, ex: obo_script_id, scr_file
                 const fieldScriptId = this.getProperScriptField(fileType);       
                 let doc = obj.getFieldDocument(fieldScriptId);
@@ -251,21 +249,33 @@ class SimpliciteAPIManager {
 
     async getBusinessObjectFields (filePath, connectedInstance) {
         try {
+            let fileType;
+            let fileName;
+            let properNameField;
+            ({ fileType, fileName, properNameField } = this.operationsBeforeObjectManipulation(filePath));
             const app = await this.appHandler.getApp(connectedInstance);
-            const fileType = this.getBusinessObjectType(filePath);
-            let obj = app.getBusinessObject(fileType, 'ide_' + fileType);
+            const obj = app.getBusinessObject(fileName, "ide_" + fileName);
             const fields = obj.getFields();
+            //const list = await obj.search({[properNameField]: fileName });
+            
             return fields;
         } catch (e) {
             console.log(e);
         }
-        
+    }
+
+    operationsBeforeObjectManipulation (filePath) {
+        const fileType = this.getBusinessObjectType(filePath);
+        let fileName = crossPlatformPath(filePath).split('/');
+        fileName = fileName[fileName.length - 1].replaceAll('.java', '');
+        const properNameField = this.getProperNameField(fileType);
+        return { fileType, fileName, properNameField };
     }
 
     async searchForUpdate (fileName, obj, properNameField) {
         if (!this.cache.isInCache(fileName)) {
             let list = await obj.search({[properNameField]: fileName });
-            if (list.length >= 2) throw 'More than one object has been returned with the name ' + fileName;
+            if (list.length >= 2) console.log('More than one object has been returned with the name ' + fileName) ;
             if (list.length === 0) throw 'No object has been returned';
             this.cache.addPair(fileName, list[0].row_id);
         }

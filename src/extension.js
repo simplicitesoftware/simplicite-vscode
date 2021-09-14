@@ -13,12 +13,6 @@ async function activate(context) {
 	let request = new SimpliciteAPIManager();
 	await request.init(context); // all the asynchronous affectation happens there
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
-	
-	// Completion initialization
-	const provider = new CompletionHandler(request);
-	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
-	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
-	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	const loginAllModules = loginAllModulesCommand(request);
@@ -40,9 +34,18 @@ async function activate(context) {
 
 	request.fileHandler.getModifiedFilesOnStart();
 	request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-	await request.loginHandler();
-	request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-	
+	if(!workspace.getConfiguration('simplicite-vscode').get('disableAutoConnect')) {
+		await request.loginHandler();
+		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+	};
+		
+	// Completion initialization 
+	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
+	const provider = new CompletionHandler(request);
+	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
+	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
+	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
+
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
