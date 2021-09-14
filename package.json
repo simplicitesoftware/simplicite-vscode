@@ -69,7 +69,12 @@
 				"simplicite-vscode.disableCompilation": {
 					"type": "boolean",
 					"default": false,
-					"description": "Disable local compilation before applying changes"
+					"description": "Disable local compilation before applying changes."
+			  	},
+				"simplicite-vscode.disableAutoConnect": {
+					"type": "boolean",
+					"default": false,
+					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."
 			  	}
 			}
 		},
