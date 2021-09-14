@@ -10,6 +10,13 @@ if (process.platform === 'win32'){
     }
     TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
     FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
+} else if (process.env.appName === 'Eclipse Theia') {
+    const dir = process.env.HOME + '/Simplicite/';
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    TOKEN_SAVE_PATH = dir + 'simplicite-info.json';
+    FILES_SAVE_PATH = dir + 'simplicite-files.json';
 } else {
     const dir = process.env.HOME + '/.config/Code/User/';
     if (!fs.existsSync(dir)) {
@@ -17,7 +24,7 @@ if (process.platform === 'win32'){
     }
     TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
     FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
-} 
+}
 
 const EXTENSION_ID = 'simpliciteExtensionTest.simplicite-vscode';
 
