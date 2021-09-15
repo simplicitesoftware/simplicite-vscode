@@ -1,7 +1,7 @@
 const fs = require('fs');
 const vscode = require('vscode');
 
-const TheiaNames = [ 'Eclipse Theia', 'Theia Multi-Language Example' ]
+const THEIA_NAMES = [ 'Eclipse Theia', 'Theia Multi-Language Example' ]
 
 let TOKEN_SAVE_PATH;
 let FILES_SAVE_PATH;
@@ -15,7 +15,7 @@ if (process.platform === 'win32'){
     }
     TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
     FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
-} else if (vscode.env.appName === 'Eclipse Theia') {
+} else if (THEIA_NAMES.includes(vscode.env.appName)) {
     const dir = process.env.HOME + '/Simplicite/';
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
