@@ -27,7 +27,7 @@ const logoutCommand = function (request) {
 	});
 }
 const connectedInstanceCommand = function (request) {
-    return commands.registerCommand('simplicite-connectedInstance', function () {	
+    return commands.registerCommand('simplicite-vscode.connectedInstance', function () {	
 		request.connectedInstance();
 	});
 }
