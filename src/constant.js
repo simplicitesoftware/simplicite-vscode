@@ -1,6 +1,8 @@
 const fs = require('fs');
 const vscode = require('vscode');
 
+const TheiaNames = [ 'Eclipse Theia', 'Theia Multi-Language Example' ]
+
 let TOKEN_SAVE_PATH;
 let FILES_SAVE_PATH;
 
