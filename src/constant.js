@@ -16,7 +16,7 @@ if (process.platform === 'win32'){
     TOKEN_SAVE_PATH = dir + 'simplicite/simplicite-info.json';
     FILES_SAVE_PATH = dir + 'simplicite/simplicite-files.json';
 } else if (THEIA_NAMES.includes(vscode.env.appName)) {
-    const dir = process.env.HOME + '/Simplicite/';
+    const dir = process.env.HOME + '/plugins/vscode-simplicite/';
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
     }
