@@ -12,6 +12,7 @@ class CompletionHandler {
 		this.completionItemList = undefined;
 		if (request.moduleHandler.moduleLength() !== 0) {
 			this.currentPagePath = crossPlatformPath(vscode.window.activeTextEditor.document.uri.path);
+			this.fileName = this.getFileNameFromPath(this.currentPagePath);
 			this.currentWorkspace = this.getWorkspaceFromFileUri(vscode.window.activeTextEditor.document.uri);
 			this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
 			this.activeEditorListener();
@@ -19,9 +20,12 @@ class CompletionHandler {
 			this.currentPagePath = undefined;
 			this.currentWorkspace = undefined;
 			this.instanceUrl = undefined;
-		}
-			
+		}	
     }
+
+	async asyncInit () {
+		this.completionItemList = await this.completionItemRender();
+	}
 
     provideCompletionItems(document, position) {
 		try {
@@ -49,19 +53,20 @@ class CompletionHandler {
     }
 
 	activeEditorListener () {
+		const self = this;
 		const listener = vscode.window.onDidChangeActiveTextEditor(async event => {
 			try {
 				if (event !== undefined) {
 					if (event.document.uri.path.includes('.java')) {
-						this.currentPagePath = crossPlatformPath(event.document.fileName);
-						this.currentWorkspace = this.getWorkspaceFromFileUri(event.document.uri);
-						this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-						this.completionItemList = await this.completionItemRender();
-						//await this.request.getBusinessObjectFields(this.instanceUrl);
+						self.currentPagePath = crossPlatformPath(event.document.fileName);
+						self.currentWorkspace = self.getWorkspaceFromFileUri(event.document.uri);
+						self.instanceUrl = self.request.moduleHandler.getModuleUrlFromWorkspacePath(self.currentWorkspace);
+						self.completionItemList = await self.completionItemRender();
+						//await self.request.getBusinessObjectFields(self.instanceUrl);
 					} else {
-						this.currentPagePath = undefined;
-						this.currentWorkspace = undefined;
-						this.instanceUrl = undefined;
+						self.currentPagePath = undefined;
+						self.currentWorkspace = undefined;
+						self.instanceUrl = undefined;
 					}			
 				}
 			} catch (e) {
@@ -72,10 +77,18 @@ class CompletionHandler {
 	}
 
 	async completionItemRender () {
+		const completionItems = new Array();
 		const objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl);
 		console.log(objectFieldsList);
-		//for ()
-		return [new vscode.CompletionItem('log', vscode.CompletionItemKind.Text)];
+		for (let item of objectFieldsList) {
+			if (item.name === this.fileName) {
+				for (let field of item.fields) {
+					completionItems.push(new vscode.CompletionItem(field.name, vscode.CompletionItemKind.Text));
+				}
+				
+			}
+		}
+		return completionItems;
 	}
 
 	getWorkspaceFromFileUri (uri) {
@@ -87,14 +100,14 @@ class CompletionHandler {
 		}
 	}
 
-	/*getFileNameFromPath (filePath) {
+	getFileNameFromPath (filePath) {
 		try {
 			const decomposedPath = filePath.split('/');
 			return decomposedPath[decomposedPath.length - 1].replace('.java', '');
 		} catch (e) {
 			console.log(e);
 		}
-	}*/
+	}
 }
 
 module.exports = { 

@@ -13,6 +13,7 @@ class SimpliciteAPIManager {
     constructor () {
         this.cache = new Cache();
         this.devInfo = null;  
+        this.moduleDevInfo = null;
         this.barItem = new BarItem('Simplicité');
         this.appHandler = new AppHandler();
         this.fileHandler = new FileHandler();
@@ -278,9 +279,10 @@ class SimpliciteAPIManager {
         try {
             const app = this.appHandler.getApp(connectedInstance);
             const moduleName = this.moduleHandler.getModuleNameFromUrl(connectedInstance);
-            const moduleFieldsInfo = await app.getDevInfo(moduleName);
-            if (moduleFieldsInfo === 0) throw 'No object fields has been found on the module ' + moduleName;
-            return moduleFieldsInfo;
+            await this.getDevInfo(app, moduleName);
+            const objectExternal = this.moduleDevInfo.ObjectInternal;
+            if (objectExternal.length === 0) throw 'No object fields has been found on the module ' + moduleName;
+            return objectExternal;
         } catch (e) {
 			logger.error(e);
         }
@@ -307,7 +309,7 @@ class SimpliciteAPIManager {
     }
     
     getProperScriptField (fileType) {
-        for (let object of this.devInfo.objects) {
+        for (let object of this.devInfo.getObject()) {
             if (fileType === object.object) {
                 return object.sourcefield;
             }
@@ -315,7 +317,7 @@ class SimpliciteAPIManager {
     }
 
     getProperNameField (fileType) {
-        for (let object of this.devInfo.objects) {
+        for (let object of this.devInfo.getObject()) {
             if (fileType === object.object) return object.keyfield;
         }
     }
@@ -324,15 +326,22 @@ class SimpliciteAPIManager {
     getBusinessObjectType (fileName) { 
         let urlForPackageComparaison;
         fileName.includes('/') ? urlForPackageComparaison = fileName.replaceAll('/', '.') : urlForPackageComparaison = fileName.replaceAll('\\', '.'); 
-        for (let object of this.devInfo.objects) {
+        for (let object of this.devInfo.object) {
             if (urlForPackageComparaison.includes(object.package)) return object.object;
         }
         throw 'No type has been found';
     }
     
-    async getDevInfo (app) { // uses the first instance available to fetch the data
+    async getDevInfo (app, moduleName) { // uses the first instance available to fetch the data
         try {
-            this.devInfo = await app.getDevInfo();
+            if (app === undefined) {
+                app = this.appHandler.getAppList()[0];
+            }
+            if (moduleName) {
+                this.moduleDevInfo = await app.getDevInfo(moduleName);
+            } else {
+                this.devInfo = await app.getDevInfo();
+            }    
         } catch(e) {
             logger.error(`get dev info: ` + e.message);
         }
