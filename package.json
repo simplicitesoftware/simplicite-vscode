@@ -56,12 +56,15 @@
 			{
 				"command": "simplicite-vscode.connectedInstance",
 				"title": "Simplicite: Get list of connected instances"
-			}	
+			}
 		],
-		"capabilities" : {
-			"completionProvider" : {
+		"capabilities": {
+			"completionProvider": {
 				"resolveProvider": "true",
-				"triggerCharacters": ["'", "\""]
+				"triggerCharacters": [
+					"'",
+					"\""
+				]
 			}
 		},
 		"configuration": {
@@ -70,12 +73,12 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Disable local compilation before applying changes."
-			  	},
+				},
 				"simplicite-vscode.disableAutoConnect": {
 					"type": "boolean",
 					"default": false,
 					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."
-			  	}
+				}
 			}
 		},
 		"keybindings": [
@@ -105,6 +108,7 @@
 	},
 	"dependencies": {
 		"simplicite": "^1.1.26",
+		"winston": "^3.3.3",
 		"xml2js": "^0.4.23"
 	},
 	"extensionDependencies": [
