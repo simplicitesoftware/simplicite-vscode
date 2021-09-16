@@ -7,6 +7,7 @@ const { FileHandler } = require('./FileHandler');
 const { crossPlatformPath } = require('./utils');
 const { AppHandler } = require('./classIndex');
 const { ModuleHandler } = require('./ModuleHandler');
+const logger = require('./Log');
 
 class SimpliciteAPIManager {
     constructor () {
@@ -24,18 +25,25 @@ class SimpliciteAPIManager {
     }
 
     async loginHandler () {
-        if (this.moduleHandler.moduleLength() > 0) {
-            for (let module of this.moduleHandler.getModules()) {
-                try { 
-                    await this.loginTokenOrCredentials(module);
-                    this.barItem.show(this.fileHandler.fileList, this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
-                } catch (e) {
-                    window.showErrorMessage(`${e}`);
+        return new Promise (async (resolve, reject) => {
+            if (this.moduleHandler.moduleLength() > 0) {
+                for (let module of this.moduleHandler.getModules()) {
+                    try { 
+                        await this.loginTokenOrCredentials(module);
+                        this.barItem.show(this.fileHandler.fileList, this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                    } catch (e) {
+                        window.showErrorMessage(`${e}`);
+                        logger.error(e);
+                        reject();
+                    }
                 }
+                resolve();
+            } else {
+                window.showInformationMessage('Simplicite: No Simplicite module has been found');
+                reject();
             }
-        } else {
-            window.showInformationMessage('Simplicite: No Simplicite module has been found');
-        }
+        })
+        
     }
 
     async loginTokenOrCredentials (module) {
@@ -61,6 +69,7 @@ class SimpliciteAPIManager {
                 this.moduleHandler.spreadToken(moduleInstanceUrl, res.authtoken);
                 this.appHandler.setApp(moduleInstanceUrl, app);
                 window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
+                logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
                 resolve();
             }).catch(err => {
                 app.setAuthToken(null);
@@ -110,8 +119,10 @@ class SimpliciteAPIManager {
             app.logout().then((res) => {
                 this.appHandler.setAppList(new Map());
                 this.moduleHandler.spreadToken(app.parameters.url, null);
-                window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);        
+                window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
+                logger.info(res.result + ' from: ' + app.parameters.url);        
             }).catch(e => {
+    			logger.error(e);
                 window.showErrorMessage(e.message ? e.message : e);        
             })
         })
@@ -138,14 +149,17 @@ class SimpliciteAPIManager {
                 this.moduleHandler.spreadToken(instanceUrl, null);
                 this.barItem.show(this.fileHandler.fileList, this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
+                logger.info(res.result + ' from: ' + app.parameters.url);
             }).catch(e => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
                     window.showInformationMessage(`Simplicite: You are not connected to ${input}`);
                 } else {
+			        logger.error(e);
                     window.showErrorMessage(`${e}`);
                 }
             });
         } catch (e) {
+			logger.error(e);
             window.showErrorMessage(`${e}`);
         }
     }
@@ -169,9 +183,10 @@ class SimpliciteAPIManager {
                     for (let filePath of fileModule[connectedModule]) {
                         try {
                             await this.attachFileAndSend(filePath, app);
+                            logger.info(filePath + ' successfully applied');
                         } catch (e) {
                             window.showErrorMessage(`Simplicite: Error sending ${filePath} \n ${e.message ? e.message : e}`);
-                            console.log(`Error in attachFileAndSend: ${e}`);
+                            logger.error(e);
                             numberOfErrors++;
                         }
                     }
@@ -197,10 +212,11 @@ class SimpliciteAPIManager {
             let obj = app.getBusinessObject('Script', 'ide_Script');
             const res = await obj.action('CodeCompile', 0);
             window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
+            logger.info('compilation succeeded');
         } catch (e) {
+			logger.error(e);
             window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
         }
-        
     }
 
     beforeApply (fileList) {
@@ -249,6 +265,7 @@ class SimpliciteAPIManager {
                 .then(() => {
                     resolve();
                 }).catch((e) => {
+			        logger.error(e);
                     throw e;
                 })
             } catch (e) {
@@ -257,21 +274,16 @@ class SimpliciteAPIManager {
         })   
     }
 
-    async getBusinessObjectFields (filePath, connectedInstance) {
-        /*try {
-            let fileType;
-            let fileName;
-            let properNameField;
-            ({ fileType, fileName, properNameField } = this.operationsBeforeObjectManipulation(filePath));
-            const app = await this.appHandler.getApp(connectedInstance);
-            const obj = app.getBusinessObject(fileName, "ide_" + fileName);
-            const fields = obj.getFields();
-            //const list = await obj.search({[properNameField]: fileName });
-            
-            return fields;
+    async getBusinessObjectFields (connectedInstance) {
+        try {
+            const app = this.appHandler.getApp(connectedInstance);
+            const moduleName = this.moduleHandler.getModuleNameFromUrl(connectedInstance);
+            const moduleFieldsInfo = await app.getDevInfo(moduleName);
+            if (moduleFieldsInfo === 0) throw 'No object fields has been found on the module ' + moduleName;
+            return moduleFieldsInfo;
         } catch (e) {
-            console.log(e);
-        }*/
+			logger.error(e);
+        }
     }
 
     operationsBeforeObjectManipulation (filePath) {
@@ -294,8 +306,6 @@ class SimpliciteAPIManager {
         return item;
     }
     
-    
-
     getProperScriptField (fileType) {
         for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
@@ -324,7 +334,7 @@ class SimpliciteAPIManager {
         try {
             this.devInfo = await app.getDevInfo();
         } catch(e) {
-            console.log(e);
+            logger.error(`get dev info: ` + e.message);
         }
     }
 

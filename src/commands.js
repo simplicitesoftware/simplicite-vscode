@@ -1,6 +1,7 @@
 'use strict';
 
 const { commands, window } = require('vscode');
+const logger = require('./Log');
 
 const loginAllModulesCommand = function (request) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -14,7 +15,7 @@ const applyChangesCommand = function (request) {
 		try {
 			await request.applyChangesHandler();
 		} catch (e) {
-			console.log(e);
+			logger.error(e);
 		}
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
@@ -41,6 +42,7 @@ const logoutFromModuleCommand = function (request) {
             if (!input) throw 'Simplicite: Action canceled';
 			await request.specificLogout(input);
         } catch (e) {
+			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
         }
 	});
@@ -76,6 +78,7 @@ const logInInstanceCommand = function (request) {
 			await request.loginTokenOrCredentials(module);
 			if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
         } catch (e) {
+			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
         }
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
@@ -86,8 +89,9 @@ const compileWorkspaceCommand = function (request) {
     return commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
 		try {
 			await request.compileJava();
+            logger.info('Compilation succeeded');
 		} catch (e) {
-			console.log(e);
+            logger.error(e);
 		}
 		
 	});

@@ -1,5 +1,6 @@
 'use strict';
 
+const logger = require('./Log');
 const vscode = require('vscode');
 const fs = require('fs');
 const { File, Module } = require('./classIndex');
@@ -40,7 +41,7 @@ class FileHandler {
             }
             return toBeWrittenJSON;
         } catch(e) {
-            console.log('Token not found');
+            logger.info(e);
         }
         return toBeWrittenJSON;
     }
@@ -49,7 +50,7 @@ class FileHandler {
         try {
             fs.writeFileSync(path, JSON.stringify(toBeWrittenJSON));
         } catch (e) {
-            console.log(e.message);
+            logger.error(e);
         }
     }
 
@@ -57,7 +58,7 @@ class FileHandler {
         try {
             fs.unlinkSync(this.TOKEN_SAVE_PATH);
         } catch (e) {
-            console.log(e.message);
+            logger.error(e);
         }
     }
 
@@ -106,7 +107,7 @@ class FileHandler {
             try {
                 foundFile.push(this.readFileSync(crossPlatformPath(file.fsPath), 'utf8' ));
             } catch(err) {
-                console.log(err.message);
+                logger.error(err);
             }
         };
         return foundFile;
@@ -124,7 +125,7 @@ class FileHandler {
                 if (modulePom[0]) modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl));
             }
         } catch (e) {
-            console.log(e.message ? e.message : e);
+            logger.warn(e);
         }
         return modules;
     }
@@ -158,9 +159,10 @@ class FileHandler {
                     }
                 }
                 this.saveJSONOnDisk(this.fileList, this.FILES_SAVE_PATH);
+                logger.info('File change detected');
                 resolve();
             } catch (e) {
-                console.log(e);
+                logger.error(e);
                 reject();
             }
         })
@@ -173,7 +175,7 @@ class FileHandler {
                 this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
         } catch (e) {
-            console.log('simplicite-file.json not found');
+            logger.info('simplicite-file.json not found');
         }
     }
 
@@ -189,7 +191,7 @@ class FileHandler {
         try {
             fs.unlinkSync(this.FILES_SAVE_PATH);
         } catch (e) {
-            console.log(e.message);
+            logger.error(e);
         }
     }
 
