@@ -107,7 +107,7 @@
 		"vscode-test": "^1.5.2"
 	},
 	"dependencies": {
-		"simplicite": "^1.1.26",
+		"simplicite": "^1.1.27",
 		"winston": "^3.3.3",
 		"xml2js": "^0.4.23"
 	},
