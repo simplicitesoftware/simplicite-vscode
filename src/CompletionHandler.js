@@ -9,17 +9,16 @@ class CompletionHandler {
     constructor (request) {
 		this.request = request;
         this.template = { scheme: 'file', language: 'java' };
+		this.completionItemList = undefined;
 		if (request.moduleHandler.moduleLength() !== 0) {
 			this.currentPagePath = crossPlatformPath(vscode.window.activeTextEditor.document.uri.path);
 			this.currentWorkspace = this.getWorkspaceFromFileUri(vscode.window.activeTextEditor.document.uri);
 			this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-			this.completionItemList = this.request.getBusinessObjectFields(this.currentPagePath, this.instanceUrl);
 			this.activeEditorListener();
 		} else {
 			this.currentPagePath = undefined;
 			this.currentWorkspace = undefined;
 			this.instanceUrl = undefined;
-			this.completionItemList = undefined;
 		}
 			
     }
@@ -57,7 +56,8 @@ class CompletionHandler {
 						this.currentPagePath = crossPlatformPath(event.document.fileName);
 						this.currentWorkspace = this.getWorkspaceFromFileUri(event.document.uri);
 						this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-						this.completionItemList = await this.request.getBusinessObjectFields(this.currentPagePath, this.instanceUrl);
+						this.completionItemList = await this.completionItemRender();
+						//await this.request.getBusinessObjectFields(this.instanceUrl);
 					} else {
 						this.currentPagePath = undefined;
 						this.currentWorkspace = undefined;
@@ -69,6 +69,13 @@ class CompletionHandler {
 			}
 			
 		})
+	}
+
+	async completionItemRender () {
+		const objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl);
+		console.log(objectFieldsList);
+		//for ()
+		return [new vscode.CompletionItem('log', vscode.CompletionItemKind.Text)];
 	}
 
 	getWorkspaceFromFileUri (uri) {

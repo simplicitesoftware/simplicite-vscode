@@ -48,6 +48,14 @@ class ModuleHandler {
         }
     }
 
+    getModuleNameFromUrl (instanceUrl) {
+        for (let module of this.modules) {
+            if (module.getInstanceUrl() === instanceUrl) {
+                return module.getName();
+            }
+        }
+    }
+
     getModuleUrlFromWorkspacePath (workspacePath) {
         try {
             for (let module of this.modules) {
