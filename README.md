@@ -9,7 +9,7 @@ This extension provides an easy way to edit the java files of one or multiple si
 - Field completion on your modules objects fields.
 - Automatic authentication on the Simplicite API.
 
-![login-apply](images/login-apply.gif)
+![login-apply](ressources/images/login-apply.gif)
 
 ---
 
