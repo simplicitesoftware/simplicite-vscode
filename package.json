@@ -7,7 +7,7 @@
 	"engines": {
 		"vscode": "^1.59.0"
 	},
-	"icon": "images/icon256.png",
+	"icon": "ressources/images/icon256.png",
 	"categories": [
 		"Other"
 	],
@@ -24,10 +24,28 @@
 		"onCommand:simplicite-vscode.connectedInstance",
 		"onCommand:simplicite-vscode.logOutFromModule",
 		"onCommand:simplicite-vscode.logOutFromInstance",
-		"onCommand::simplicite-vscode.compileWorkspace"
+		"onCommand::simplicite-vscode.compileWorkspace",
+		"onCommand::simplicite-vscode.refreshTreeView"
 	],
 	"main": "./src/extension.js",
 	"contributes": {
+		"views": {
+			"explorer": [
+				{
+					"id": "simpliciteObjectFields",
+					"name": "Simplicite object fields"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "simplicite-vscode.refreshTreeView",
+					"when": "view == simpliciteObjectFields",
+					"group": "navigation"
+				}
+			]
+		},
 		"commands": [
 			{
 				"command": "simplicite-vscode.applyChanges",
@@ -56,6 +74,14 @@
 			{
 				"command": "simplicite-vscode.connectedInstance",
 				"title": "Simplicite: Get list of connected instances"
+			},
+			{
+				"command": "simplicite-vscode.refreshTreeView",
+				"title": "Simplicite: Refresh object fields Tree View",
+				"icon": {
+					"light": "ressources/light/refresh.svg",
+					"dark": "ressources/dark/refresh.svg"
+				}
 			}
 		],
 		"capabilities": {

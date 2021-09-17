@@ -50,7 +50,7 @@ async function activate(context) {
 	// Completion initialization 
 	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
 	const provider = new CompletionHandler(request);
-	provider.asyncInit();
+	await provider.asyncInit();
 	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
 	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
 	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);

@@ -2,6 +2,8 @@
 
 const vscode = require('vscode');
 const { crossPlatformPath } = require('./utils');
+const FieldObjectTree = require('./FieldObjectTree');
+const logger = require('./Log');
 
 const triggerFunctions = ['getField', 'getFieldValue', 'setFieldValue'];
 
@@ -10,12 +12,24 @@ class CompletionHandler {
 		this.request = request;
         this.template = { scheme: 'file', language: 'java' };
 		this.completionItemList = undefined;
+		this.fieldObjectTree = new FieldObjectTree(request);
+		vscode.window.registerTreeDataProvider(
+			'simpliciteObjectFields',
+			this.fieldObjectTree
+		)
+		vscode.commands.registerCommand('simplicite-vscode.refreshTreeView', async () => this.fieldObjectTree.refresh());
+		
 		if (request.moduleHandler.moduleLength() !== 0) {
-			this.currentPagePath = crossPlatformPath(vscode.window.activeTextEditor.document.uri.path);
-			this.fileName = this.getFileNameFromPath(this.currentPagePath);
-			this.currentWorkspace = this.getWorkspaceFromFileUri(vscode.window.activeTextEditor.document.uri);
-			this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-			this.activeEditorListener();
+			try {
+				if (vscode.window.activeTextEditor === undefined) throw 'No active text editor, cannot handle completion';
+				this.currentPagePath = crossPlatformPath(vscode.window.activeTextEditor.document.uri.path);
+				this.fileName = this.getFileNameFromPath(this.currentPagePath);
+				this.currentWorkspace = this.getWorkspaceFromFileUri(vscode.window.activeTextEditor.document.uri);
+				this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
+				this.activeEditorListener();
+			} catch (e) {
+				logger.error(e);
+			}
 		} else {
 			this.currentPagePath = undefined;
 			this.currentWorkspace = undefined;
@@ -23,8 +37,16 @@ class CompletionHandler {
 		}	
     }
 
+	
+
 	async asyncInit () {
-		this.completionItemList = await this.completionItemRender();
+		try {
+			if (vscode.window.activeTextEditor.document.uri.path === undefined) throw 'No active text editor, cannot handle completion';
+			this.completionItemList = await this.completionItemRender();
+		} catch (e) {
+			logger.error(e);
+		}
+		
 	}
 
     provideCompletionItems(document, position) {
@@ -96,7 +118,7 @@ class CompletionHandler {
 			const workspace = vscode.workspace.getWorkspaceFolder(uri);
 			return crossPlatformPath(workspace.uri.path);
 		} catch (e) {
-			console.log(e);
+			logger.warn(e);
 		}
 	}
 
