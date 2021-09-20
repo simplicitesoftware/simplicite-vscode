@@ -4,7 +4,7 @@ const logger = require('./Log');
 const { window, languages, commands, workspace, ExtensionContext, env } = require('vscode');
 const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
 const { CompletionHandler } = require('./CompletionHandler');
-const { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand } = require('./commands');
+const { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } = require('./commands');
 
 /**
  * @param {ExtensionContext} context
@@ -25,7 +25,8 @@ async function activate(context) {
 	const logoutFromModule = logoutFromModuleCommand(request);
 	const logInInstance = logInInstanceCommand(request);
 	const compileWorkspace = compileWorkspaceCommand(request);
-	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace);
+	const fieldToClipBoard = fieldToClipBoardCommand();
+	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event) => {
@@ -72,7 +73,7 @@ async function activate(context) {
 			await request.specificLogout(event.removed[0].name);
 			modulesLength = request.moduleHandler.moduleLength();
 		}
-		request.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules());
+		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 }

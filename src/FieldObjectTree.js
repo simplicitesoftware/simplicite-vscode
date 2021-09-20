@@ -1,6 +1,6 @@
 'use strict';
 
-const { TreeDataProvider, TreeItemCollapsibleState, EventEmitter } = require('vscode');
+const { TreeItemCollapsibleState, EventEmitter, TreeItem } = require('vscode');
 const logger = require('./Log');
 
 module.exports = class FieldObjectTree {
@@ -11,8 +11,8 @@ module.exports = class FieldObjectTree {
     }
     
     async refresh() {
+        this.request.moduleHandler.setModules(await this.request.fileHandler.getSimpliciteModules()); 
         this._onDidChangeTreeData.fire();
-        this.request.fileHandler.setModules(await this.request.fileHandler.getSimpliciteModules()); 
     }
 
     fieldsIntoTreeItem (objectFieldInfo, element) {
@@ -22,16 +22,24 @@ module.exports = class FieldObjectTree {
                 fielditem.push(new TreeItem(fieldLoop.moduleName, TreeItemCollapsibleState.Collapsed));
             }
         } else if (element) {
+            let elseFlag = true;
             for (let fieldLoop of objectFieldInfo) {
                 if (fieldLoop.moduleName === element) { // Nom des objets
+                    elseFlag = false;
                     for (let objF of fieldLoop.objectFields) {
                         fielditem.push(new TreeItem(objF.name, TreeItemCollapsibleState.Collapsed));
                     }
-                } else {
+                } else if (elseFlag) {
                     for (let objF of fieldLoop.objectFields) {
                         if (objF.name === element) {
                             for (let field of objF.fields) {
-                                fielditem.push(new TreeItem(field.name, TreeItemCollapsibleState.None));
+                                const treeItem = new TreeItem(field.name, TreeItemCollapsibleState.None); 
+                                treeItem.command = {
+                                    command: 'simplicite-vscode.fieldToClipBoard',
+                                    title: 'Not a title',
+                                    arguments: [field.name]
+                                }
+                                fielditem.push(treeItem);
                             }
                             
                         }
@@ -65,17 +73,7 @@ module.exports = class FieldObjectTree {
             return Promise.resolve(fields);
         } catch (e) {
             logger.error(`${e}`);
-            return Promise.resolve([]);
-            //return Promise.reject(e);
+            return Promise.resolve([new TreeItem('Log in to get the object fields')]);
         }   
-    }
-
-    
-}
-
-class TreeItem {
-    constructor (label, collapsibleState) {
-        this.label = label;
-        this.collapsibleState = collapsibleState;
-    }
+    }    
 }

@@ -2,6 +2,7 @@
 
 const { commands, window } = require('vscode');
 const logger = require('./Log');
+const copyToClipBoard = require('copy-paste').copy;
 
 const loginAllModulesCommand = function (request) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -59,7 +60,6 @@ const logInInstanceCommand = function (request) {
 			let flag = false;
             let module;
             try {
-                console.log(request.moduleHandler.getConnectedInstancesUrl());
                 for (let moduleLoop of request.moduleHandler.getModules()) {
                     if (moduleLoop.getInstanceUrl() === moduleName) {
                         module = moduleLoop;
@@ -97,6 +97,12 @@ const compileWorkspaceCommand = function (request) {
 	});
 }
 
+const fieldToClipBoardCommand = function () {
+    return commands.registerCommand('simplicite-vscode.fieldToClipBoard', element => {
+        if (element !== undefined) copyToClipBoard(element);
+    });
+} 
+
 module.exports = {
     loginAllModulesCommand: loginAllModulesCommand,
     applyChangesCommand: applyChangesCommand,
@@ -104,5 +110,6 @@ module.exports = {
     connectedInstanceCommand: connectedInstanceCommand,
     logoutFromModuleCommand: logoutFromModuleCommand,
     logInInstanceCommand: logInInstanceCommand,
-    compileWorkspaceCommand: compileWorkspaceCommand
+    compileWorkspaceCommand: compileWorkspaceCommand,
+    fieldToClipBoardCommand: fieldToClipBoardCommand
 }
