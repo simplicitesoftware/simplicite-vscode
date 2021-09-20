@@ -44,7 +44,6 @@ class CompletionHandler {
 		} catch (e) {
 			logger.error(e);
 		}
-		
 	}
 
     provideCompletionItems(document, position) {

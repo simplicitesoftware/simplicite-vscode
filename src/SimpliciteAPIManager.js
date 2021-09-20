@@ -165,7 +165,7 @@ class SimpliciteAPIManager {
         }
     }
 
-    async applyChangesHandler () { // AJOUTER SETTINGS SKIP_LOCAL_COMPILATION
+    async applyChangesHandler () {
         return new Promise(async (resolve, reject) => {
             try {
                 this.beforeApply(this.fileHandler.fileList);
@@ -177,29 +177,8 @@ class SimpliciteAPIManager {
                         });
                 }  
                 const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
-                let numberOfErrors = 0;
                 for (let connectedModule of this.moduleHandler.getConnectedInstancesUrl()) {
-                    const app = await this.appHandler.getApp(connectedModule);
-                    if (!fileModule[connectedModule]) continue; 
-                    for (let filePath of fileModule[connectedModule]) {
-                        try {
-                            await this.attachFileAndSend(filePath, app);
-                            logger.info(filePath + ' successfully applied');
-                        } catch (e) {
-                            window.showErrorMessage(`Simplicite: Error sending ${filePath} \n ${e.message ? e.message : e}`);
-                            logger.error(e);
-                            numberOfErrors++;
-                        }
-                    }
-                    await this.triggerBackendCompilation(app);
-                }
-                const fileListLength = this.fileHandler.fileList.length
-                if (numberOfErrors === fileListLength) {
-                    window.showInformationMessage('Simplicite: Cannot apply any change');
-                } else {
-                    window.showInformationMessage(`Simplicite: Changed ${fileListLength - numberOfErrors} files over ${fileListLength}`);
-                    this.fileHandler.deleteModifiedFiles();
-                    this.fileHandler.fileList = new Array();
+                    this.applyChangesModuleScope(connectedModule, fileModule)
                 }
                 resolve();
             } catch(e) {
@@ -208,12 +187,33 @@ class SimpliciteAPIManager {
         });    
     }
 
+    async applyChangesModuleScope (instanceUrl, fileModule) {
+        const problematicFile = new Array();
+        const app = await this.appHandler.getApp(instanceUrl);
+        if (!fileModule[instanceUrl]) return; 
+        for (let filePath of fileModule[instanceUrl]) {
+            try {
+                await this.attachFileAndSend(filePath, app);
+                logger.info(filePath + ' successfully applied');
+            } catch (e) {
+                problematicFile.push(filePath);
+                logger.error(`Error sending ${filePath}: ${e}`);
+            }
+        }
+        await this.triggerBackendCompilation(app);
+        if (problematicFile.length > 0) {
+            window.showInformationMessage(`Simplicite: Cannot apply changes on the following file(s): ${problematicFile}`);
+        }
+        this.fileHandler.deleteModifiedFilesPersistance(problematicFile, instanceUrl);
+        this.fileHandler.deleteModifiedFiles(problematicFile, instanceUrl);
+    }
+
     async triggerBackendCompilation (app) {
         try {
             let obj = app.getBusinessObject('Script', 'ide_Script');
             const res = await obj.action('CodeCompile', 0);
             window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
-            logger.info('compilation succeeded');
+            logger.info(`backend ${res}`);
         } catch (e) {
 			logger.error(e);
             window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
@@ -309,7 +309,7 @@ class SimpliciteAPIManager {
     }
     
     getProperScriptField (fileType) {
-        for (let object of this.devInfo.getObject()) {
+        for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
                 return object.sourcefield;
             }
@@ -317,7 +317,7 @@ class SimpliciteAPIManager {
     }
 
     getProperNameField (fileType) {
-        for (let object of this.devInfo.getObject()) {
+        for (let object of this.devInfo.objects) {
             if (fileType === object.object) return object.keyfield;
         }
     }
@@ -326,7 +326,7 @@ class SimpliciteAPIManager {
     getBusinessObjectType (fileName) { 
         let urlForPackageComparaison;
         fileName.includes('/') ? urlForPackageComparaison = fileName.replaceAll('/', '.') : urlForPackageComparaison = fileName.replaceAll('\\', '.'); 
-        for (let object of this.devInfo.object) {
+        for (let object of this.devInfo.objects) {
             if (urlForPackageComparaison.includes(object.package)) return object.object;
         }
         throw 'No type has been found';

@@ -179,20 +179,39 @@ class FileHandler {
         }
     }
 
-    readModifiedFiles () {
+    deleteModifiedFilesPersistance (problematicFile, instanceUrl) {
         try {
-            return this.readFileSync(this.FILES_SAVE_PATH);
-        } catch (e) {
-            throw e.message;
-        }
-    }
-
-    deleteModifiedFiles () {
-        try {
-            fs.unlinkSync(this.FILES_SAVE_PATH);
+            if (problematicFile.length === 0) return;
+            const toBeWrittenJSON = new Array();
+            const JSONContent = require(this.FILES_SAVE_PATH);
+            for (let content of JSONContent) {
+                for (let pFile of problematicFile) {
+                    if (content.filePath === pFile && instanceUrl === content.instanceUrl) {
+                        toBeWrittenJSON.push(content);
+                    }
+                }
+            }
+            this.saveJSONOnDisk(toBeWrittenJSON, this.FILES_SAVE_PATH);
         } catch (e) {
             logger.error(e);
         }
+    }
+
+    deleteModifiedFiles (problematicFile, instanceUrl) {
+        try {
+            const newFileList = new Array();
+            for (let file of this.fileList) {
+                for (let pFile of problematicFile) {
+                    if (file.filePath === pFile && instanceUrl === file.instanceUrl) {
+                        newFileList.push(file);
+                    }
+                }
+            }
+            this.fileList = newFileList;
+            console.log(this.fileList);
+        } catch(e) {
+            logger.error(e);
+        }        
     }
 
     isFileInFileList (filePath) {
