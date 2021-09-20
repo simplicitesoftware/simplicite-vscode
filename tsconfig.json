@@ -3,10 +3,10 @@
 		"outDir": "./dist",
 		"strict": true,
 		"allowJs": true,
-		"target": "es5",
+		"target": "ES2021",
 		"checkJs": true,  /* Typecheck .js files. */
 		"lib": [
-			"es5"
+			"ES2021"
 		]
 	},
 	"exclude": [

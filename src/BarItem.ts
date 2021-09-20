@@ -1,8 +1,7 @@
 'use strict';
 
-const { throws } = require('assert');
-const { window, MarkdownString, commands, extensions } = require('vscode');
-const { EXTENSION_ID } = require('./constant');
+import { window, MarkdownString, commands, extensions } from 'vscode';
+import { EXTENSION_ID } from './constant';
 
 class BarItem {
     constructor (name) {

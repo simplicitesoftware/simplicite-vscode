@@ -1,6 +1,6 @@
 'use strict';
 
-class Module {
+export class Module {
     constructor (name, workspaceFolderName, workspaceFolderPath, instanceUrl, token) {
         this.name = name;
         this.workspaceFolderName = workspaceFolderName;
@@ -43,8 +43,4 @@ class Module {
     getToken () {
         return this.token;
     }
-}
-
-module.exports = {
-    Module: Module
 }

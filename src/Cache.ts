@@ -1,11 +1,12 @@
 'use strict';
 
-class Cache {
+export class Cache {
+    itemCache: Map<string, number>;
     constructor() {
         this.itemCache = new Map();
     }
 
-    isInCache (fileName) {
+    isInCache (fileName: string) {
         this.itemCache.forEach((value, key) => {
             if (key === fileName) {
                 return true;
@@ -14,7 +15,7 @@ class Cache {
         return false;
     }
 
-    getListFromCache (fileName) {
+    getListFromCache (fileName: string) {
         let returnValue;
         this.itemCache.forEach((value, key) => {
             if (key === fileName) {
@@ -25,11 +26,7 @@ class Cache {
         throw 'Cache has malfunctionned';
     }
     
-    addPair (key, value) {
+    addPair (key: string, value: number) {
         this.itemCache.set(key, value);
     }
-}
-
-module.exports = {
-    Cache: Cache
 }
