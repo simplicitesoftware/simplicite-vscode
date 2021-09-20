@@ -1,18 +1,15 @@
 'use strict';
 
 const logger = require('./Log');
-const { window, languages, commands, workspace, ExtensionContext, env } = require('vscode');
+import * as vscode from 'vscode';
 const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
 const { CompletionHandler } = require('./CompletionHandler');
 const { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } = require('./commands');
 
-/**
- * @param {ExtensionContext} context
- */
-async function activate(context) {
+async function activate(context: vscode.ExtensionContext) {
 	// Api initialization
 	logger.info('Starting extension...');
-	logger.info('env appName: ' + env.appName);
+	logger.info('env appName: ' + vscode.env.appName);
 	let request = new SimpliciteAPIManager();
 	await request.init(context); // all the asynchronous affectation happens there
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
@@ -29,7 +26,7 @@ async function activate(context) {
 	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard);
 
 	// On save file detection
-	workspace.onDidSaveTextDocument(async (event) => {
+	workspace.onDidSaveTextDocument(async (event: vscode.TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
 			await request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
 			request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
@@ -52,12 +49,12 @@ async function activate(context) {
 	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
 	const provider = new CompletionHandler(request);
 	await provider.asyncInit();
-	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
-	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
+	const completionProviderSingleQuote = vscode.languages.registerCompletionItemProvider(provider.template, provider, '"');
+	const completionProviderDoubleQuote = vscode.languages.registerCompletionItemProvider(provider.template, provider, '\'');
 	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
 
 	// workspace handler
-	workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
+	workspace.onDidChangeWorkspaceFolders(async (event: vscode.WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
 		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module

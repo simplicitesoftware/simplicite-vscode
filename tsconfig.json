@@ -1,6 +1,8 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"outDir": "./dist",
+		"strict": true,
+		"allowJs": true,
 		"target": "es5",
 		"checkJs": true,  /* Typecheck .js files. */
 		"lib": [
@@ -9,5 +11,8 @@
 	},
 	"exclude": [
 		"node_modules"
+	],
+	"include": [
+		"./src/**/*"
 	]
 }
