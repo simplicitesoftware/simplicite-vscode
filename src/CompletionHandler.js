@@ -37,8 +37,6 @@ class CompletionHandler {
 		}	
     }
 
-	
-
 	async asyncInit () {
 		try {
 			if (vscode.window.activeTextEditor.document.uri.path === undefined) throw 'No active text editor, cannot handle completion';
@@ -55,21 +53,14 @@ class CompletionHandler {
 			if (linePrefix === -1) {
 			  return []
 			}
-	
-			if (linePrefix.split('(').length > 2) {
-				console.log(linePrefix.split('('));
-			}
-		
-			const cleanPrefix = linePrefix.replace('(', '').replace('\t', '').replace('\'', '').replace('"', '');
-			console.log(cleanPrefix);
+			
 			for (let functionName of triggerFunctions) {
-				if (functionName === cleanPrefix) {
-					console.log('implement completion');
+				if (linePrefix.endsWith(functionName + '(\'')) {
 					return this.completionItemList;
 				}
 			}
 		} catch (e) {
-			console.log(e);
+			logger.error(`provideCompletionItems: ${e}`);
 		}
         
     }
@@ -100,8 +91,8 @@ class CompletionHandler {
 
 	async completionItemRender () {
 		const completionItems = new Array();
-		const objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl);
-		console.log(objectFieldsList);
+		const objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
+		//console.log(objectFieldsList);
 		for (let item of objectFieldsList) {
 			if (item.name === this.fileName) {
 				for (let field of item.fields) {

@@ -278,6 +278,7 @@ class SimpliciteAPIManager {
     async getBusinessObjectFields (connectedInstance, moduleName) {
         try {
             const app = this.appHandler.getApp(connectedInstance);
+            if (app.authtoken === undefined) throw `Cannot get object fields, not connected to ${moduleName} (${connectedInstance})`;
             await this.getDevInfo(app, moduleName);
             const objectExternal = this.moduleDevInfo.ObjectInternal;
             if (objectExternal.length === 0) throw 'No object fields has been found on the module ' + moduleName;
