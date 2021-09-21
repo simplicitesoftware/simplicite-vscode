@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 'use strict';
 
+=======
+>>>>>>> 3a25893f0d471589f8dee6c54e46aa59e6269cdf
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 

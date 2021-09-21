@@ -4,12 +4,17 @@
 	"displayName": "simplicite-vscode",
 	"description": "Making life easier for simplicite's designers in an IDE environment",
 	"version": "0.0.1",
-	"icon": "ressources/images/icon256.png",
 	"engines": {
-		"vscode": "1.60.1"
+		"vscode": "^1.60.0"
 	},
+	"icon": "ressources/images/icon256.png",
 	"categories": [
 		"Other"
+	],
+	"keywords": [
+		"simplicite",
+		"make your own business",
+		"simplicite extension"
 	],
 	"activationEvents": [
 		"onStartupFinished",
