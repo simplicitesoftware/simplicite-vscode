@@ -1,0 +1,159 @@
+{
+	"name": "simplicite-vscode",
+	"publisher": "simpliciteExtensionTest",
+	"displayName": "simplicite-vscode",
+	"description": "Making life easier for simplicite's designers in an IDE environment",
+	"version": "0.0.1",
+	"icon": "ressources/images/icon256.png",
+	"engines": {
+		"vscode": "1.60.1"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished",
+		"onCommand:simplicite-vscode.logIn",
+		"onCommand:simplicite-vscode.applyChanges",
+		"onCommand:simplicite-vscode.logOut",
+		"onCommand:simplicite-vscode.connectedInstance",
+		"onCommand:simplicite-vscode.logOutFromModule",
+		"onCommand:simplicite-vscode.logOutFromInstance",
+		"onCommand::simplicite-vscode.compileWorkspace",
+		"onCommand::simplicite-vscode.refreshTreeView"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"views": {
+			"explorer": [
+				{
+					"id": "simpliciteObjectFields",
+					"name": "Simplicite object fields"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "simplicite-vscode.refreshTreeView",
+					"when": "view == simpliciteObjectFields",
+					"group": "navigation"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "simplicite-vscode.applyChanges",
+				"title": "Simplicite: Apply changes"
+			},
+			{
+				"command": "simplicite-vscode.compileWorkspace",
+				"title": "Simplicite: Compile java code in current workspace"
+			},
+			{
+				"command": "simplicite-vscode.logIn",
+				"title": "Simplicite: Log into detected instances"
+			},
+			{
+				"command": "simplicite-vscode.logInInstance",
+				"title": "Simplicite: Log into specific instance"
+			},
+			{
+				"command": "simplicite-vscode.logOut",
+				"title": "Simplicite: Log out from all instances"
+			},
+			{
+				"command": "simplicite-vscode.logOutFromInstance",
+				"title": "Simplicite: Log out from specific instance"
+			},
+			{
+				"command": "simplicite-vscode.connectedInstance",
+				"title": "Simplicite: Get list of connected instances"
+			},
+			{
+				"command": "simplicite-vscode.refreshTreeView",
+				"title": "Simplicite: Refresh object fields Tree View",
+				"icon": {
+					"light": "ressources/light/refresh.svg",
+					"dark": "ressources/dark/refresh.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode.fieldToClipBoard",
+				"title": "Not a title",
+				"when": "false"
+			}
+		],
+		"capabilities": {
+			"completionProvider": {
+				"resolveProvider": "true",
+				"triggerCharacters": [
+					"'",
+					"\""
+				]
+			}
+		},
+		"configuration": {
+			"properties": {
+				"simplicite-vscode.disableCompilation": {
+					"type": "boolean",
+					"default": false,
+					"description": "Disable local compilation before applying changes."
+				},
+				"simplicite-vscode.disableAutoConnect": {
+					"type": "boolean",
+					"default": false,
+					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."
+				}
+			}
+		},
+		"keybindings": [
+			{
+				"command": "simplicite-vscode.showSimpliciteCommands",
+				"key": "Ctrl+Shift+space",
+				"mac": "Ctrl+Shift+space",
+				"linux": "Ctrl+Shift+space"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package",
+		"compile": "webpack",
+		"watch": "webpack --watch",
+		"package": "webpack --mode production --devtool hidden-source-map",
+		"test-compile": "tsc -p ./",
+		"test-watch": "tsc -watch -p ./",
+		"pretest": "npm run test-compile && npm run lint",
+		"lint": "eslint src --ext ts",
+		"test": "node ./out/test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.60.0",
+		"@types/glob": "^7.1.3",
+		"@types/mocha": "^8.2.2",
+		"@types/node": "14.x",
+		"eslint": "^7.27.0",
+		"@typescript-eslint/eslint-plugin": "^4.26.0",
+		"@typescript-eslint/parser": "^4.26.0",
+		"glob": "^7.1.7",
+		"mocha": "^8.4.0",
+		"typescript": "^4.3.2",
+		"vscode-test": "^1.5.2",
+		"ts-loader": "^9.2.2",
+		"webpack": "^5.38.1",
+		"webpack-cli": "^4.7.0"
+	},
+	"dependencies": {
+		"copy-paste": "^1.3.0",
+		"simplicite": "^1.1.27",
+		"winston": "^3.3.3",
+		"xml2js": "^0.4.23"
+	},
+	"extensionDependencies": [
+		"redhat.java"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
+	}
+}
