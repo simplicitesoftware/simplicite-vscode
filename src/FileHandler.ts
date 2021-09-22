@@ -7,15 +7,14 @@ import { File } from './File';
 import { Module } from './Module';
 const parseString = require('xml2js').parseStringPromise;
 import { crossPlatformPath } from './utils';
-import { parse } from 'path';
 
 export class FileHandler {
-    TOKEN_SAVE_PATH: string;
-    FILES_SAVE_PATH: string;
+    tokenSavePath: string;
+    fileSavePath: string;
     fileList: Array<File>;
     constructor () {
-        this.TOKEN_SAVE_PATH = crossPlatformPath(require('./constant').TOKEN_SAVE_PATH);
-        this.FILES_SAVE_PATH = crossPlatformPath(require('./constant').FILES_SAVE_PATH);
+        this.tokenSavePath = crossPlatformPath(require('./constant').tokenSavePath);
+        this.fileSavePath = crossPlatformPath(require('./constant').fileSavePath);
         this.fileList = new Array();
     }
 
@@ -31,7 +30,7 @@ export class FileHandler {
             }
         }
         toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-        this.saveJSONOnDisk(toBeWrittenJSON, this.TOKEN_SAVE_PATH);
+        this.saveJSONOnDisk(toBeWrittenJSON, this.tokenSavePath);
     }
 
     getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
@@ -61,7 +60,7 @@ export class FileHandler {
 
     deleteSimpliciteInfo () {
         try {
-            fs.unlinkSync(this.TOKEN_SAVE_PATH);
+            fs.unlinkSync(this.tokenSavePath);
         } catch (e: any) {
             logger.error(e);
         }
@@ -76,7 +75,7 @@ export class FileHandler {
                     newInfo.push(module);
                 }
             }
-            this.saveJSONOnDisk(newInfo, this.TOKEN_SAVE_PATH);
+            this.saveJSONOnDisk(newInfo, this.tokenSavePath);
         } catch (e: any) {
             throw e;
         }
@@ -84,7 +83,7 @@ export class FileHandler {
 
     getSimpliciteInfoContent () {
         try {
-            return JSON.parse(fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8'));
+            return JSON.parse(fs.readFileSync(this.tokenSavePath, 'utf8'));
         } catch (e: any) {
             throw e;
         }
@@ -119,14 +118,20 @@ export class FileHandler {
     async getSimpliciteModules () { // returns array of module objects
         let modules = new Array();
         try {
-            if (workspace.workspaceFolders === undefined) throw 'No workspace detected';
+            if (workspace.workspaceFolders === undefined) {
+                throw 'No workspace detected';
+            }
             for (let workspaceFolder of workspace.workspaceFolders) {
                 const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                 const relativePattern = new RelativePattern(workspaceFolder, globPatern);
                 const modulePom = await this.findFiles(relativePattern);
-                if (modulePom.length === 0) throw 'No module found';
+                if (modulePom.length === 0) {
+                    throw 'No module found';
+                } 
                 const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
-                if (modulePom[0]) modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
+                if (modulePom[0]) {
+                    modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
+                }
             }
         } catch (e: any) {
             logger.warn(e);
@@ -161,7 +166,7 @@ export class FileHandler {
                     }
                 }
             }
-            this.saveJSONOnDisk(this.fileList, this.FILES_SAVE_PATH);
+            this.saveJSONOnDisk(this.fileList, this.fileSavePath);
             logger.info('File change detected');
         } catch (e: any) {
             logger.error(e);
@@ -170,8 +175,8 @@ export class FileHandler {
 
     getModifiedFilesOnStart () {
         try {
-            const JSONContent = require(this.FILES_SAVE_PATH);
-            for (let content of JSONContent) {
+            const jsonContent = require(this.fileSavePath);
+            for (let content of jsonContent) {
                 this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
         } catch (e: any) {
@@ -181,7 +186,7 @@ export class FileHandler {
 
     readModifiedFiles () {
         try {
-            return this.readFileSync(this.FILES_SAVE_PATH);
+            return this.readFileSync(this.fileSavePath);
         } catch (e: any) {
             throw e;
         }
@@ -189,7 +194,7 @@ export class FileHandler {
 
     deleteModifiedFiles () {
         try {
-            fs.unlinkSync(this.FILES_SAVE_PATH);
+            fs.unlinkSync(this.fileSavePath);
         } catch (e: any) {
             logger.error(e);
         }
@@ -197,7 +202,9 @@ export class FileHandler {
 
     isFileInFileList (filePath: string) {
         for (let fileListelement of this.fileList) {
-            if (fileListelement.getFilePath() === filePath) return true; 
+            if (fileListelement.getFilePath() === filePath) {
+                return true;
+            }
         }
         return false;
     }
@@ -205,7 +212,9 @@ export class FileHandler {
     getOnlyFilesPath (workspaceFolderPath: string) {
         let filesPath = new Array();
         for (let file of this.fileList) {
-            if (workspaceFolderPath === file.getWorkspaceFolderPath()) filesPath.push(file.getFilePath());
+            if (workspaceFolderPath === file.getWorkspaceFolderPath()) {
+                filesPath.push(file.getFilePath());
+            }
         }
         return filesPath;
     }

@@ -29,14 +29,14 @@ function activate(context) {
         let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
         const barItem = yield BarItem_1.BarItem.build('Simplicite', context, request);
         // Commands has to be declared in package.json so VS Code knows that the extension provides a command
-        const loginAllModules = (0, commands_1.loginAllModulesCommand)(request);
-        const applyChanges = (0, commands_1.applyChangesCommand)(request);
-        const logout = (0, commands_1.logoutCommand)(request);
-        const connectedInstance = (0, commands_1.connectedInstanceCommand)(request);
-        const logoutFromModule = (0, commands_1.logoutFromModuleCommand)(request);
-        const logInInstance = (0, commands_1.logInInstanceCommand)(request);
-        const compileWorkspace = (0, commands_1.compileWorkspaceCommand)(request);
-        const fieldToClipBoard = (0, commands_1.fieldToClipBoardCommand)();
+        const loginAllModules = commands_1.loginAllModulesCommand(request);
+        const applyChanges = commands_1.applyChangesCommand(request);
+        const logout = commands_1.logoutCommand(request);
+        const connectedInstance = commands_1.connectedInstanceCommand(request);
+        const logoutFromModule = commands_1.logoutFromModuleCommand(request);
+        const logInInstance = commands_1.logInInstanceCommand(request);
+        const compileWorkspace = commands_1.compileWorkspaceCommand(request);
+        const fieldToClipBoard = commands_1.fieldToClipBoardCommand();
         context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard);
         // On save file detection
         vscode_1.workspace.onDidSaveTextDocument((event) => __awaiter(this, void 0, void 0, function* () {
@@ -4976,7 +4976,7 @@ exports.warn = {
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"_from":"winston@^3.3.3","_id":"winston@3.3.3","_inBundle":false,"_integrity":"sha512-oEXTISQnC8VlSAKf1KYSSd7J6IWuRPQqDdo8eoRNaYKLvwSb5+79Z3Yi1lrl6KDpU6/VWaxpakDAtb1oQ4n9aw==","_location":"/winston","_phantomChildren":{"inherits":"2.0.4","string_decoder":"1.1.1","util-deprecate":"1.0.2"},"_requested":{"type":"range","registry":true,"raw":"winston@^3.3.3","name":"winston","escapedName":"winston","rawSpec":"^3.3.3","saveSpec":null,"fetchSpec":"^3.3.3"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/winston/-/winston-3.3.3.tgz","_shasum":"ae6172042cafb29786afa3d09c8ff833ab7c9170","_spec":"winston@^3.3.3","_where":"D:\\\\repo\\\\Github\\\\SimpliciteSharing\\\\simplicite-vscode","author":{"name":"Charlie Robbins","email":"charlie.robbins@gmail.com"},"browser":"./dist/winston","bugs":{"url":"https://github.com/winstonjs/winston/issues"},"bundleDependencies":false,"dependencies":{"@dabh/diagnostics":"^2.0.2","async":"^3.1.0","is-stream":"^2.0.0","logform":"^2.2.0","one-time":"^1.0.0","readable-stream":"^3.4.0","stack-trace":"0.0.x","triple-beam":"^1.3.0","winston-transport":"^4.4.0"},"deprecated":false,"description":"A logger for just about everything.","devDependencies":{"@babel/cli":"^7.10.3","@babel/core":"^7.10.3","@babel/preset-env":"^7.10.3","@types/node":"^14.0.13","abstract-winston-transport":"^0.5.1","assume":"^2.2.0","colors":"^1.4.0","cross-spawn-async":"^2.2.5","eslint-config-populist":"^4.2.0","hock":"^1.4.1","mocha":"^8.0.1","nyc":"^15.1.0","rimraf":"^3.0.2","split2":"^3.1.1","std-mocks":"^1.0.1","through2":"^3.0.1","winston-compat":"^0.1.5"},"engines":{"node":">= 6.4.0"},"homepage":"https://github.com/winstonjs/winston#readme","keywords":["winston","logger","logging","logs","sysadmin","bunyan","pino","loglevel","tools","json","stream"],"license":"MIT","main":"./lib/winston","maintainers":[{"name":"Jarrett Cruger","email":"jcrugzz@gmail.com"},{"name":"Chris Alderson","email":"chrisalderson@protonmail.com"},{"name":"David Hyde","email":"dabh@stanford.edu"}],"name":"winston","repository":{"type":"git","url":"git+https://github.com/winstonjs/winston.git"},"scripts":{"build":"rimraf dist && babel lib -d dist","lint":"populist lib/*.js lib/winston/*.js lib/winston/**/*.js","prepublishOnly":"npm run build","pretest":"npm run lint","test":"nyc --reporter=text --reporter lcov npm run test:mocha","test:mocha":"mocha test/*.test.js test/**/*.test.js --exit"},"types":"./index.d.ts","version":"3.3.3"}');
+module.exports = JSON.parse('{"_args":[["winston@3.3.3","C:\\\\Users\\\\Majax850G1\\\\repo\\\\github\\\\simplicite-vscode"]],"_from":"winston@3.3.3","_id":"winston@3.3.3","_inBundle":false,"_integrity":"sha512-oEXTISQnC8VlSAKf1KYSSd7J6IWuRPQqDdo8eoRNaYKLvwSb5+79Z3Yi1lrl6KDpU6/VWaxpakDAtb1oQ4n9aw==","_location":"/winston","_phantomChildren":{"inherits":"2.0.4","string_decoder":"1.1.1","util-deprecate":"1.0.2"},"_requested":{"type":"version","registry":true,"raw":"winston@3.3.3","name":"winston","escapedName":"winston","rawSpec":"3.3.3","saveSpec":null,"fetchSpec":"3.3.3"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/winston/-/winston-3.3.3.tgz","_spec":"3.3.3","_where":"C:\\\\Users\\\\Majax850G1\\\\repo\\\\github\\\\simplicite-vscode","author":{"name":"Charlie Robbins","email":"charlie.robbins@gmail.com"},"browser":"./dist/winston","bugs":{"url":"https://github.com/winstonjs/winston/issues"},"dependencies":{"@dabh/diagnostics":"^2.0.2","async":"^3.1.0","is-stream":"^2.0.0","logform":"^2.2.0","one-time":"^1.0.0","readable-stream":"^3.4.0","stack-trace":"0.0.x","triple-beam":"^1.3.0","winston-transport":"^4.4.0"},"description":"A logger for just about everything.","devDependencies":{"@babel/cli":"^7.10.3","@babel/core":"^7.10.3","@babel/preset-env":"^7.10.3","@types/node":"^14.0.13","abstract-winston-transport":"^0.5.1","assume":"^2.2.0","colors":"^1.4.0","cross-spawn-async":"^2.2.5","eslint-config-populist":"^4.2.0","hock":"^1.4.1","mocha":"^8.0.1","nyc":"^15.1.0","rimraf":"^3.0.2","split2":"^3.1.1","std-mocks":"^1.0.1","through2":"^3.0.1","winston-compat":"^0.1.5"},"engines":{"node":">= 6.4.0"},"homepage":"https://github.com/winstonjs/winston#readme","keywords":["winston","logger","logging","logs","sysadmin","bunyan","pino","loglevel","tools","json","stream"],"license":"MIT","main":"./lib/winston","maintainers":[{"name":"Jarrett Cruger","email":"jcrugzz@gmail.com"},{"name":"Chris Alderson","email":"chrisalderson@protonmail.com"},{"name":"David Hyde","email":"dabh@stanford.edu"}],"name":"winston","repository":{"type":"git","url":"git+https://github.com/winstonjs/winston.git"},"scripts":{"build":"rimraf dist && babel lib -d dist","lint":"populist lib/*.js lib/winston/*.js lib/winston/**/*.js","prepublishOnly":"npm run build","pretest":"npm run lint","test":"nyc --reporter=text --reporter lcov npm run test:mocha","test:mocha":"mocha test/*.test.js test/**/*.test.js --exit"},"types":"./index.d.ts","version":"3.3.3"}');
 
 /***/ }),
 /* 76 */
@@ -5480,22 +5480,22 @@ Writable.WritableState = WritableState;
 
 /*<replacement>*/
 var util = Object.create(__webpack_require__(83));
-util.inherits = __webpack_require__(85);
+util.inherits = __webpack_require__(84);
 /*</replacement>*/
 
 /*<replacement>*/
 var internalUtil = {
-  deprecate: __webpack_require__(87)
+  deprecate: __webpack_require__(86)
 };
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(88);
+var Stream = __webpack_require__(87);
 /*</replacement>*/
 
 /*<replacement>*/
 
-var Buffer = __webpack_require__(89).Buffer;
+var Buffer = __webpack_require__(88).Buffer;
 var OurUint8Array = global.Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
@@ -6155,7 +6155,7 @@ function nextTick(fn, arg1, arg2, arg3) {
 
 /***/ }),
 /* 83 */
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6259,7 +6259,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(84).Buffer.isBuffer;
+exports.isBuffer = Buffer.isBuffer;
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -6268,13 +6268,6 @@ function objectToString(o) {
 
 /***/ }),
 /* 84 */
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("buffer");
-
-/***/ }),
-/* 85 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 try {
@@ -6284,12 +6277,12 @@ try {
   module.exports = util.inherits;
 } catch (e) {
   /* istanbul ignore next */
-  module.exports = __webpack_require__(86);
+  module.exports = __webpack_require__(85);
 }
 
 
 /***/ }),
-/* 86 */
+/* 85 */
 /***/ ((module) => {
 
 if (typeof Object.create === 'function') {
@@ -6322,7 +6315,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 87 */
+/* 86 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 
@@ -6334,18 +6327,18 @@ module.exports = __webpack_require__(9).deprecate;
 
 
 /***/ }),
-/* 88 */
+/* 87 */
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 module.exports = __webpack_require__(80);
 
 
 /***/ }),
-/* 89 */
+/* 88 */
 /***/ ((module, exports, __webpack_require__) => {
 
 /* eslint-disable node/no-deprecated-api */
-var buffer = __webpack_require__(84)
+var buffer = __webpack_require__(89)
 var Buffer = buffer.Buffer
 
 // alternative to using Object.keys for old browsers
@@ -6407,6 +6400,13 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
+
+/***/ }),
+/* 89 */
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("buffer");
 
 /***/ }),
 /* 90 */
@@ -6539,7 +6539,7 @@ module.exports = Duplex;
 
 /*<replacement>*/
 var util = Object.create(__webpack_require__(83));
-util.inherits = __webpack_require__(85);
+util.inherits = __webpack_require__(84);
 /*</replacement>*/
 
 var Readable = __webpack_require__(92);
@@ -6679,12 +6679,12 @@ var EElistenerCount = function (emitter, type) {
 /*</replacement>*/
 
 /*<replacement>*/
-var Stream = __webpack_require__(88);
+var Stream = __webpack_require__(87);
 /*</replacement>*/
 
 /*<replacement>*/
 
-var Buffer = __webpack_require__(89).Buffer;
+var Buffer = __webpack_require__(88).Buffer;
 var OurUint8Array = global.Uint8Array || function () {};
 function _uint8ArrayToBuffer(chunk) {
   return Buffer.from(chunk);
@@ -6697,7 +6697,7 @@ function _isUint8Array(obj) {
 
 /*<replacement>*/
 var util = Object.create(__webpack_require__(83));
-util.inherits = __webpack_require__(85);
+util.inherits = __webpack_require__(84);
 /*</replacement>*/
 
 /*<replacement>*/
@@ -7677,7 +7677,7 @@ module.exports = require("events");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var Buffer = __webpack_require__(89).Buffer;
+var Buffer = __webpack_require__(88).Buffer;
 var util = __webpack_require__(9);
 
 function copyBuffer(src, target, offset) {
@@ -8060,7 +8060,7 @@ function simpleEnd(buf) {
 /***/ ((module, exports, __webpack_require__) => {
 
 /* eslint-disable node/no-deprecated-api */
-var buffer = __webpack_require__(84)
+var buffer = __webpack_require__(89)
 var Buffer = buffer.Buffer
 
 // alternative to using Object.keys for old browsers
@@ -9960,7 +9960,7 @@ var Stream = __webpack_require__(122);
 /*</replacement>*/
 
 
-var Buffer = __webpack_require__(84).Buffer;
+var Buffer = __webpack_require__(89).Buffer;
 
 var OurUint8Array = global.Uint8Array || function () {};
 
@@ -10004,7 +10004,7 @@ var StringDecoder;
 var createReadableStreamAsyncIterator;
 var from;
 
-__webpack_require__(85)(Readable, Stream);
+__webpack_require__(84)(Readable, Stream);
 
 var errorOrDestroy = destroyImpl.errorOrDestroy;
 var kProxyEvents = ['error', 'close', 'destroy', 'pause', 'resume'];
@@ -11066,7 +11066,7 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var _require = __webpack_require__(84),
+var _require = __webpack_require__(89),
     Buffer = _require.Buffer;
 
 var _require2 = __webpack_require__(9),
@@ -11580,7 +11580,7 @@ var Readable = __webpack_require__(121);
 
 var Writable = __webpack_require__(128);
 
-__webpack_require__(85)(Duplex, Readable);
+__webpack_require__(84)(Duplex, Readable);
 
 {
   // Allow the keys array to be GC'ed.
@@ -11739,7 +11739,7 @@ Writable.WritableState = WritableState;
 /*<replacement>*/
 
 var internalUtil = {
-  deprecate: __webpack_require__(87)
+  deprecate: __webpack_require__(86)
 };
 /*</replacement>*/
 
@@ -11749,7 +11749,7 @@ var Stream = __webpack_require__(122);
 /*</replacement>*/
 
 
-var Buffer = __webpack_require__(84).Buffer;
+var Buffer = __webpack_require__(89).Buffer;
 
 var OurUint8Array = global.Uint8Array || function () {};
 
@@ -11778,7 +11778,7 @@ var _require$codes = __webpack_require__(126).codes,
 
 var errorOrDestroy = destroyImpl.errorOrDestroy;
 
-__webpack_require__(85)(Writable, Stream);
+__webpack_require__(84)(Writable, Stream);
 
 function nop() {}
 
@@ -12849,7 +12849,7 @@ var _require$codes = __webpack_require__(126).codes,
 
 var Duplex = __webpack_require__(127);
 
-__webpack_require__(85)(Transform, Duplex);
+__webpack_require__(84)(Transform, Duplex);
 
 function afterTransform(er, data) {
   var ts = this._transformState;
@@ -13012,7 +13012,7 @@ module.exports = PassThrough;
 
 var Transform = __webpack_require__(132);
 
-__webpack_require__(85)(PassThrough, Transform);
+__webpack_require__(84)(PassThrough, Transform);
 
 function PassThrough(options) {
   if (!(this instanceof PassThrough)) return new PassThrough(options);
@@ -18759,8 +18759,8 @@ class SimpliciteAPIManager {
     }
     operationsBeforeObjectManipulation(filePath) {
         const fileType = this.getBusinessObjectType(filePath);
-        let filePathDecomposed = (0, utils_1.crossPlatformPath)(filePath).split('/');
-        let fileName = (0, utils_2.replaceAll)(filePathDecomposed[filePathDecomposed.length - 1], '.java', '');
+        let filePathDecomposed = utils_1.crossPlatformPath(filePath).split('/');
+        let fileName = utils_2.replaceAll(filePathDecomposed[filePathDecomposed.length - 1], '.java', '');
         const properNameField = this.getProperNameField(fileType);
         return { fileType, fileName, properNameField };
     }
@@ -18795,7 +18795,7 @@ class SimpliciteAPIManager {
     // Change path into Java package modele to find object type with dev info
     getBusinessObjectType(fileName) {
         let urlForPackageComparaison;
-        fileName.includes('/') ? urlForPackageComparaison = (0, utils_2.replaceAll)(fileName, '/\\/', '.') : urlForPackageComparaison = (0, utils_2.replaceAll)(fileName, '/\\/', '.');
+        fileName.includes('/') ? urlForPackageComparaison = utils_2.replaceAll(fileName, '/\\/', '.') : urlForPackageComparaison = utils_2.replaceAll(fileName, '/\\/', '.');
         for (let object of this.devInfo.object) {
             if (urlForPackageComparaison.includes(object.package))
                 return object.object;
@@ -18902,8 +18902,9 @@ class Cache {
                 returnValue = value;
             }
         });
-        if (returnValue)
+        if (returnValue) {
             return returnValue;
+        }
         throw 'Cache has malfunctionned';
     }
     addPair(key, value) {
@@ -18939,8 +18940,8 @@ const parseString = __webpack_require__(184).parseStringPromise;
 const utils_1 = __webpack_require__(225);
 class FileHandler {
     constructor() {
-        this.TOKEN_SAVE_PATH = (0, utils_1.crossPlatformPath)(__webpack_require__(177).TOKEN_SAVE_PATH);
-        this.FILES_SAVE_PATH = (0, utils_1.crossPlatformPath)(__webpack_require__(177).FILES_SAVE_PATH);
+        this.tokenSavePath = utils_1.crossPlatformPath(__webpack_require__(177).tokenSavePath);
+        this.fileSavePath = utils_1.crossPlatformPath(__webpack_require__(177).fileSavePath);
         this.fileList = new Array();
     }
     simpliciteInfoGenerator(token, appURL) {
@@ -18957,7 +18958,7 @@ class FileHandler {
                 }
             }
             toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-            this.saveJSONOnDisk(toBeWrittenJSON, this.TOKEN_SAVE_PATH);
+            this.saveJSONOnDisk(toBeWrittenJSON, this.tokenSavePath);
         });
     }
     getTokenFromSimpliciteInfo(toBeWrittenJSON) {
@@ -18987,7 +18988,7 @@ class FileHandler {
     }
     deleteSimpliciteInfo() {
         try {
-            fs.unlinkSync(this.TOKEN_SAVE_PATH);
+            fs.unlinkSync(this.tokenSavePath);
         }
         catch (e) {
             Log_1.logger.error(e);
@@ -19002,7 +19003,7 @@ class FileHandler {
                     newInfo.push(module);
                 }
             }
-            this.saveJSONOnDisk(newInfo, this.TOKEN_SAVE_PATH);
+            this.saveJSONOnDisk(newInfo, this.tokenSavePath);
         }
         catch (e) {
             throw e;
@@ -19010,7 +19011,7 @@ class FileHandler {
     }
     getSimpliciteInfoContent() {
         try {
-            return JSON.parse(fs.readFileSync(this.TOKEN_SAVE_PATH, 'utf8'));
+            return JSON.parse(fs.readFileSync(this.tokenSavePath, 'utf8'));
         }
         catch (e) {
             throw e;
@@ -19036,7 +19037,7 @@ class FileHandler {
             }
             for (let file of files) {
                 try {
-                    foundFile.push(this.readFileSync((0, utils_1.crossPlatformPath)(file.fsPath), 'utf8'));
+                    foundFile.push(this.readFileSync(utils_1.crossPlatformPath(file.fsPath), 'utf8'));
                 }
                 catch (e) {
                     Log_1.logger.error(e);
@@ -19051,17 +19052,20 @@ class FileHandler {
         return __awaiter(this, void 0, void 0, function* () {
             let modules = new Array();
             try {
-                if (vscode_1.workspace.workspaceFolders === undefined)
+                if (vscode_1.workspace.workspaceFolders === undefined) {
                     throw 'No workspace detected';
+                }
                 for (let workspaceFolder of vscode_1.workspace.workspaceFolders) {
                     const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                     const relativePattern = new vscode_1.RelativePattern(workspaceFolder, globPatern);
                     const modulePom = yield this.findFiles(relativePattern);
-                    if (modulePom.length === 0)
+                    if (modulePom.length === 0) {
                         throw 'No module found';
+                    }
                     const instanceUrl = yield this.getModuleInstanceUrl(workspaceFolder);
-                    if (modulePom[0])
-                        modules.push(new Module_1.Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, (0, utils_1.crossPlatformPath)(workspaceFolder.uri.path), instanceUrl, ''));
+                    if (modulePom[0]) {
+                        modules.push(new Module_1.Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, utils_1.crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
+                    }
                 }
             }
             catch (e) {
@@ -19088,7 +19092,7 @@ class FileHandler {
     setFileList(modules, uri) {
         try {
             for (let module of modules) {
-                const filePath = (0, utils_1.crossPlatformPath)(uri.path);
+                const filePath = utils_1.crossPlatformPath(uri.path);
                 const filePathLowerCase = filePath;
                 const workspaceLowerCase = module.getWorkspaceFolderPath();
                 if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
@@ -19099,7 +19103,7 @@ class FileHandler {
                     }
                 }
             }
-            this.saveJSONOnDisk(this.fileList, this.FILES_SAVE_PATH);
+            this.saveJSONOnDisk(this.fileList, this.fileSavePath);
             Log_1.logger.info('File change detected');
         }
         catch (e) {
@@ -19108,8 +19112,8 @@ class FileHandler {
     }
     getModifiedFilesOnStart() {
         try {
-            const JSONContent = __webpack_require__(226)(this.FILES_SAVE_PATH);
-            for (let content of JSONContent) {
+            const jsonContent = __webpack_require__(226)(this.fileSavePath);
+            for (let content of jsonContent) {
                 this.fileList.push(new File_1.File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
         }
@@ -19119,7 +19123,7 @@ class FileHandler {
     }
     readModifiedFiles() {
         try {
-            return this.readFileSync(this.FILES_SAVE_PATH);
+            return this.readFileSync(this.fileSavePath);
         }
         catch (e) {
             throw e;
@@ -19127,7 +19131,7 @@ class FileHandler {
     }
     deleteModifiedFiles() {
         try {
-            fs.unlinkSync(this.FILES_SAVE_PATH);
+            fs.unlinkSync(this.fileSavePath);
         }
         catch (e) {
             Log_1.logger.error(e);
@@ -19135,16 +19139,18 @@ class FileHandler {
     }
     isFileInFileList(filePath) {
         for (let fileListelement of this.fileList) {
-            if (fileListelement.getFilePath() === filePath)
+            if (fileListelement.getFilePath() === filePath) {
                 return true;
+            }
         }
         return false;
     }
     getOnlyFilesPath(workspaceFolderPath) {
         let filesPath = new Array();
         for (let file of this.fileList) {
-            if (workspaceFolderPath === file.getWorkspaceFolderPath())
+            if (workspaceFolderPath === file.getWorkspaceFolderPath()) {
                 filesPath.push(file.getFilePath());
+            }
         }
         return filesPath;
     }
@@ -25863,7 +25869,7 @@ exports.AppHandler = AppHandler;
  * @version 1.1.27
  * @license Apache-2.0
  */
-var Q=__webpack_require__(229);var axios=__webpack_require__(230);var buffer=__webpack_require__(84);var constants={DEFAULT_ROW_ID_NAME:"row_id",DEFAULT_ROW_ID:"0",CONTEXT_NONE:0,CONTEXT_SEARCH:1,CONTEXT_LIST:2,CONTEXT_CREATE:3,CONTEXT_COPY:4,CONTEXT_UPDATE:5,CONTEXT_DELETE:6,CONTEXT_GRAPH:7,CONTEXT_CROSSTAB:8,CONTEXT_PRINTTMPL:9,CONTEXT_UPDATEALL:10,CONTEXT_REFSELECT:11,CONTEXT_DATAMAPSELECT:12,CONTEXT_PREVALIDATE:13,CONTEXT_POSTVALIDATE:14,CONTEXT_STATETRANSITION:15,CONTEXT_EXPORT:16,CONTEXT_IMPORT:17,CONTEXT_ASSOCIATE:18,CONTEXT_PANELLIST:19,TYPE_ID:0,TYPE_INT:1,TYPE_FLOAT:2,TYPE_STRING:3,TYPE_DATE:4,TYPE_DATETIME:5,TYPE_TIME:6,TYPE_ENUM:7,TYPE_BOOLEAN:8,TYPE_PASSWORD:9,TYPE_URL:10,TYPE_HTML:11,TYPE_EMAIL:12,TYPE_LONG_STRING:13,TYPE_ENUM_MULTI:14,TYPE_REGEXP:15,TYPE_DOC:17,TYPE_FLOAT_EMPTY:18,TYPE_EXTFILE:19,TYPE_IMAGE:20,TYPE_NOTEPAD:21,TYPE_PHONENUM:22,TYPE_COLOR:23,TYPE_OBJECT:24,TYPE_GEOCOORDS:25,VIS_NOT:0,VIS_HIDDEN:0,VIS_LIST:1,VIS_FORM:2,VIS_BOTH:3,SEARCH_NONE:0,SEARCH_MONO:1,SEARCH_MULTI_CHECK:2,SEARCH_MULTI_LIST:3,SEARCH_PERIOD:4,TRUE:"1",FALSE:"0",ERRLEVEL_FATAL:1,ERRLEVEL_ERROR:2,ERRLEVEL_WARNING:3,RESOURCE_TYPE_IMAGE:"IMG",RESOURCE_TYPE_ICON:"ICO",RESOURCE_TYPE_STYLESHEET:"CSS",RESOURCE_TYPE_JAVASCRIPT:"JS"};function session(params){return new Session(params)}function Session(params){params=params||{};this.constants=constants;this.endpoint=params.endpoint||"api";this.log=params.logHandler||function(arg){console.log(arg)};this.info=params.infoHandle||function(arg){console.info(arg)};this.warn=params.warningHandler||function(arg){console.warn(arg)};this.error=params.errorHandler||function(arg){console.error(arg)};var _debug=!!params.debug;this.debug=params.debugHandler||function(arg){if(_debug)console.log(arg)};this.timeout=params.timeout||30;if(params.url){try{params.scheme=params.url.replace(/:.*$/,"");var u=params.url.replace(new RegExp("^"+params.scheme+"://"),"").split(":");if(u.length===1){params.host=u[0].replace(/\/.*$/,"");params.port=params.scheme==="http"?80:443;params.root=u[0].replace(new RegExp("^"+params.host+"/?"),"")}else{params.host=u[0];params.port=parseInt(u[1].replace(/\/.*$/,""),10);if(isNaN(params.port))throw new Error("Incorrect port");params.root=u[1].replace(new RegExp("^"+params.port+"/?"),"")}if(params.root==="/")params.root=""}catch(e){this.error("Unable to parse URL ["+params.url+"]: "+e.message);return}}var scheme=params.scheme||(params.port===443?"https":"http");if(scheme!=="http"&&scheme!=="https"){this.error("Incorrect scheme ["+params.scheme+"]");return}var host=params.host||"localhost";var port=params.port||8080;var root=params.root||"";if(root==="/")root="";var url=scheme+"://"+host;if(scheme==="http"&&port!=80||scheme==="https"&&port!=443)url+=":"+port;if(root!=="")url+=root.startsWith("/")?root:"/"+root;this.debug("[simplicite] Base URL = "+url);var ep=this.endpoint=="public"?"":"/"+this.endpoint;this.parameters={scheme:scheme,host:host,port:port,root:root,url:url,healthpath:(ep=="/ui"?ep:"")+"/health?format=json",apppath:ep+"/json/app",objpath:ep+"/json/obj",extpath:ep+"/ext",docpath:ep+"/raw/document",respath:"/resource"};this.username=params.username||params.login;this.setUsername=function(usr){this.username=usr};this.password=params.password||params.pwd;this.setPassword=function(pwd){this.password=pwd};this.authtoken=params.authtoken||params.authToken||params.token;this.setAuthToken=function(tkn){this.authtoken=tkn};var businessObjectCache={};this.getBusinessObjectCacheKey=function(name,instance){return name+":"+(instance||"js_"+name)};this.clear=function(){this.username=undefined;this.password=undefined;this.authtoken=undefined;this.sessionid=undefined;this.grant=undefined;this.appinfo=undefined;this.sysinfo=undefined;this.devinfo=undefined;this.userinfo=undefined;businessObjectCache={}};this.getBasicAuthHeader=function(){return this.username&&this.password?"Basic "+buffer.Buffer.from(this.username+":"+this.password).toString("base64"):undefined};this.getBearerTokenHeader=function(){return this.authtoken?"Bearer "+this.authtoken:undefined};this.req=function(path,data,callback,errorHandler){var self=this;var m=data?"post":"get";var h={};if(data)h["Content-Type"]="application/x-www-form-urlencoded; charset=utf-8";var b=self.getBearerTokenHeader();if(b){self.debug("[simplicite.req] Using bearer token header = "+b);h["X-Simplicite-Authorization"]=b}else{b=self.getBasicAuthHeader();if(b){self.debug("[simplicite.req] Using basic auth header = "+b);h.Authorization=b}}axios.request({baseURL:self.parameters.url,url:path||"/",method:m,headers:h,timeout:self.timeout*1e3,withCredentials:true,data:data}).then(function(res){if(callback)callback.call(self,res.data,res.status,res.headers)}).catch(function(err){var s=err.response&&err.response.status?err.response.status:undefined;var e=err.response&&err.response.data?err.response.data:err;if(errorHandler)errorHandler.call(self,self.getError.call(self,e,s));else throw e})};this.getError=function(err,status){if(typeof err==="string")return{message:err,status:status||200};else if(err.response)return typeof err.response==="string"?{message:err.response,status:status||200}:err.response;else return err};this.parse=function(res,status){try{if(status!==200)return{type:"error",response:this.getError("HTTP status: "+status,status)};return typeof res==="object"?res:JSON.parse(res)}catch(e){return{type:"error",response:this.getError("Parsing error: "+e.message,status)}}};function _getHealth(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.healthpath+"&full="+!!opts.full,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite._getHealth] HTTP status = "+status+", response type = "+res);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getHealth=function(opts){var d=Q.defer();opts=opts||{};opts.error=function(e){var err=this.getError(e);d.reject(err)};_getHealth.call(this,function(health){d.resolve(health)},opts);return d.promise};function _login(callback,opts){var self=this;opts=opts||{};if((opts.username||opts.login)&&(opts.password||opts.pwd)){self.clear();self.username=opts.username||opts.login;self.password=opts.password||opts.pwd}else if(opts.authtoken||opts.authToken||opts.token){self.clear();self.authtoken=opts.authtoken||opts.authToken||opts.token}self.req.call(self,self.parameters.apppath+"?action=session",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.login] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.sessionid=r.response.id;self.debug("[simplicite.login] Session ID = "+self.sessionid);self.username=r.response.login;if(self.username)self.debug("[simplicite.login] Username = "+self.username);self.authtoken=r.response.authtoken;if(self.authtoken)self.debug("[simplicite.login] Auth token = "+self.authtoken);self.grant=Object.assign(new Grant,{login:r.response.login,userid:r.response.userid,firstname:r.response.firstanme,lastname:r.response.lastname,email:r.response.email});if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.login=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_login.call(this,function(res){d.resolve(res)},opts);return d.promise};function _logout(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=logout",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.logout] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.clear();if(callback)callback.call(self,r.response)}},function(e){if(e.status===401)self.authtoken=undefined;(opts.error?opts.error:self.error).call(self,e)})}this.logout=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_logout.call(this,function(res){d.resolve(res)},opts);return d.promise};this.grant=undefined;function _getGrant(callback,opts){var self=this;opts=opts||{};var p="&web=true";if(opts.inlinePicture||opts.picture)p+="&inline_picture="+(!!opts.inlinePicture||!!opts.picture);if(opts.includeTexts||opts.texts)p+="&texts="+(!!opts.includeTexts||!!opts.texts);self.req.call(self,self.parameters.apppath+"?action=getgrant"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getGrant] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.grant=Object.assign(new Grant,r.response);if(callback)callback.call(self,self.grant)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getGrant=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getGrant.call(this,function(grt){d.resolve(grt)},opts);return d.promise};function _changePassword(callback,pwd,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=setpassword&password="+encodeURIComponent(pwd),undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.changePassword] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.changePassword=function(pwd,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_changePassword.call(this,function(res){d.resolve(res)},pwd,opts);return d.promise};function _getAppInfo(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=getinfo",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getAppInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.appinfo=r.response;if(callback)callback.call(self,self.appinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getAppInfo=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getAppInfo.call(this,function(inf){d.resolve(inf)},opts);return d.promise};function _getSysInfo(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=sysinfo",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getSysInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.sysinfo=r.response;if(callback)callback.call(self,self.sysinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getSysInfo=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getSysInfo.call(this,function(inf){d.resolve(inf)},opts);return d.promise};function _getDevInfo(callback,module,opts){var self=this;opts=opts||{};var p="";if(module)p+="&module="+encodeURIComponent(module);self.req.call(self,self.parameters.apppath+"?action=devinfo"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getDevInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.devinfo=r.response;if(callback)callback.call(self,self.devinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getDevInfo=function(module,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getDevInfo.call(this,function(inf){d.resolve(inf)},module,opts);return d.promise};function _getNews(callback,opts){var self=this;opts=opts||{};var p="";if(opts.inlineImages)p+="&inline_images="+!!opts.inlineImages;self.req.call(self,self.parameters.apppath+"?action=news"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getNews] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.news=r.response;if(callback)callback.call(self,self.news)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getNews=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getNews.call(this,function(nws){d.resolve(nws)},opts);return d.promise};function _indexSearch(callback,request,object,opts){var self=this;opts=opts||{};var p="";if(opts.metadata===true)p+="&_md=true";if(opts.context)p+="&context="+encodeURIComponent(opts.context);self.req.call(self,self.parameters.apppath+"?action=indexsearch&request="+encodeURIComponent(request?request:"")+(object?"&object="+encodeURIComponent(object):"")+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.indexSearch] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.indexSearch=function(request,object,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_indexSearch.call(this,function(srs){d.resolve(srs)},request,object,opts);return d.promise};this.getBusinessObject=function(name,instance){var cacheKey=this.getBusinessObjectCacheKey(name,instance);var obj=businessObjectCache[cacheKey];if(!obj){obj=new BusinessObject(this,name,instance);businessObjectCache[cacheKey]=obj}return obj};this.getExternalObject=function(name){return new ExternalObject(this,name)};this.getResourceURL=function(code,type,object,objId){return this.parameters.url+this.parameters.respath+"?code="+encodeURIComponent(code)+"&type="+encodeURIComponent(type||"IMG")+(object?"&object="+encodeURIComponent(object):"")+(objId?"&objid="+encodeURIComponent(objId):"")+(this.authtoken?"_x_simplicite_authorization_="+encodeURIComponent(this.authtoken):"")}}function Grant(){this.getUserId=function(){return this.userid};this.getUsername=function(){return this.login};this.getLogin=this.getUsername;this.getLang=function(){return this.lang};this.getEmail=function(){return this.email};this.getFirstname=function(){return this.firstname};this.getFirstName=this.getFirstname;this.getLastname=function(){return this.lastname};this.getLastName=this.getLastname;this.getPictureURL=function(){if(this.picture)return"data:"+this.picture.mime+";base64,"+this.picture.content};this.hasResponsibility=function(group){return this.responsibilities&&this.responsibilities.indexOf(group)!==-1};this.T=function(code){return this.texts?this.texts[code]||"":""}}function Document(){this.getId=function(){return this.id};this.getMIMEType=function(){return this.mime};this.getMimeType=this.getMIMEType;this.setMIMEType=function(mime){this.mime=mime};this.setMimeType=this.setMIMEType;this.getFilename=function(){return this.filename};this.getFileName=this.getFilename;this.setFilename=function(filename){this.filename=filename};this.setFileName=this.setFilename;this.getContent=function(){return this.content};this.getThumbnail=function(){return this.thumbnail};function getBuffer(data){return buffer.Buffer.from(data,"base64")}this.getContentAsArrayBuffer=function(){return getBuffer(this.content).buffer};this.getThumbnailAsArrayBuffer=function(){return getBuffer(this.thumbnail||"").buffer};this.getContentAsText=function(encoding){return getBuffer(this.content).toString(encoding||"utf-8")};this.setContent=function(content){this.content=content};this.setContentFromText=function(content,encoding){this.content=buffer.Buffer.from(content,encoding||"utf-8").toString("base64")};this.getDataURL=function(thumbnail){if(this.content)return"data:"+this.mime+";base64,"+(thumbnail&&this.thumbnail?this.thumbnail:this.content)};this.getValue=function(){return JSON.parse(JSON.stringify(this))}}function BusinessObjectMetadata(name,instance){this.name=name;this.instance=instance;this.rowidfield=constants.DEFAULT_ROW_ID_NAME;this.label=name;this.help="";this.fields=[]}function BusinessObject(ses,name,instance){instance=instance||"js_"+name;this.session=ses;this.metadata=new BusinessObjectMetadata(name,instance);this.cacheKey=this.session.getBusinessObjectCacheKey(name,instance);this.path=this.session.parameters.objpath+"?object="+encodeURIComponent(name)+"&inst="+encodeURIComponent(instance);this.item={};this.filters={};this.list=[];function _getMetaData(callback,opts){var self=this;opts=opts||{};var p="";if(opts.context)p+="&context="+encodeURIComponent(opts.context);if(opts.contextParam)p+="&contextparam="+encodeURIComponent(opts.contextParam);self.session.req.call(self.session,self.path+"&action=metadata"+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getMetaData] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.metadata=r.response;if(callback)callback.call(self,self.metadata)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getMetaData=function(opts){var d=Q.defer();_getMetaData.call(this,function(metadata){d.resolve(metadata)},opts);return d.promise};this.getName=function(){return this.metadata.name};this.getInstance=function(){return this.metadata.instance};this.getLabel=function(){return this.metadata.label};this.getHelp=function(){return this.metadata.help};this.getFields=function(){return this.metadata.fields};this.getField=function(fieldName){var n=0;var fs=this.getFields();while(n<fs.length&&fs[n].name!==fieldName)n++;if(n<fs.length)return fs[n]};this.getRowIdFieldName=function(){return this.metadata.rowidfield};this.getRowIdField=function(){return this.getField(this.getRowIdFieldName())};this.getLinks=function(){return this.metadata.links};this.getFieldType=function(field){if(typeof field==="string")field=this.getField(field);if(field)return field.type};this.getFieldLabel=function(field){if(typeof field==="string")field=this.getField(field);if(field)return field.label};this.getFieldValue=function(field,item){if(!item)item=this.item;if(field&&item){return item[typeof field==="string"?field:field.name]}};this.getFieldListValue=function(field,item){if(typeof field==="string")field=this.getField(field);var val=this.getFieldValue(field,item);return field&&field.listOfValues?this.getListValue(field.listOfValues,val):val};this.getFieldDataURL=function(field,item){if(typeof field!=="string")field=field.fullinput||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)return"data:"+val.mime+";base64,"+(val.content||val.thumbnail)};this.getFieldDocument=function(field,item){if(typeof field!=="string")field=field.fullinput||field.input||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)return Object.assign(new Document,val)};this.getFieldDocumentURL=function(field,item,thumbnail){if(typeof field!=="string")field=field.fullinput||field.input||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)val=val.id;if(val)return this.session.parameters.url+this.session.parameters.docpath+"?object="+encodeURIComponent(this.metadata.name)+"&inst="+encodeURIComponent(this.metadata.instance)+"&field="+encodeURIComponent(field)+"&row_id="+encodeURIComponent(this.getRowId(item))+"&doc_id="+encodeURIComponent(val)+(thumbnail?"&thumbnail=true":"")+(this.session.authtoken?"&_x_simplicite_authorization_="+encodeURIComponent(this.session.authtoken):"")};this.getListValue=function(list,code){if(list){for(var i=0;i<list.length;i++){var l=list[i];if(l.code===code)return l.value}}return code};this.setFieldValue=function(field,value,item){if(!item)item=this.item;if(field&&item){item[typeof field==="string"?field:field.name]=value instanceof Document?value.getValue():value}};this.isRowIdField=function(field){return!field.ref&&field.name===this.metadata.rowidfield};this.isTimestampField=function(field){var n=field.name;return!field.ref&&(n==="created_by"||n==="created_dt"||n==="updated_by"||n==="updated_dt")};function _getFilters(callback,opts){var self=this;opts=opts||{};var p="";if(opts.context)p+="&context="+encodeURIComponent(opts.context);if(opts.reset)p+="&reset="+!!opts.reset;self.session.req.call(self.session,self.path+"&action=filters"+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getFilters] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response;if(callback)callback.call(self,self.filters)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getFilters=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getFilters.call(this,function(filters){d.resolve(filters)},opts);return d.promise};function _getOptions(options){var opts="";if(options.context)opts+="&context="+encodeURIComponent(options.context);var id=options.inlineDocs||options.inlineDocuments||options.inlineImages;if(id)opts+="&inline_documents="+encodeURIComponent(id.join?id.join(","):id);var it=options.inlineThumbs||options.inlineThumbnails;if(it)opts+="&inline_thumbnails="+encodeURIComponent(it.join?it.join(","):it);var io=options.inlineObjs||options.inlineObjects;if(io)opts+="&inline_objects="+encodeURIComponent(io.join?io.join(","):io);return opts}function _getReqParams(data){var p="";if(!data)return p;var n=0;for(var i in data){var d=data[i]||"";if(d.name&&d.content){if(d.content.startsWith("data:"))d.content=d.content.replace(/data:.*;base64,/,"");p+=(n++!==0?"&":"")+i+"="+encodeURIComponent("id|"+(d.id?d.id:"0")+"|name|"+d.name+"|content|"+d.content)}else if(d.object&&d.row_id){p+=(n++!==0?"&":"")+i+"="+encodeURIComponent("object|"+d.object+"|row_id|"+d.row_id)}else if(d.sort){for(var j=0;j<d.length;j++)p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(d[j])}else{p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(d)}}return p}function _count(callback,filters,opts){var self=this;opts=opts||{};self.filters=filters||{};self.session.req.call(self.session,self.path+"&action=count",_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getCount] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.count=r.response.count;self.page=r.response.page>=0?r.response.page+1:undefined;self.maxpage=r.response.maxpage>=0?r.response.maxpage+1:undefined;self.list=[];if(callback)callback.call(self,self.count)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.count=function(filters,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_count.call(this,function(count){d.resolve(count)},filters,opts);return d.promise};this.getCount=this.count;function _search(callback,filters,opts){var self=this;opts=opts||{};var p=_getOptions(opts);if(opts.page>0)p+="&page="+(opts.page-1);if(opts.metadata===true)p+="&_md=true";if(opts.visible===true)p+="&_visible=true";self.filters=filters||{};self.session.req.call(self.session,self.path+"&action=search"+p,_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.search] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(res.meta)self.metadata=r.response.meta;self.count=r.response.count;self.page=r.response.page>=0?r.response.page+1:undefined;self.maxpage=r.response.maxpage>=0?r.response.maxpage+1:undefined;self.list=r.response.list;if(callback)callback.call(self,self.list)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.search=function(filters,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_search.call(this,function(list){d.resolve(list)},filters,opts);return d.promise};function _get(callback,rowId,opts){var self=this;opts=opts||{};var p=_getOptions(opts);var tv=opts.treeView;if(tv)p+="&treeview="+encodeURIComponent(tv);if(opts.fields){for(var i=0;i<opts.fields.length;i++){p+="&fields="+encodeURIComponent(opts.fields[i].replace(".","__"))}}if(opts.metadata)p+="&_md=true";if(opts.social)p+="&_social=true";self.session.req.call(self.session,self.path+"&action=get&"+self.metadata.rowidfield+"="+encodeURIComponent(rowId)+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.get] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(res.meta)self.metadata=r.response.meta;if(res.data)self.item=tv?r.response.data.item:r.response.data;else self.item=tv?r.response.item:r.response;if(callback)callback.call(self,tv?r.response:self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.get=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_get.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForCreate(callback,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_CREATE;_get.call(this,callback,this.session.constants.DEFAULT_ROW_ID,opts)}this.getForCreate=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForCreate.call(this,function(itm){d.resolve(itm)},opts);return d.promise};function _getForUpdate(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_UPDATE;_get.call(this,callback,rowId,opts)}this.getForUpdate=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForUpdate.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForCopy(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_COPY;_get.call(this,callback,rowId,opts)}this.getForCopy=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForCopy.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForDelete(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_CREATE;_get.call(this,callback,rowId,opts)}this.getForDelete=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForDelete.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};this.getRowId=function(item){item=item||this.item;if(item)return item[this.getRowIdFieldName()]};function _populate(callback,rowId,opts){var self=this;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=populate&"+self.metadata.rowidfield+"="+encodeURIComponent(rowId)+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.populate] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.populate=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_populate.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _save(callback,item,opts){if(item)this.item=item;var rowId=this.item[this.metadata.rowidfield];if(!rowId||rowId===constants.DEFAULT_ROW_ID)_create.call(this,callback,item,opts);else _update.call(this,callback,item,opts)}this.save=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_save.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _create(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=create"+p,_getReqParams(self.item),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.create] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response.data?r.response.data:r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.create=function(itm,opts){itm.row_id=this.session.constants.DEFAULT_ROW_ID;var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_create.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _update(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=update"+p,_getReqParams(self.item),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.update] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response.data?r.response.data:r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.update=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_update.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _del(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};self.session.req.call(self.session,self.path+"&action=delete&"+self.metadata.rowidfield+"="+encodeURIComponent(self.item[self.metadata.rowidfield]),undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.del] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=undefined;delete r.response.undoredo;if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.del=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_del.call(this,function(r){d.resolve(r)},itm,opts);return d.promise};function _action(callback,action,rowId,opts){var self=this;opts=opts||{};self.session.req.call(self.session,self.path+"&action="+encodeURIComponent(action)+(rowId?"&"+self.getRowIdFieldName()+"="+encodeURIComponent(rowId):""),_getReqParams(opts.parameters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.action("+action+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.action=function(action,rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_action.call(this,function(res){d.resolve(res)},action,rowId,opts);return d.promise};function _crosstab(callback,crosstab,opts){var self=this;opts=opts||{};if(opts.filters)self.filters=opts.filters;self.session.req.call(self.session,self.path+"&action=crosstab&crosstab="+encodeURIComponent(crosstab),_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.crosstab("+crosstab+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.crosstabdata=r.response;if(callback)callback.call(self,self.crosstabdata)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.crosstab=function(ctb,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_crosstab.call(this,function(res){d.resolve(res)},ctb,opts);return d.promise};function _print(callback,prt,rowId,opts){var self=this;opts=opts||{};if(opts.filters)self.filters=opts.filters;var p="";if(opts.all)p+="&all="+!!opts.all;if(opts.mailing)p+="&mailing="+!!opts.mailing;self.session.req.call(self.session,self.path+"&action=print&printtemplate="+encodeURIComponent(prt)+(rowId?"&"+self.getRowIdFieldName()+"="+encodeURIComponent(rowId):"")+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.print("+prt+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(callback)callback.call(self,Object.assign(new Document,r.response))}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.print=function(pt,rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_print.call(this,function(res){d.resolve(res)},pt,rowId,opts);return d.promise};function _setParameter(callback,param,value,opts){var self=this;opts=opts||{};var p={name:param};if(value)p.value=value;self.session.req.call(self.session,self.path+"&action=setparameter",_getReqParams(p),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.setParameter("+p.name+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.setParameter=function(param,value,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_setParameter.call(this,function(){d.resolve()},param,value,opts);return d.promise};function _getParameter(callback,param,opts){var self=this;opts=opts||{};var p={name:param};self.session.req.call(self.session,self.path+"&action=getparameter",_getReqParams(p),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getParameter("+p.name+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getParameter=function(param,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getParameter.call(this,function(value){d.resolve(value)},param,opts);return d.promise};this.getResourceURL=function(code,type){return this.session.getResourceURL(code,type,this.metadata.name,this.metadata.id)}}function ExternalObjectMetadata(name){this.name=name}function ExternalObject(ses,name){this.session=ses;this.metadata=new ExternalObjectMetadata(name);this.path=this.session.parameters.extpath+"/"+encodeURIComponent(name);this.getName=function(){return this.metadata.name};this.callParams=function(params){var p="";if(!params)return p;var n=0;for(var i in params){var v=params[i]||"";if(v.sort){for(var j=0;j<v.length;j++)p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(v[j])}else{p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(v)}}return p};function _call(callback,params,data,opts){var self=this;opts=opts||{};var p="";if(params)p="?"+self.callParams(params);var m=opts.method?opts.method:data?"post":"get";var h={};if(opts.contentType)h["Content-Type"]=opts.contentType;var b=self.session.getBearerTokenHeader();if(b){self.session.debug("[simplicite.ExternalObject.call] Using bearer token header = "+b);h["X-Simplicite-Authorization"]=b}else{b=self.session.getBasicAuthHeader();if(b){self.session.debug("[simplicite.ExternalObject.call] Using basic auth header = "+b);h.Authorization=b}}axios.request({baseURL:self.session.parameters.url,url:self.path+p,method:m,headers:h,timeout:self.session.timeout*1e3,withCredentials:true,data:data}).then(function(res){if(callback)callback.call(self,res.data,res.status,res.headers)}).catch(function(err){if(opts.error)opts.error.call(self,err);else throw err})}this.call=function(params,data,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_call.call(this,function(value){d.resolve(value)},params,data,opts);return d.promise}}module.exports={session:session,Session:Session,Grant:Grant,BusinessObject:BusinessObject,BusinessObjectMetadata:BusinessObjectMetadata,ExternalObject:ExternalObject};
+var Q=__webpack_require__(229);var axios=__webpack_require__(230);var buffer=__webpack_require__(89);var constants={DEFAULT_ROW_ID_NAME:"row_id",DEFAULT_ROW_ID:"0",CONTEXT_NONE:0,CONTEXT_SEARCH:1,CONTEXT_LIST:2,CONTEXT_CREATE:3,CONTEXT_COPY:4,CONTEXT_UPDATE:5,CONTEXT_DELETE:6,CONTEXT_GRAPH:7,CONTEXT_CROSSTAB:8,CONTEXT_PRINTTMPL:9,CONTEXT_UPDATEALL:10,CONTEXT_REFSELECT:11,CONTEXT_DATAMAPSELECT:12,CONTEXT_PREVALIDATE:13,CONTEXT_POSTVALIDATE:14,CONTEXT_STATETRANSITION:15,CONTEXT_EXPORT:16,CONTEXT_IMPORT:17,CONTEXT_ASSOCIATE:18,CONTEXT_PANELLIST:19,TYPE_ID:0,TYPE_INT:1,TYPE_FLOAT:2,TYPE_STRING:3,TYPE_DATE:4,TYPE_DATETIME:5,TYPE_TIME:6,TYPE_ENUM:7,TYPE_BOOLEAN:8,TYPE_PASSWORD:9,TYPE_URL:10,TYPE_HTML:11,TYPE_EMAIL:12,TYPE_LONG_STRING:13,TYPE_ENUM_MULTI:14,TYPE_REGEXP:15,TYPE_DOC:17,TYPE_FLOAT_EMPTY:18,TYPE_EXTFILE:19,TYPE_IMAGE:20,TYPE_NOTEPAD:21,TYPE_PHONENUM:22,TYPE_COLOR:23,TYPE_OBJECT:24,TYPE_GEOCOORDS:25,VIS_NOT:0,VIS_HIDDEN:0,VIS_LIST:1,VIS_FORM:2,VIS_BOTH:3,SEARCH_NONE:0,SEARCH_MONO:1,SEARCH_MULTI_CHECK:2,SEARCH_MULTI_LIST:3,SEARCH_PERIOD:4,TRUE:"1",FALSE:"0",ERRLEVEL_FATAL:1,ERRLEVEL_ERROR:2,ERRLEVEL_WARNING:3,RESOURCE_TYPE_IMAGE:"IMG",RESOURCE_TYPE_ICON:"ICO",RESOURCE_TYPE_STYLESHEET:"CSS",RESOURCE_TYPE_JAVASCRIPT:"JS"};function session(params){return new Session(params)}function Session(params){params=params||{};this.constants=constants;this.endpoint=params.endpoint||"api";this.log=params.logHandler||function(arg){console.log(arg)};this.info=params.infoHandle||function(arg){console.info(arg)};this.warn=params.warningHandler||function(arg){console.warn(arg)};this.error=params.errorHandler||function(arg){console.error(arg)};var _debug=!!params.debug;this.debug=params.debugHandler||function(arg){if(_debug)console.log(arg)};this.timeout=params.timeout||30;if(params.url){try{params.scheme=params.url.replace(/:.*$/,"");var u=params.url.replace(new RegExp("^"+params.scheme+"://"),"").split(":");if(u.length===1){params.host=u[0].replace(/\/.*$/,"");params.port=params.scheme==="http"?80:443;params.root=u[0].replace(new RegExp("^"+params.host+"/?"),"")}else{params.host=u[0];params.port=parseInt(u[1].replace(/\/.*$/,""),10);if(isNaN(params.port))throw new Error("Incorrect port");params.root=u[1].replace(new RegExp("^"+params.port+"/?"),"")}if(params.root==="/")params.root=""}catch(e){this.error("Unable to parse URL ["+params.url+"]: "+e.message);return}}var scheme=params.scheme||(params.port===443?"https":"http");if(scheme!=="http"&&scheme!=="https"){this.error("Incorrect scheme ["+params.scheme+"]");return}var host=params.host||"localhost";var port=params.port||8080;var root=params.root||"";if(root==="/")root="";var url=scheme+"://"+host;if(scheme==="http"&&port!=80||scheme==="https"&&port!=443)url+=":"+port;if(root!=="")url+=root.startsWith("/")?root:"/"+root;this.debug("[simplicite] Base URL = "+url);var ep=this.endpoint=="public"?"":"/"+this.endpoint;this.parameters={scheme:scheme,host:host,port:port,root:root,url:url,healthpath:(ep=="/ui"?ep:"")+"/health?format=json",apppath:ep+"/json/app",objpath:ep+"/json/obj",extpath:ep+"/ext",docpath:ep+"/raw/document",respath:"/resource"};this.username=params.username||params.login;this.setUsername=function(usr){this.username=usr};this.password=params.password||params.pwd;this.setPassword=function(pwd){this.password=pwd};this.authtoken=params.authtoken||params.authToken||params.token;this.setAuthToken=function(tkn){this.authtoken=tkn};var businessObjectCache={};this.getBusinessObjectCacheKey=function(name,instance){return name+":"+(instance||"js_"+name)};this.clear=function(){this.username=undefined;this.password=undefined;this.authtoken=undefined;this.sessionid=undefined;this.grant=undefined;this.appinfo=undefined;this.sysinfo=undefined;this.devinfo=undefined;this.userinfo=undefined;businessObjectCache={}};this.getBasicAuthHeader=function(){return this.username&&this.password?"Basic "+buffer.Buffer.from(this.username+":"+this.password).toString("base64"):undefined};this.getBearerTokenHeader=function(){return this.authtoken?"Bearer "+this.authtoken:undefined};this.req=function(path,data,callback,errorHandler){var self=this;var m=data?"post":"get";var h={};if(data)h["Content-Type"]="application/x-www-form-urlencoded; charset=utf-8";var b=self.getBearerTokenHeader();if(b){self.debug("[simplicite.req] Using bearer token header = "+b);h["X-Simplicite-Authorization"]=b}else{b=self.getBasicAuthHeader();if(b){self.debug("[simplicite.req] Using basic auth header = "+b);h.Authorization=b}}axios.request({baseURL:self.parameters.url,url:path||"/",method:m,headers:h,timeout:self.timeout*1e3,withCredentials:true,data:data}).then(function(res){if(callback)callback.call(self,res.data,res.status,res.headers)}).catch(function(err){var s=err.response&&err.response.status?err.response.status:undefined;var e=err.response&&err.response.data?err.response.data:err;if(errorHandler)errorHandler.call(self,self.getError.call(self,e,s));else throw e})};this.getError=function(err,status){if(typeof err==="string")return{message:err,status:status||200};else if(err.response)return typeof err.response==="string"?{message:err.response,status:status||200}:err.response;else return err};this.parse=function(res,status){try{if(status!==200)return{type:"error",response:this.getError("HTTP status: "+status,status)};return typeof res==="object"?res:JSON.parse(res)}catch(e){return{type:"error",response:this.getError("Parsing error: "+e.message,status)}}};function _getHealth(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.healthpath+"&full="+!!opts.full,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite._getHealth] HTTP status = "+status+", response type = "+res);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getHealth=function(opts){var d=Q.defer();opts=opts||{};opts.error=function(e){var err=this.getError(e);d.reject(err)};_getHealth.call(this,function(health){d.resolve(health)},opts);return d.promise};function _login(callback,opts){var self=this;opts=opts||{};if((opts.username||opts.login)&&(opts.password||opts.pwd)){self.clear();self.username=opts.username||opts.login;self.password=opts.password||opts.pwd}else if(opts.authtoken||opts.authToken||opts.token){self.clear();self.authtoken=opts.authtoken||opts.authToken||opts.token}self.req.call(self,self.parameters.apppath+"?action=session",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.login] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.sessionid=r.response.id;self.debug("[simplicite.login] Session ID = "+self.sessionid);self.username=r.response.login;if(self.username)self.debug("[simplicite.login] Username = "+self.username);self.authtoken=r.response.authtoken;if(self.authtoken)self.debug("[simplicite.login] Auth token = "+self.authtoken);self.grant=Object.assign(new Grant,{login:r.response.login,userid:r.response.userid,firstname:r.response.firstanme,lastname:r.response.lastname,email:r.response.email});if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.login=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_login.call(this,function(res){d.resolve(res)},opts);return d.promise};function _logout(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=logout",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.logout] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.clear();if(callback)callback.call(self,r.response)}},function(e){if(e.status===401)self.authtoken=undefined;(opts.error?opts.error:self.error).call(self,e)})}this.logout=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_logout.call(this,function(res){d.resolve(res)},opts);return d.promise};this.grant=undefined;function _getGrant(callback,opts){var self=this;opts=opts||{};var p="&web=true";if(opts.inlinePicture||opts.picture)p+="&inline_picture="+(!!opts.inlinePicture||!!opts.picture);if(opts.includeTexts||opts.texts)p+="&texts="+(!!opts.includeTexts||!!opts.texts);self.req.call(self,self.parameters.apppath+"?action=getgrant"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getGrant] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.grant=Object.assign(new Grant,r.response);if(callback)callback.call(self,self.grant)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getGrant=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getGrant.call(this,function(grt){d.resolve(grt)},opts);return d.promise};function _changePassword(callback,pwd,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=setpassword&password="+encodeURIComponent(pwd),undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.changePassword] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.changePassword=function(pwd,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_changePassword.call(this,function(res){d.resolve(res)},pwd,opts);return d.promise};function _getAppInfo(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=getinfo",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getAppInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.appinfo=r.response;if(callback)callback.call(self,self.appinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getAppInfo=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getAppInfo.call(this,function(inf){d.resolve(inf)},opts);return d.promise};function _getSysInfo(callback,opts){var self=this;opts=opts||{};self.req.call(self,self.parameters.apppath+"?action=sysinfo",undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getSysInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.sysinfo=r.response;if(callback)callback.call(self,self.sysinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getSysInfo=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getSysInfo.call(this,function(inf){d.resolve(inf)},opts);return d.promise};function _getDevInfo(callback,module,opts){var self=this;opts=opts||{};var p="";if(module)p+="&module="+encodeURIComponent(module);self.req.call(self,self.parameters.apppath+"?action=devinfo"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getDevInfo] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.devinfo=r.response;if(callback)callback.call(self,self.devinfo)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getDevInfo=function(module,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getDevInfo.call(this,function(inf){d.resolve(inf)},module,opts);return d.promise};function _getNews(callback,opts){var self=this;opts=opts||{};var p="";if(opts.inlineImages)p+="&inline_images="+!!opts.inlineImages;self.req.call(self,self.parameters.apppath+"?action=news"+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.getNews] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{self.news=r.response;if(callback)callback.call(self,self.news)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.getNews=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getNews.call(this,function(nws){d.resolve(nws)},opts);return d.promise};function _indexSearch(callback,request,object,opts){var self=this;opts=opts||{};var p="";if(opts.metadata===true)p+="&_md=true";if(opts.context)p+="&context="+encodeURIComponent(opts.context);self.req.call(self,self.parameters.apppath+"?action=indexsearch&request="+encodeURIComponent(request?request:"")+(object?"&object="+encodeURIComponent(object):"")+p,undefined,function(res,status){var r=self.parse(res,status);self.debug("[simplicite.indexSearch] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.error).call(self,r.response)}else{if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.error).call(self,e)})}this.indexSearch=function(request,object,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_indexSearch.call(this,function(srs){d.resolve(srs)},request,object,opts);return d.promise};this.getBusinessObject=function(name,instance){var cacheKey=this.getBusinessObjectCacheKey(name,instance);var obj=businessObjectCache[cacheKey];if(!obj){obj=new BusinessObject(this,name,instance);businessObjectCache[cacheKey]=obj}return obj};this.getExternalObject=function(name){return new ExternalObject(this,name)};this.getResourceURL=function(code,type,object,objId){return this.parameters.url+this.parameters.respath+"?code="+encodeURIComponent(code)+"&type="+encodeURIComponent(type||"IMG")+(object?"&object="+encodeURIComponent(object):"")+(objId?"&objid="+encodeURIComponent(objId):"")+(this.authtoken?"_x_simplicite_authorization_="+encodeURIComponent(this.authtoken):"")}}function Grant(){this.getUserId=function(){return this.userid};this.getUsername=function(){return this.login};this.getLogin=this.getUsername;this.getLang=function(){return this.lang};this.getEmail=function(){return this.email};this.getFirstname=function(){return this.firstname};this.getFirstName=this.getFirstname;this.getLastname=function(){return this.lastname};this.getLastName=this.getLastname;this.getPictureURL=function(){if(this.picture)return"data:"+this.picture.mime+";base64,"+this.picture.content};this.hasResponsibility=function(group){return this.responsibilities&&this.responsibilities.indexOf(group)!==-1};this.T=function(code){return this.texts?this.texts[code]||"":""}}function Document(){this.getId=function(){return this.id};this.getMIMEType=function(){return this.mime};this.getMimeType=this.getMIMEType;this.setMIMEType=function(mime){this.mime=mime};this.setMimeType=this.setMIMEType;this.getFilename=function(){return this.filename};this.getFileName=this.getFilename;this.setFilename=function(filename){this.filename=filename};this.setFileName=this.setFilename;this.getContent=function(){return this.content};this.getThumbnail=function(){return this.thumbnail};function getBuffer(data){return buffer.Buffer.from(data,"base64")}this.getContentAsArrayBuffer=function(){return getBuffer(this.content).buffer};this.getThumbnailAsArrayBuffer=function(){return getBuffer(this.thumbnail||"").buffer};this.getContentAsText=function(encoding){return getBuffer(this.content).toString(encoding||"utf-8")};this.setContent=function(content){this.content=content};this.setContentFromText=function(content,encoding){this.content=buffer.Buffer.from(content,encoding||"utf-8").toString("base64")};this.getDataURL=function(thumbnail){if(this.content)return"data:"+this.mime+";base64,"+(thumbnail&&this.thumbnail?this.thumbnail:this.content)};this.getValue=function(){return JSON.parse(JSON.stringify(this))}}function BusinessObjectMetadata(name,instance){this.name=name;this.instance=instance;this.rowidfield=constants.DEFAULT_ROW_ID_NAME;this.label=name;this.help="";this.fields=[]}function BusinessObject(ses,name,instance){instance=instance||"js_"+name;this.session=ses;this.metadata=new BusinessObjectMetadata(name,instance);this.cacheKey=this.session.getBusinessObjectCacheKey(name,instance);this.path=this.session.parameters.objpath+"?object="+encodeURIComponent(name)+"&inst="+encodeURIComponent(instance);this.item={};this.filters={};this.list=[];function _getMetaData(callback,opts){var self=this;opts=opts||{};var p="";if(opts.context)p+="&context="+encodeURIComponent(opts.context);if(opts.contextParam)p+="&contextparam="+encodeURIComponent(opts.contextParam);self.session.req.call(self.session,self.path+"&action=metadata"+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getMetaData] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.metadata=r.response;if(callback)callback.call(self,self.metadata)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getMetaData=function(opts){var d=Q.defer();_getMetaData.call(this,function(metadata){d.resolve(metadata)},opts);return d.promise};this.getName=function(){return this.metadata.name};this.getInstance=function(){return this.metadata.instance};this.getLabel=function(){return this.metadata.label};this.getHelp=function(){return this.metadata.help};this.getFields=function(){return this.metadata.fields};this.getField=function(fieldName){var n=0;var fs=this.getFields();while(n<fs.length&&fs[n].name!==fieldName)n++;if(n<fs.length)return fs[n]};this.getRowIdFieldName=function(){return this.metadata.rowidfield};this.getRowIdField=function(){return this.getField(this.getRowIdFieldName())};this.getLinks=function(){return this.metadata.links};this.getFieldType=function(field){if(typeof field==="string")field=this.getField(field);if(field)return field.type};this.getFieldLabel=function(field){if(typeof field==="string")field=this.getField(field);if(field)return field.label};this.getFieldValue=function(field,item){if(!item)item=this.item;if(field&&item){return item[typeof field==="string"?field:field.name]}};this.getFieldListValue=function(field,item){if(typeof field==="string")field=this.getField(field);var val=this.getFieldValue(field,item);return field&&field.listOfValues?this.getListValue(field.listOfValues,val):val};this.getFieldDataURL=function(field,item){if(typeof field!=="string")field=field.fullinput||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)return"data:"+val.mime+";base64,"+(val.content||val.thumbnail)};this.getFieldDocument=function(field,item){if(typeof field!=="string")field=field.fullinput||field.input||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)return Object.assign(new Document,val)};this.getFieldDocumentURL=function(field,item,thumbnail){if(typeof field!=="string")field=field.fullinput||field.input||field.name;var val=this.getFieldValue(field,item);if(val&&val.mime)val=val.id;if(val)return this.session.parameters.url+this.session.parameters.docpath+"?object="+encodeURIComponent(this.metadata.name)+"&inst="+encodeURIComponent(this.metadata.instance)+"&field="+encodeURIComponent(field)+"&row_id="+encodeURIComponent(this.getRowId(item))+"&doc_id="+encodeURIComponent(val)+(thumbnail?"&thumbnail=true":"")+(this.session.authtoken?"&_x_simplicite_authorization_="+encodeURIComponent(this.session.authtoken):"")};this.getListValue=function(list,code){if(list){for(var i=0;i<list.length;i++){var l=list[i];if(l.code===code)return l.value}}return code};this.setFieldValue=function(field,value,item){if(!item)item=this.item;if(field&&item){item[typeof field==="string"?field:field.name]=value instanceof Document?value.getValue():value}};this.isRowIdField=function(field){return!field.ref&&field.name===this.metadata.rowidfield};this.isTimestampField=function(field){var n=field.name;return!field.ref&&(n==="created_by"||n==="created_dt"||n==="updated_by"||n==="updated_dt")};function _getFilters(callback,opts){var self=this;opts=opts||{};var p="";if(opts.context)p+="&context="+encodeURIComponent(opts.context);if(opts.reset)p+="&reset="+!!opts.reset;self.session.req.call(self.session,self.path+"&action=filters"+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getFilters] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response;if(callback)callback.call(self,self.filters)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getFilters=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getFilters.call(this,function(filters){d.resolve(filters)},opts);return d.promise};function _getOptions(options){var opts="";if(options.context)opts+="&context="+encodeURIComponent(options.context);var id=options.inlineDocs||options.inlineDocuments||options.inlineImages;if(id)opts+="&inline_documents="+encodeURIComponent(id.join?id.join(","):id);var it=options.inlineThumbs||options.inlineThumbnails;if(it)opts+="&inline_thumbnails="+encodeURIComponent(it.join?it.join(","):it);var io=options.inlineObjs||options.inlineObjects;if(io)opts+="&inline_objects="+encodeURIComponent(io.join?io.join(","):io);return opts}function _getReqParams(data){var p="";if(!data)return p;var n=0;for(var i in data){var d=data[i]||"";if(d.name&&d.content){if(d.content.startsWith("data:"))d.content=d.content.replace(/data:.*;base64,/,"");p+=(n++!==0?"&":"")+i+"="+encodeURIComponent("id|"+(d.id?d.id:"0")+"|name|"+d.name+"|content|"+d.content)}else if(d.object&&d.row_id){p+=(n++!==0?"&":"")+i+"="+encodeURIComponent("object|"+d.object+"|row_id|"+d.row_id)}else if(d.sort){for(var j=0;j<d.length;j++)p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(d[j])}else{p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(d)}}return p}function _count(callback,filters,opts){var self=this;opts=opts||{};self.filters=filters||{};self.session.req.call(self.session,self.path+"&action=count",_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getCount] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.count=r.response.count;self.page=r.response.page>=0?r.response.page+1:undefined;self.maxpage=r.response.maxpage>=0?r.response.maxpage+1:undefined;self.list=[];if(callback)callback.call(self,self.count)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.count=function(filters,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_count.call(this,function(count){d.resolve(count)},filters,opts);return d.promise};this.getCount=this.count;function _search(callback,filters,opts){var self=this;opts=opts||{};var p=_getOptions(opts);if(opts.page>0)p+="&page="+(opts.page-1);if(opts.metadata===true)p+="&_md=true";if(opts.visible===true)p+="&_visible=true";self.filters=filters||{};self.session.req.call(self.session,self.path+"&action=search"+p,_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.search] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(res.meta)self.metadata=r.response.meta;self.count=r.response.count;self.page=r.response.page>=0?r.response.page+1:undefined;self.maxpage=r.response.maxpage>=0?r.response.maxpage+1:undefined;self.list=r.response.list;if(callback)callback.call(self,self.list)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.search=function(filters,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_search.call(this,function(list){d.resolve(list)},filters,opts);return d.promise};function _get(callback,rowId,opts){var self=this;opts=opts||{};var p=_getOptions(opts);var tv=opts.treeView;if(tv)p+="&treeview="+encodeURIComponent(tv);if(opts.fields){for(var i=0;i<opts.fields.length;i++){p+="&fields="+encodeURIComponent(opts.fields[i].replace(".","__"))}}if(opts.metadata)p+="&_md=true";if(opts.social)p+="&_social=true";self.session.req.call(self.session,self.path+"&action=get&"+self.metadata.rowidfield+"="+encodeURIComponent(rowId)+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.get] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(res.meta)self.metadata=r.response.meta;if(res.data)self.item=tv?r.response.data.item:r.response.data;else self.item=tv?r.response.item:r.response;if(callback)callback.call(self,tv?r.response:self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.get=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_get.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForCreate(callback,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_CREATE;_get.call(this,callback,this.session.constants.DEFAULT_ROW_ID,opts)}this.getForCreate=function(opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForCreate.call(this,function(itm){d.resolve(itm)},opts);return d.promise};function _getForUpdate(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_UPDATE;_get.call(this,callback,rowId,opts)}this.getForUpdate=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForUpdate.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForCopy(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_COPY;_get.call(this,callback,rowId,opts)}this.getForCopy=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForCopy.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};function _getForDelete(callback,rowId,opts){opts=opts||{};delete opts.treeview;delete opts.fields;opts.context=constants.CONTEXT_CREATE;_get.call(this,callback,rowId,opts)}this.getForDelete=function(rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getForDelete.call(this,function(itm){d.resolve(itm)},rowId,opts);return d.promise};this.getRowId=function(item){item=item||this.item;if(item)return item[this.getRowIdFieldName()]};function _populate(callback,rowId,opts){var self=this;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=populate&"+self.metadata.rowidfield+"="+encodeURIComponent(rowId)+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.populate] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.populate=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_populate.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _save(callback,item,opts){if(item)this.item=item;var rowId=this.item[this.metadata.rowidfield];if(!rowId||rowId===constants.DEFAULT_ROW_ID)_create.call(this,callback,item,opts);else _update.call(this,callback,item,opts)}this.save=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_save.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _create(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=create"+p,_getReqParams(self.item),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.create] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response.data?r.response.data:r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.create=function(itm,opts){itm.row_id=this.session.constants.DEFAULT_ROW_ID;var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_create.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _update(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};var p=_getOptions(opts);self.session.req.call(self.session,self.path+"&action=update"+p,_getReqParams(self.item),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.update] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=r.response.data?r.response.data:r.response;if(callback)callback.call(self,self.item)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.update=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_update.call(this,function(i){d.resolve(i)},itm,opts);return d.promise};function _del(callback,item,opts){var self=this;if(item)self.item=item;opts=opts||{};self.session.req.call(self.session,self.path+"&action=delete&"+self.metadata.rowidfield+"="+encodeURIComponent(self.item[self.metadata.rowidfield]),undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.del] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.item=undefined;delete r.response.undoredo;if(callback)callback.call(self,r.response)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.del=function(itm,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_del.call(this,function(r){d.resolve(r)},itm,opts);return d.promise};function _action(callback,action,rowId,opts){var self=this;opts=opts||{};self.session.req.call(self.session,self.path+"&action="+encodeURIComponent(action)+(rowId?"&"+self.getRowIdFieldName()+"="+encodeURIComponent(rowId):""),_getReqParams(opts.parameters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.action("+action+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.action=function(action,rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_action.call(this,function(res){d.resolve(res)},action,rowId,opts);return d.promise};function _crosstab(callback,crosstab,opts){var self=this;opts=opts||{};if(opts.filters)self.filters=opts.filters;self.session.req.call(self.session,self.path+"&action=crosstab&crosstab="+encodeURIComponent(crosstab),_getReqParams(self.filters),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.crosstab("+crosstab+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{self.crosstabdata=r.response;if(callback)callback.call(self,self.crosstabdata)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.crosstab=function(ctb,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_crosstab.call(this,function(res){d.resolve(res)},ctb,opts);return d.promise};function _print(callback,prt,rowId,opts){var self=this;opts=opts||{};if(opts.filters)self.filters=opts.filters;var p="";if(opts.all)p+="&all="+!!opts.all;if(opts.mailing)p+="&mailing="+!!opts.mailing;self.session.req.call(self.session,self.path+"&action=print&printtemplate="+encodeURIComponent(prt)+(rowId?"&"+self.getRowIdFieldName()+"="+encodeURIComponent(rowId):"")+p,undefined,function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.print("+prt+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{if(callback)callback.call(self,Object.assign(new Document,r.response))}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.print=function(pt,rowId,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_print.call(this,function(res){d.resolve(res)},pt,rowId,opts);return d.promise};function _setParameter(callback,param,value,opts){var self=this;opts=opts||{};var p={name:param};if(value)p.value=value;self.session.req.call(self.session,self.path+"&action=setparameter",_getReqParams(p),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.setParameter("+p.name+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.setParameter=function(param,value,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_setParameter.call(this,function(){d.resolve()},param,value,opts);return d.promise};function _getParameter(callback,param,opts){var self=this;opts=opts||{};var p={name:param};self.session.req.call(self.session,self.path+"&action=getparameter",_getReqParams(p),function(res,status){var r=self.session.parse(res,status);this.debug("[simplicite.BusinessObject.getParameter("+p.name+")] HTTP status = "+status+", response type = "+r.type);if(r.type==="error"){(opts.error?opts.error:self.session.error).call(self,r.response)}else{var result=r.response.result;if(callback)callback.call(self,result)}},function(e){(opts.error?opts.error:self.session.error).call(self,e)})}this.getParameter=function(param,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_getParameter.call(this,function(value){d.resolve(value)},param,opts);return d.promise};this.getResourceURL=function(code,type){return this.session.getResourceURL(code,type,this.metadata.name,this.metadata.id)}}function ExternalObjectMetadata(name){this.name=name}function ExternalObject(ses,name){this.session=ses;this.metadata=new ExternalObjectMetadata(name);this.path=this.session.parameters.extpath+"/"+encodeURIComponent(name);this.getName=function(){return this.metadata.name};this.callParams=function(params){var p="";if(!params)return p;var n=0;for(var i in params){var v=params[i]||"";if(v.sort){for(var j=0;j<v.length;j++)p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(v[j])}else{p+=(n++!==0?"&":"")+i+"="+encodeURIComponent(v)}}return p};function _call(callback,params,data,opts){var self=this;opts=opts||{};var p="";if(params)p="?"+self.callParams(params);var m=opts.method?opts.method:data?"post":"get";var h={};if(opts.contentType)h["Content-Type"]=opts.contentType;var b=self.session.getBearerTokenHeader();if(b){self.session.debug("[simplicite.ExternalObject.call] Using bearer token header = "+b);h["X-Simplicite-Authorization"]=b}else{b=self.session.getBasicAuthHeader();if(b){self.session.debug("[simplicite.ExternalObject.call] Using basic auth header = "+b);h.Authorization=b}}axios.request({baseURL:self.session.parameters.url,url:self.path+p,method:m,headers:h,timeout:self.session.timeout*1e3,withCredentials:true,data:data}).then(function(res){if(callback)callback.call(self,res.data,res.status,res.headers)}).catch(function(err){if(opts.error)opts.error.call(self,err);else throw err})}this.call=function(params,data,opts){var d=Q.defer();opts=opts||{};opts.error=opts.error||function(e){d.reject(e)};_call.call(this,function(value){d.resolve(value)},params,data,opts);return d.promise}}module.exports={session:session,Session:Session,Grant:Grant,BusinessObject:BusinessObject,BusinessObjectMetadata:BusinessObjectMetadata,ExternalObject:ExternalObject};
 
 /***/ }),
 /* 229 */
@@ -31411,7 +31417,7 @@ module.exports = (flag, argv) => {
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"_from":"axios@latest","_id":"axios@0.21.4","_inBundle":false,"_integrity":"sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==","_location":"/axios","_phantomChildren":{},"_requested":{"type":"tag","registry":true,"raw":"axios@latest","name":"axios","escapedName":"axios","rawSpec":"latest","saveSpec":null,"fetchSpec":"latest"},"_requiredBy":["/simplicite"],"_resolved":"https://registry.npmjs.org/axios/-/axios-0.21.4.tgz","_shasum":"c67b90dc0568e5c1cf2b0b858c43ba28e2eda575","_spec":"axios@latest","_where":"D:\\\\repo\\\\Github\\\\SimpliciteSharing\\\\simplicite-vscode\\\\node_modules\\\\simplicite","author":{"name":"Matt Zabriskie"},"browser":{"./lib/adapters/http.js":"./lib/adapters/xhr.js"},"bugs":{"url":"https://github.com/axios/axios/issues"},"bundleDependencies":false,"bundlesize":[{"path":"./dist/axios.min.js","threshold":"5kB"}],"dependencies":{"follow-redirects":"^1.14.0"},"deprecated":false,"description":"Promise based HTTP client for the browser and node.js","devDependencies":{"coveralls":"^3.0.0","es6-promise":"^4.2.4","grunt":"^1.3.0","grunt-banner":"^0.6.0","grunt-cli":"^1.2.0","grunt-contrib-clean":"^1.1.0","grunt-contrib-watch":"^1.0.0","grunt-eslint":"^23.0.0","grunt-karma":"^4.0.0","grunt-mocha-test":"^0.13.3","grunt-ts":"^6.0.0-beta.19","grunt-webpack":"^4.0.2","istanbul-instrumenter-loader":"^1.0.0","jasmine-core":"^2.4.1","karma":"^6.3.2","karma-chrome-launcher":"^3.1.0","karma-firefox-launcher":"^2.1.0","karma-jasmine":"^1.1.1","karma-jasmine-ajax":"^0.1.13","karma-safari-launcher":"^1.0.0","karma-sauce-launcher":"^4.3.6","karma-sinon":"^1.0.5","karma-sourcemap-loader":"^0.3.8","karma-webpack":"^4.0.2","load-grunt-tasks":"^3.5.2","minimist":"^1.2.0","mocha":"^8.2.1","sinon":"^4.5.0","terser-webpack-plugin":"^4.2.3","typescript":"^4.0.5","url-search-params":"^0.10.0","webpack":"^4.44.2","webpack-dev-server":"^3.11.0"},"homepage":"https://axios-http.com","jsdelivr":"dist/axios.min.js","keywords":["xhr","http","ajax","promise","node"],"license":"MIT","main":"index.js","name":"axios","repository":{"type":"git","url":"git+https://github.com/axios/axios.git"},"scripts":{"build":"NODE_ENV=production grunt build","coveralls":"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js","examples":"node ./examples/server.js","fix":"eslint --fix lib/**/*.js","postversion":"git push && git push --tags","preversion":"npm test","start":"node ./sandbox/server.js","test":"grunt test","version":"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json"},"typings":"./index.d.ts","unpkg":"dist/axios.min.js","version":"0.21.4"}');
+module.exports = JSON.parse('{"_args":[["axios@0.21.4","C:\\\\Users\\\\Majax850G1\\\\repo\\\\github\\\\simplicite-vscode"]],"_from":"axios@0.21.4","_id":"axios@0.21.4","_inBundle":false,"_integrity":"sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==","_location":"/axios","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"axios@0.21.4","name":"axios","escapedName":"axios","rawSpec":"0.21.4","saveSpec":null,"fetchSpec":"0.21.4"},"_requiredBy":["/simplicite"],"_resolved":"https://registry.npmjs.org/axios/-/axios-0.21.4.tgz","_spec":"0.21.4","_where":"C:\\\\Users\\\\Majax850G1\\\\repo\\\\github\\\\simplicite-vscode","author":{"name":"Matt Zabriskie"},"browser":{"./lib/adapters/http.js":"./lib/adapters/xhr.js"},"bugs":{"url":"https://github.com/axios/axios/issues"},"bundlesize":[{"path":"./dist/axios.min.js","threshold":"5kB"}],"dependencies":{"follow-redirects":"^1.14.0"},"description":"Promise based HTTP client for the browser and node.js","devDependencies":{"coveralls":"^3.0.0","es6-promise":"^4.2.4","grunt":"^1.3.0","grunt-banner":"^0.6.0","grunt-cli":"^1.2.0","grunt-contrib-clean":"^1.1.0","grunt-contrib-watch":"^1.0.0","grunt-eslint":"^23.0.0","grunt-karma":"^4.0.0","grunt-mocha-test":"^0.13.3","grunt-ts":"^6.0.0-beta.19","grunt-webpack":"^4.0.2","istanbul-instrumenter-loader":"^1.0.0","jasmine-core":"^2.4.1","karma":"^6.3.2","karma-chrome-launcher":"^3.1.0","karma-firefox-launcher":"^2.1.0","karma-jasmine":"^1.1.1","karma-jasmine-ajax":"^0.1.13","karma-safari-launcher":"^1.0.0","karma-sauce-launcher":"^4.3.6","karma-sinon":"^1.0.5","karma-sourcemap-loader":"^0.3.8","karma-webpack":"^4.0.2","load-grunt-tasks":"^3.5.2","minimist":"^1.2.0","mocha":"^8.2.1","sinon":"^4.5.0","terser-webpack-plugin":"^4.2.3","typescript":"^4.0.5","url-search-params":"^0.10.0","webpack":"^4.44.2","webpack-dev-server":"^3.11.0"},"homepage":"https://axios-http.com","jsdelivr":"dist/axios.min.js","keywords":["xhr","http","ajax","promise","node"],"license":"MIT","main":"index.js","name":"axios","repository":{"type":"git","url":"git+https://github.com/axios/axios.git"},"scripts":{"build":"NODE_ENV=production grunt build","coveralls":"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js","examples":"node ./examples/server.js","fix":"eslint --fix lib/**/*.js","postversion":"git push && git push --tags","preversion":"npm test","start":"node ./sandbox/server.js","test":"grunt test","version":"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json"},"typings":"./index.d.ts","unpkg":"dist/axios.min.js","version":"0.21.4"}');
 
 /***/ }),
 /* 263 */
@@ -31888,7 +31894,7 @@ class CompletionHandler {
             try {
                 if (vscode_1.window.activeTextEditor === undefined)
                     throw 'No active text editor, cannot handle completion';
-                this.currentPagePath = (0, utils_1.crossPlatformPath)(vscode_1.window.activeTextEditor.document.uri.path);
+                this.currentPagePath = utils_1.crossPlatformPath(vscode_1.window.activeTextEditor.document.uri.path);
                 this.fileName = this.getFileNameFromPath(this.currentPagePath);
                 this.currentWorkspace = this.getWorkspaceFromFileUri(vscode_1.window.activeTextEditor.document.uri);
                 if (this.currentWorkspace)
@@ -31937,7 +31943,7 @@ class CompletionHandler {
             try {
                 if (event !== undefined) {
                     if (event.document.uri.path.includes('.java')) {
-                        self.currentPagePath = (0, utils_1.crossPlatformPath)(event.document.fileName);
+                        self.currentPagePath = utils_1.crossPlatformPath(event.document.fileName);
                         self.currentWorkspace = self.getWorkspaceFromFileUri(event.document.uri);
                         if (self.currentWorkspace)
                             self.instanceUrl = self.request.moduleHandler.getModuleUrlFromWorkspacePath(self.currentWorkspace);
@@ -31976,15 +31982,16 @@ class CompletionHandler {
     }
     getWorkspaceFromFileUri(uri) {
         try {
-            return (0, utils_1.crossPlatformPath)(vscode_1.workspace.getWorkspaceFolder(uri).uri.path);
+            return utils_1.crossPlatformPath(vscode_1.workspace.getWorkspaceFolder(uri).uri.path);
         }
         catch (e) {
             Log_1.logger.warn(e);
         }
     }
     getFileNameFromPath(filePath) {
-        if (filePath === undefined)
+        if (filePath === undefined) {
             throw 'Cannot identify the open file';
+        }
         try {
             const decomposedPath = filePath.split('/');
             return decomposedPath[decomposedPath.length - 1].replace('.java', '');
@@ -32169,8 +32176,9 @@ const logoutFromModuleCommand = function (request) {
                     placeHolder: 'module name',
                     title: 'Simplicite: Type the name of the module'
                 });
-                if (!input)
+                if (!input) {
                     throw 'Simplicite: Action canceled';
+                }
                 yield request.specificLogout(input);
             }
             catch (e) {
@@ -32189,8 +32197,9 @@ const logInInstanceCommand = function (request) {
                     placeHolder: 'module name',
                     title: 'Simplicite: Type the name of the module'
                 });
-                if (!moduleName)
+                if (!moduleName) {
                     throw 'Simplicite: Action canceled';
+                }
                 let flag = false;
                 let module;
                 try {
@@ -32200,8 +32209,9 @@ const logInInstanceCommand = function (request) {
                             flag = true;
                         }
                     }
-                    if (module === undefined)
+                    if (module === undefined) {
                         throw '';
+                    }
                 }
                 catch (e) {
                     for (let moduleLoop of request.moduleHandler.getModules()) {
@@ -32211,10 +32221,12 @@ const logInInstanceCommand = function (request) {
                         }
                     }
                 }
-                if (module)
+                if (module) {
                     yield request.loginTokenOrCredentials(module);
-                if (!flag)
+                }
+                if (!flag) {
                     throw `Simplicite: There is no module ${moduleName} in your current workspace`;
+                }
             }
             catch (e) {
                 Log_1.logger.error(e);
@@ -32241,8 +32253,9 @@ const compileWorkspaceCommand = function (request) {
 exports.compileWorkspaceCommand = compileWorkspaceCommand;
 const fieldToClipBoardCommand = function () {
     return vscode_1.commands.registerCommand('simplicite-vscode.fieldToClipBoard', element => {
-        if (element !== undefined)
+        if (element !== undefined) {
             copyToClipBoard(element);
+        }
     });
 };
 exports.fieldToClipBoardCommand = fieldToClipBoardCommand;
@@ -32779,7 +32792,7 @@ if (false) {}
 
 
 
-var buffer = __webpack_require__(84)
+var buffer = __webpack_require__(89)
 var Buffer = buffer.Buffer
 
 var safer = {}
@@ -35143,7 +35156,7 @@ module.exports = JSON.parse('[["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕�
 "use strict";
 
 
-var Buffer = __webpack_require__(84).Buffer,
+var Buffer = __webpack_require__(89).Buffer,
     Transform = __webpack_require__(80).Transform;
 
 
@@ -35270,7 +35283,7 @@ IconvLiteDecoderStream.prototype.collect = function(cb) {
 
 "use strict";
 
-var Buffer = __webpack_require__(84).Buffer;
+var Buffer = __webpack_require__(89).Buffer;
 // Note: not polyfilled with safer-buffer on a purpose, as overrides Buffer
 
 // == Extend Node primitives to use iconv-lite =================================
@@ -35303,7 +35316,7 @@ module.exports = function (iconv) {
         }
 
         // -- SlowBuffer -----------------------------------------------------------
-        var SlowBuffer = __webpack_require__(84).SlowBuffer;
+        var SlowBuffer = __webpack_require__(89).SlowBuffer;
 
         original.SlowBufferToString = SlowBuffer.prototype.toString;
         SlowBuffer.prototype.toString = function(encoding, start, end) {
@@ -35466,7 +35479,7 @@ module.exports = function (iconv) {
 
         delete Buffer.isNativeEncoding;
 
-        var SlowBuffer = __webpack_require__(84).SlowBuffer;
+        var SlowBuffer = __webpack_require__(89).SlowBuffer;
 
         SlowBuffer.prototype.toString = original.SlowBufferToString;
         SlowBuffer.prototype.write = original.SlowBufferWrite;
@@ -35548,8 +35561,9 @@ class BarItem {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const simpliciteExtension = vscode_1.extensions.getExtension(constant_1.EXTENSION_ID);
-                if (simpliciteExtension === undefined)
+                if (simpliciteExtension === undefined) {
                     throw '';
+                }
                 const commandList = simpliciteExtension.packageJSON.contributes.commands;
                 const commandQuickPick = this.commandListQuickPick(commandList);
                 const target = yield vscode_1.window.showQuickPick(commandQuickPick);
@@ -35573,22 +35587,24 @@ class BarItem {
     }
     markdownGenerator(fileList, modules, connectedInstancesUrl) {
         return this.fileListMarkdown(fileList) + '\n\n---\n\n'
-            + this.URLmodulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n'
+            + this.urlModulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n'
             + this.modulesMarkdown(modules, connectedInstancesUrl);
     }
     fileListMarkdown(fileList) {
         let fileMarkdown = 'Modified files:\n\n';
-        if (fileList.length === 0)
+        if (fileList.length === 0) {
             return fileMarkdown + '- none';
+        }
         for (let file of fileList) {
             fileMarkdown += '- ' + this.fileName(file.filePath) + '\n\n';
         }
         return fileMarkdown;
     }
-    URLmodulesMarkdown(modules, connectedInstancesUrl) {
+    urlModulesMarkdown(modules, connectedInstancesUrl) {
         let moduleMarkdown = 'Connected Simplicite\'s instances and their corresponding modules:\n\n';
-        if (connectedInstancesUrl.length === 0)
+        if (connectedInstancesUrl.length === 0) {
             return moduleMarkdown + '- none\n\n';
+        }
         for (let url of connectedInstancesUrl) {
             moduleMarkdown += url + ':\n';
             for (let module of modules) {
@@ -35600,8 +35616,9 @@ class BarItem {
         return moduleMarkdown;
     }
     modulesMarkdown(modules, connectedInstancesUrl) {
-        if (modules.length === 0)
+        if (modules.length === 0) {
             return '';
+        }
         let moduleMarkdown = '';
         let firstTime = false;
         for (let module of modules) {
@@ -35618,8 +35635,9 @@ class BarItem {
     fileName(filePath) {
         const fileList = filePath.split('/');
         console.log('Bar Item, test include');
-        if (fileList[fileList.length - 1].includes('.java'))
+        if (fileList[fileList.length - 1].includes('.java')) {
             return fileList[fileList.length - 1];
+        }
     }
     commandListQuickPick(commandList) {
         const preparedList = new Array();

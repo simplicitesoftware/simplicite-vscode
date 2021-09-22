@@ -34,7 +34,9 @@ export class BarItem {
     async quickPickEntry () { // entry point called by command
         try {
             const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
-            if (simpliciteExtension === undefined) throw '';
+            if (simpliciteExtension === undefined) {
+                throw '';
+            }
             const commandList = simpliciteExtension.packageJSON.contributes.commands;
             const commandQuickPick = this.commandListQuickPick(commandList);
             const target = await window.showQuickPick(commandQuickPick);
@@ -58,22 +60,26 @@ export class BarItem {
     
     markdownGenerator (fileList: Array<File>, modules: Array<Module>, connectedInstancesUrl: Array<string>) {
         return this.fileListMarkdown(fileList) + '\n\n---\n\n' 
-        + this.URLmodulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n' 
+        + this.urlModulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n' 
         + this.modulesMarkdown(modules, connectedInstancesUrl);
     }
 
     fileListMarkdown (fileList: Array<File>) {
         let fileMarkdown = 'Modified files:\n\n';
-        if (fileList.length === 0) return fileMarkdown + '- none';
+        if (fileList.length === 0) {
+            return fileMarkdown + '- none';
+        }
         for (let file of fileList) {
             fileMarkdown += '- ' + this.fileName(file.filePath)+ '\n\n';
         }
         return fileMarkdown;
     }
 
-    URLmodulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
+    urlModulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
         let moduleMarkdown = 'Connected Simplicite\'s instances and their corresponding modules:\n\n';
-        if (connectedInstancesUrl.length === 0) return moduleMarkdown + '- none\n\n';
+        if (connectedInstancesUrl.length === 0) {
+            return moduleMarkdown + '- none\n\n';
+        }
         for (let url of connectedInstancesUrl) {
             moduleMarkdown += url + ':\n';
             for (let module of modules) {
@@ -86,7 +92,9 @@ export class BarItem {
     } 
 
     modulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
-        if (modules.length === 0) return '';
+        if (modules.length === 0) {
+            return '';
+        }
         let moduleMarkdown = '';
         let firstTime = false;
         for (let module of modules) {
@@ -105,7 +113,9 @@ export class BarItem {
     fileName (filePath: string) {
         const fileList = filePath.split('/');
         console.log('Bar Item, test include');
-        if (fileList[fileList.length - 1].includes('.java')) return fileList[fileList.length - 1]
+        if (fileList[fileList.length - 1].includes('.java')) {
+            return fileList[fileList.length - 1];
+        }
     }
 
     commandListQuickPick (commandList: Array<Command>) {

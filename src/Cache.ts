@@ -22,7 +22,9 @@ export class Cache {
                 returnValue = value; 
             }
         });
-        if (returnValue) return returnValue;
+        if (returnValue) {
+            return returnValue;
+        }
         throw 'Cache has malfunctionned';
     }
     

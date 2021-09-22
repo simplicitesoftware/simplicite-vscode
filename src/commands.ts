@@ -1,6 +1,5 @@
 'use strict';
 
-import { Module } from 'module';
 import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
@@ -40,7 +39,9 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager) 
                 placeHolder: 'module name',  
                 title: 'Simplicite: Type the name of the module'
             });
-            if (!input) throw 'Simplicite: Action canceled';
+            if (!input) {
+                throw 'Simplicite: Action canceled';
+            }
 			await request.specificLogout(input);
         } catch (e: any) {
 			logger.error(e);
@@ -55,7 +56,9 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                 placeHolder: 'module name',  
                 title: 'Simplicite: Type the name of the module'
             });
-            if (!moduleName) throw 'Simplicite: Action canceled';
+            if (!moduleName) {
+                throw 'Simplicite: Action canceled';
+            }
 			let flag = false;
             let module;
             try {
@@ -65,7 +68,9 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                         flag = true;
                     }
                 }
-                if (module === undefined) throw '';
+                if (module === undefined) {
+                    throw '';
+                }
             } catch (e) {
                 for (let moduleLoop of request.moduleHandler.getModules()) {
                     if (moduleLoop.getName() === moduleName) {
@@ -74,8 +79,12 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                     }
                 }
             }
-			if (module) await request.loginTokenOrCredentials(module);
-			if (!flag) throw `Simplicite: There is no module ${moduleName} in your current workspace`;
+			if (module) {
+                await request.loginTokenOrCredentials(module);
+            } 
+			if (!flag) {
+                throw `Simplicite: There is no module ${moduleName} in your current workspace`;
+            } 
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
@@ -97,6 +106,8 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) 
 
 export const fieldToClipBoardCommand = function () {
     return commands.registerCommand('simplicite-vscode.fieldToClipBoard', element => {
-        if (element !== undefined) copyToClipBoard(element);
+        if (element !== undefined) {
+            copyToClipBoard(element);
+        }
     });
 };
