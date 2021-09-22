@@ -54,7 +54,6 @@ export class CompletionHandler implements CompletionItemProvider {
 		} catch (e) {
 			logger.error(e);
 		}
-		
 	}
 
     provideCompletionItems(document: TextDocument, position: Position) {
