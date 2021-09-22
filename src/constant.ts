@@ -2,6 +2,7 @@
 
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { crossPlatformPath } from './utils';
 
 const THEIA_NAMES = [ 'Eclipse Theia', 'Theia Multi-Language Example' ]
 
@@ -24,14 +25,14 @@ if (process.platform === 'win32'){
     }
 }
 
-const TOKEN_SAVE_PATH = dir + 'simplicite-info.json';
-const FILES_SAVE_PATH = dir + 'simplicite-files.json';
-const LOGS_PATH = dir + 'simplicite.logs';
-const EXTENSION_ID = 'simpliciteExtensionTest.simplicite-vscode';
+export const TOKEN_SAVE_PATH = crossPlatformPath(dir + 'simplicite-info.json');
+export const FILES_SAVE_PATH = crossPlatformPath(dir + 'simplicite-files.json');
+export const LOGS_PATH = crossPlatformPath(dir + 'simplicite.logs');
+export const EXTENSION_ID = 'simpliciteExtensionTest.simplicite-vscode';
 
-export {
-    TOKEN_SAVE_PATH,
-    FILES_SAVE_PATH,
-    EXTENSION_ID,
-    LOGS_PATH
-};
+// export {
+//     TOKEN_SAVE_PATH,
+//     FILES_SAVE_PATH,
+//     EXTENSION_ID,
+//     LOGS_PATH
+// };

@@ -5,19 +5,15 @@ import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder } from 'v
 import * as fs from 'fs';
 import { File } from './File';
 import { Module } from './Module';
-const parseString = require('xml2js').parseStringPromise;
 import { crossPlatformPath } from './utils';
+import { TOKEN_SAVE_PATH, FILES_SAVE_PATH } from './constant';
+import { parseStringPromise } from 'xml2js';
 
 export class FileHandler {
-    tokenSavePath: string;
-    fileSavePath: string;
     fileList: Array<File>;
     constructor () {
-        this.tokenSavePath = crossPlatformPath(require('./constant').tokenSavePath);
-        this.fileSavePath = crossPlatformPath(require('./constant').fileSavePath);
         this.fileList = new Array();
     }
-
     async simpliciteInfoGenerator (token: string, appURL: string) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
         let toBeWrittenJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
@@ -30,7 +26,7 @@ export class FileHandler {
             }
         }
         toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-        this.saveJSONOnDisk(toBeWrittenJSON, this.tokenSavePath);
+        this.saveJSONOnDisk(toBeWrittenJSON, TOKEN_SAVE_PATH);
     }
 
     getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
@@ -60,7 +56,7 @@ export class FileHandler {
 
     deleteSimpliciteInfo () {
         try {
-            fs.unlinkSync(this.tokenSavePath);
+            fs.unlinkSync(TOKEN_SAVE_PATH);
         } catch (e: any) {
             logger.error(e);
         }
@@ -75,7 +71,7 @@ export class FileHandler {
                     newInfo.push(module);
                 }
             }
-            this.saveJSONOnDisk(newInfo, this.tokenSavePath);
+            this.saveJSONOnDisk(newInfo, TOKEN_SAVE_PATH);
         } catch (e: any) {
             throw e;
         }
@@ -83,7 +79,7 @@ export class FileHandler {
 
     getSimpliciteInfoContent () {
         try {
-            return JSON.parse(fs.readFileSync(this.tokenSavePath, 'utf8'));
+            return JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
         } catch (e: any) {
             throw e;
         }
@@ -144,7 +140,7 @@ export class FileHandler {
         const relativePattern = new RelativePattern(workspaceFolder, globPatern);
         const pom = await this.findFiles(relativePattern);
         try {
-            const res = await parseString(pom);
+            const res = await parseStringPromise(pom);
             console.log(res.project.properties[0]['simplicite.url'][0]);
             return res.project.properties[0]['simplicite.url'][0];
         } catch (e) {
@@ -166,7 +162,7 @@ export class FileHandler {
                     }
                 }
             }
-            this.saveJSONOnDisk(this.fileList, this.fileSavePath);
+            this.saveJSONOnDisk(this.fileList, FILES_SAVE_PATH);
             logger.info('File change detected');
         } catch (e: any) {
             logger.error(e);
@@ -175,7 +171,7 @@ export class FileHandler {
 
     getModifiedFilesOnStart () {
         try {
-            const jsonContent = require(this.fileSavePath);
+            const jsonContent = require(FILES_SAVE_PATH);
             for (let content of jsonContent) {
                 this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
@@ -186,7 +182,7 @@ export class FileHandler {
 
     readModifiedFiles () {
         try {
-            return this.readFileSync(this.fileSavePath);
+            return this.readFileSync(FILES_SAVE_PATH);
         } catch (e: any) {
             throw e;
         }
@@ -194,7 +190,7 @@ export class FileHandler {
 
     deleteModifiedFiles () {
         try {
-            fs.unlinkSync(this.fileSavePath);
+            fs.unlinkSync(FILES_SAVE_PATH);
         } catch (e: any) {
             logger.error(e);
         }

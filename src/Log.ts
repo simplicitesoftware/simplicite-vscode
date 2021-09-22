@@ -1,7 +1,7 @@
 'use strict';
 
-const { createLogger, transports, format } = require('winston');
-const { LOGS_PATH } = require('./constant');
+import { createLogger, transports, format } from 'winston';
+import { LOGS_PATH } from './constant'; 
 
 const customFormat = format.combine(format.timestamp(), format.printf((info: any) => {
     return `${info.timestamp} - [${info.level.toUpperCase().padEnd(7)}] - ${info.message}`;

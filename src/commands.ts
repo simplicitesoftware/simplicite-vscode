@@ -3,7 +3,7 @@
 import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-const copyToClipBoard = require('copy-paste').copy;
+import { copy } from 'copy-paste';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -107,7 +107,7 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) 
 export const fieldToClipBoardCommand = function () {
     return commands.registerCommand('simplicite-vscode.fieldToClipBoard', element => {
         if (element !== undefined) {
-            copyToClipBoard(element);
+            copy(element);
         }
     });
 };

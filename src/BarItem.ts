@@ -44,7 +44,7 @@ export class BarItem {
                 try {
                     await commands.executeCommand(target.commandId, this.request);
                 } catch (e) {
-                    logger.log(e + 'Error occured while executing command');
+                    logger.error(e + 'Error occured while executing command');
                 }
             }
         } catch(e) {
