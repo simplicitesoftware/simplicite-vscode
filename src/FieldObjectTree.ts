@@ -1,10 +1,20 @@
 'use strict';
 
-const { TreeItemCollapsibleState, EventEmitter, TreeItem } = require('vscode');
-const logger = require('./Log');
+import { SimpliciteAPIManager } from "./SimpliciteAPIManager";
+import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider } from 'vscode';
+import { logger } from './Log';
+import { Module } from "./Module";
 
-module.exports = class FieldObjectTree {
-    constructor (request) {
+interface FieldInfo {
+    moduleName: string;
+    objectFields: Array<any>;
+}
+
+export class FieldObjectTree implements TreeDataProvider<CustomItem> {
+    request: SimpliciteAPIManager;
+    _onDidChangeTreeData: EventEmitter<CustomItem>;
+    onDidChangeTreeData: Event<CustomItem>;
+    constructor (request: SimpliciteAPIManager) {
         this.request = request;
         this._onDidChangeTreeData = new EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -12,10 +22,10 @@ module.exports = class FieldObjectTree {
     
     async refresh() {
         this.request.moduleHandler.setModules(await this.request.fileHandler.getSimpliciteModules()); 
-        this._onDidChangeTreeData.fire();
+        this._onDidChangeTreeData.fire(new CustomItem('test', TreeItemCollapsibleState.None));
     }
 
-    fieldsIntoTreeItem (objectFieldInfo, element) {
+    fieldsIntoTreeItem (objectFieldInfo: Array<FieldInfo>, element?: string) {
         const fielditem = new Array();
         if (element === undefined) {
             for (let fieldLoop of objectFieldInfo) {
@@ -50,7 +60,7 @@ module.exports = class FieldObjectTree {
         return fielditem;
     }
 
-    async getFieldsOfAllModules (modules) {
+    async getFieldsOfAllModules (modules: Array<Module>) {
         const fieldList = new Array();
         for (let module of modules) {
             fieldList.push({ objectFields: await this.request.getBusinessObjectFields(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
@@ -58,22 +68,35 @@ module.exports = class FieldObjectTree {
         return fieldList;
     }
 
-    getTreeItem (element) {
+    getTreeItem (element: CustomItem): CustomItem {
         return element;
     }
 
-    async getChildren (element) {
+    async getChildren (element: CustomItem): Promise<Array<CustomItem>> {
         let label = undefined;
-        if (element) label = element.label;
+        if (element) {
+            label = element.label;
+        }
         try {
             const modules = this.request.moduleHandler.getModules();
-            if (modules.length === 0) throw '';
+            if (modules.length === 0) {
+                throw '';
+            }
             const objectFieldInfo = await this.getFieldsOfAllModules(modules);
             const fields = this.fieldsIntoTreeItem(objectFieldInfo, label);
             return Promise.resolve(fields);
         } catch (e) {
             logger.error(`${e}`);
-            return Promise.resolve([new TreeItem('Log in to get the object fields')]);
+            return Promise.resolve([new CustomItem('Log in to get the object fields', TreeItemCollapsibleState.None)]);
         }   
     }    
+}
+
+class CustomItem extends TreeItem {
+    constructor(
+        public readonly label: string,
+        public readonly collapsibleState: TreeItemCollapsibleState
+      ) {
+        super(label, collapsibleState);
+      }
 }

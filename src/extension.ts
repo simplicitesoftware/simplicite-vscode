@@ -1,21 +1,18 @@
 'use strict';
 
-const logger = require('./Log');
-const { window, languages, commands, workspace, ExtensionContext, env } = require('vscode');
-const { SimpliciteAPIManager } = require('./SimpliciteAPIManager');
-const { CompletionHandler } = require('./CompletionHandler');
-const { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } = require('./commands');
+import { logger } from './Log';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages } from 'vscode';
+import { SimpliciteAPIManager } from './SimpliciteAPIManager';
+import { CompletionHandler } from './CompletionHandler';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } from './commands';
+import { BarItem } from './BarItem';
 
-/**
- * @param {ExtensionContext} context
- */
-async function activate(context) {
-	// Api initialization
-	logger.info('Starting extension...');
-	logger.info('env appName: ' + env.appName);
-	let request = new SimpliciteAPIManager();
-	await request.init(context); // all the asynchronous affectation happens there
+export async function activate(context: ExtensionContext) {
+	logger.info('Starting extension on ' + env.appName);
+	const request = await SimpliciteAPIManager.build();
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
+
+	const barItem = await BarItem.build('Simplicite', context, request);
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	const loginAllModules = loginAllModulesCommand(request);
@@ -29,19 +26,19 @@ async function activate(context) {
 	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard);
 
 	// On save file detection
-	workspace.onDidSaveTextDocument(async (event) => {
+	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
-			await request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
-			request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
+			//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		}
-	})
+	});
 
 	request.fileHandler.getModifiedFilesOnStart();
-	request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+	//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	if(!workspace.getConfiguration('simplicite-vscode').get('disableAutoConnect')) {
 		try {
 			await request.loginHandler();
-			request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 			logger.info('Automatic authentication succeeded');
 		} catch (e) {
 			logger.error(e);
@@ -57,8 +54,8 @@ async function activate(context) {
 	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
 
 	// workspace handler
-	workspace.onDidChangeWorkspaceFolders(async (event) => { // The case where one folder is added and one removed should not happen
-		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
+		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			logger.info('added workspace');
@@ -74,10 +71,6 @@ async function activate(context) {
 			modulesLength = request.moduleHandler.moduleLength();
 		}
 		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());
-		request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
-}
-
-module.exports = {
-	activate: activate
 }

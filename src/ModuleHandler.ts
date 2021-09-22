@@ -1,11 +1,15 @@
 'use strict';
 
-class ModuleHandler {
+import { logger } from "./Log";
+import { Module } from "./Module";
+
+export class ModuleHandler {
+    modules: Array<Module>;
     constructor () {
         this.modules = new Array();
     }
 
-    setModules (modules) {
+    setModules (modules: Array<Module>) {
         this.modules = modules;
     }
     getModules () {
@@ -16,7 +20,7 @@ class ModuleHandler {
         return this.modules.length;
     }
 
-    spreadToken (instanceUrl, token) {
+    spreadToken (instanceUrl: string, token: string | null) {
         for (let module of this.modules) {
             if (module.getInstanceUrl() === instanceUrl) {
                 module.setToken(token);
@@ -27,36 +31,44 @@ class ModuleHandler {
     getDisconnectedModules () { // useful ?
         const disconnectedModules = new Array();
         for (let module of this.modules) {
-            if (!module.getToken()) disconnectedModules.push(module);
+            if (!module.getToken()) {
+                disconnectedModules.push(module);
+            }
         }
         return disconnectedModules;
     }
 
-    getConnectedInstancesUrl () {
+    getConnectedInstancesUrl (): Array<string> {
         const connectedInstances = new Array();
         for (let module of this.modules) {
-            if (module.getToken()) connectedInstances.push(module.getInstanceUrl());
+            if (module.getToken()) {
+                connectedInstances.push(module.getInstanceUrl());
+            }
         }
         return connectedInstances;
     }
 
-    getModuleUrlFromName (moduleName) {
+    getModuleUrlFromName (moduleName: string): string {
         for (let module of this.modules) {
             if (module.getName() === moduleName) {
                 return module.getInstanceUrl();
             }
         }
+        logger.error('Cannot get module url from name');
+        return '';
     }
 
-    getModuleNameFromUrl (instanceUrl) {
+    getModuleNameFromUrl (instanceUrl: string): string {
         for (let module of this.modules) {
             if (module.getInstanceUrl() === instanceUrl) {
                 return module.getName();
             }
         }
+        logger.error('Cannot get module name from url');
+        return '';
     }
 
-    getModuleUrlFromWorkspacePath (workspacePath) {
+    getModuleUrlFromWorkspacePath (workspacePath: string) {
         try {
             for (let module of this.modules) {
                 if (module.getWorkspaceFolderPath() === workspacePath) {
@@ -64,12 +76,8 @@ class ModuleHandler {
                 }
             }
         } catch (e) {
-            console.log(e);
+            logger.error(e);
         }
         
     }
-}
-
-module.exports = {
-    ModuleHandler: ModuleHandler
 }

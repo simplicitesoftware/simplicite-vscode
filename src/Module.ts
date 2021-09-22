@@ -1,7 +1,12 @@
 'use strict';
 
-class Module {
-    constructor (name, workspaceFolderName, workspaceFolderPath, instanceUrl, token) {
+export class Module {
+    name: string;
+    workspaceFolderName: string;
+    workspaceFolderPath: string;
+    instanceUrl: string;
+    token: string | null;
+    constructor (name: string, workspaceFolderName: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
         this.name = name;
         this.workspaceFolderName = workspaceFolderName;
         this.workspaceFolderPath = workspaceFolderPath;
@@ -9,42 +14,38 @@ class Module {
         this.token = token;
     }
 
-    setName (name) {
+    setName (name: string) {
         this.name = name;
     }
     getName () {
         return this.name;
     }
 
-    setWorkspaceFolderName (workspaceFolderName) {
+    setWorkspaceFolderName (workspaceFolderName: string) {
         this.workspaceFolderName = workspaceFolderName;
     }
     getWorkspaceFolderName () {
         return this.workspaceFolderName;
     }
 
-    setWorkspaceFolderPath (workspaceFolderPath) {
+    setWorkspaceFolderPath (workspaceFolderPath: string) {
         this.workspaceFolderPath = workspaceFolderPath; 
     }
     getWorkspaceFolderPath () {
         return this.workspaceFolderPath;
     }
 
-    setInstanceUrl (instanceUrl) {
+    setInstanceUrl (instanceUrl: string) {
         this.instanceUrl = instanceUrl;
     }
     getInstanceUrl () {
         return this.instanceUrl;
     }
 
-    setToken (token) {
+    setToken (token: string | null) {
         this.token = token;
     }
     getToken () {
         return this.token;
     }
-}
-
-module.exports = {
-    Module: Module
 }
