@@ -12,17 +12,18 @@ interface FieldInfo {
 
 export class FieldObjectTree implements TreeDataProvider<CustomItem> {
     request: SimpliciteAPIManager;
-    _onDidChangeTreeData: EventEmitter<CustomItem>;
-    onDidChangeTreeData: Event<CustomItem>;
+    private _onDidChangeTreeData: EventEmitter<CustomItem | undefined | null | void>;
+    readonly onDidChangeTreeData: Event<CustomItem | undefined | null | void>;
     constructor (request: SimpliciteAPIManager) {
         this.request = request;
-        this._onDidChangeTreeData = new EventEmitter();
+        this._onDidChangeTreeData = new EventEmitter<CustomItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     }
-    
+
     async refresh() {
         this.request.moduleHandler.setModules(await this.request.fileHandler.getSimpliciteModules()); 
-        this._onDidChangeTreeData.fire(new CustomItem('test', TreeItemCollapsibleState.None));
+        this._onDidChangeTreeData.fire();
+        //new CustomItem('test', TreeItemCollapsibleState.None)
     }
 
     fieldsIntoTreeItem (objectFieldInfo: Array<FieldInfo>, element?: string) {
@@ -48,7 +49,7 @@ export class FieldObjectTree implements TreeDataProvider<CustomItem> {
                                     command: 'simplicite-vscode.fieldToClipBoard',
                                     title: 'Not a title',
                                     arguments: [field.name]
-                                }
+                                };
                                 fielditem.push(treeItem);
                             }
                             
@@ -80,7 +81,7 @@ export class FieldObjectTree implements TreeDataProvider<CustomItem> {
         try {
             const modules = this.request.moduleHandler.getModules();
             if (modules.length === 0) {
-                throw '';
+                throw new Error('');
             }
             const objectFieldInfo = await this.getFieldsOfAllModules(modules);
             const fields = this.fieldsIntoTreeItem(objectFieldInfo, label);

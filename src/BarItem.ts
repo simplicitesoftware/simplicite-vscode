@@ -15,27 +15,25 @@ export class BarItem {
         this.barItem.text = text;
         this.request = undefined;
     }
-
-    async init (context: ExtensionContext, request: SimpliciteAPIManager) {
-        this.request = request;
-        const commandId = 'simplicite-vscode.showSimpliciteCommands';
-        context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
-        this.barItem.command = commandId;
-    }
-
+    
     static async build(text: string, context: ExtensionContext, request: SimpliciteAPIManager) {
         const barItem = new BarItem(text);
         await barItem.init(context, request);
         return barItem;
     }
 
-    
+    private async init (context: ExtensionContext, request: SimpliciteAPIManager) {
+        this.request = request;
+        const commandId = 'simplicite-vscode.showSimpliciteCommands';
+        context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
+        this.barItem.command = commandId;
+    }
 
     async quickPickEntry () { // entry point called by command
         try {
             const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
             if (simpliciteExtension === undefined) {
-                throw '';
+                throw new Error('No extension id available');
             }
             const commandList = simpliciteExtension.packageJSON.contributes.commands;
             const commandQuickPick = this.commandListQuickPick(commandList);

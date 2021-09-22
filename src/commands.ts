@@ -7,8 +7,7 @@ import { copy } from 'copy-paste';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
-    await request.loginHandler();
-    //request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+        await request.loginHandler();
     });
 };
 export const applyChangesCommand = function (request: SimpliciteAPIManager) {
@@ -18,13 +17,11 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
 		} catch (e) {
 			logger.error(e);
 		}
-		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
 export const logoutCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logOut', function () {	
 		request.logout();
-		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
 export const connectedInstanceCommand = function (request: SimpliciteAPIManager) {
@@ -40,9 +37,10 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager) 
                 title: 'Simplicite: Type the name of the module'
             });
             if (!input) {
-                throw 'Simplicite: Action canceled';
+                throw new Error('Simplicite: Action canceled');
             }
 			await request.specificLogout(input);
+		    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
@@ -57,7 +55,7 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                 title: 'Simplicite: Type the name of the module'
             });
             if (!moduleName) {
-                throw 'Simplicite: Action canceled';
+                throw new Error('Simplicite: Action canceled');
             }
 			let flag = false;
             let module;
@@ -69,7 +67,7 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                     }
                 }
                 if (module === undefined) {
-                    throw '';
+                    throw new Error('error no module LogInInstanceCommand');
                 }
             } catch (e) {
                 for (let moduleLoop of request.moduleHandler.getModules()) {
@@ -83,13 +81,13 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                 await request.loginTokenOrCredentials(module);
             } 
 			if (!flag) {
-                throw `Simplicite: There is no module ${moduleName} in your current workspace`;
+                throw new Error(`Simplicite: There is no module ${moduleName} in your current workspace`);
             } 
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
         }
-		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
 export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) {

@@ -1,7 +1,7 @@
 'use strict';
 
 export class Cache {
-    itemCache: Map<string, number>;
+    private itemCache: Map<string, number>;
     constructor() {
         this.itemCache = new Map();
     }
@@ -25,7 +25,7 @@ export class Cache {
         if (returnValue) {
             return returnValue;
         }
-        throw 'Cache has malfunctionned';
+        throw new Error('Cache has malfunctionned');
     }
     
     addPair (key: string, value: number) {

@@ -1,5 +1,5 @@
 export class AppHandler {
-    appList: Map<string, any>;
+    private appList: Map<string, any>;
     constructor () {
         this.appList = new Map(); // Map (url, app), one entry for one instance (ex: one entry = one simplicite instance)
     }

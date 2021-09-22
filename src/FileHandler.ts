@@ -10,7 +10,7 @@ import { TOKEN_SAVE_PATH, FILES_SAVE_PATH } from './constant';
 import { parseStringPromise } from 'xml2js';
 
 export class FileHandler {
-    fileList: Array<File>;
+    private fileList: Array<File>;
     constructor () {
         this.fileList = new Array();
     }
@@ -115,14 +115,14 @@ export class FileHandler {
         let modules = new Array();
         try {
             if (workspace.workspaceFolders === undefined) {
-                throw 'No workspace detected';
+                throw new Error('No workspace detected');
             }
             for (let workspaceFolder of workspace.workspaceFolders) {
                 const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                 const relativePattern = new RelativePattern(workspaceFolder, globPatern);
                 const modulePom = await this.findFiles(relativePattern);
                 if (modulePom.length === 0) {
-                    throw 'No module found';
+                    throw new Error('No module found');
                 } 
                 const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
                 if (modulePom[0]) {
@@ -167,6 +167,18 @@ export class FileHandler {
         } catch (e: any) {
             logger.error(e);
         }
+    }
+
+    getFileList () {
+        return this.fileList;
+    }
+
+    resetFileList () {
+        this.fileList = new Array();
+    }
+
+    fileListLength () {
+        return this.fileList.length;
     }
 
     getModifiedFilesOnStart () {

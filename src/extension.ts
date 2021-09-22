@@ -11,9 +11,9 @@ export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
 	const request = await SimpliciteAPIManager.build();
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
-
 	const barItem = await BarItem.build('Simplicite', context, request);
-
+	request.setBarItem(barItem);
+	barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	const loginAllModules = loginAllModulesCommand(request);
 	const applyChanges = applyChangesCommand(request);
@@ -29,16 +29,14 @@ export async function activate(context: ExtensionContext) {
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
 			request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
-			//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		}
 	});
 
-	request.fileHandler.getModifiedFilesOnStart();
-	//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	if(!workspace.getConfiguration('simplicite-vscode').get('disableAutoConnect')) {
 		try {
 			await request.loginHandler();
-			//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 			logger.info('Automatic authentication succeeded');
 		} catch (e) {
 			logger.error(e);
@@ -47,15 +45,14 @@ export async function activate(context: ExtensionContext) {
 		
 	// Completion initialization 
 	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
-	const provider = new CompletionHandler(request);
-	await provider.asyncInit();
+	const provider = await CompletionHandler.build(request);
 	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
 	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
 	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
-		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			logger.info('added workspace');
@@ -71,6 +68,6 @@ export async function activate(context: ExtensionContext) {
 			modulesLength = request.moduleHandler.moduleLength();
 		}
 		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());
-		//request.barItem.show(request.fileHandler.fileList, request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 }

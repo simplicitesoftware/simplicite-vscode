@@ -15,7 +15,7 @@ export class CompletionHandler implements CompletionItemProvider {
 	fieldObjectTree: any; // peut changer
 	currentPagePath?: string;
 	fileName?: string;
-	currentWorkspace?: string
+	currentWorkspace?: string;
 	instanceUrl?: string;
     constructor (request: SimpliciteAPIManager) {
 		this.request = request;
@@ -25,16 +25,20 @@ export class CompletionHandler implements CompletionItemProvider {
 		window.registerTreeDataProvider(
 			'simpliciteObjectFields',
 			this.fieldObjectTree
-		)
+		);
 		commands.registerCommand('simplicite-vscode.refreshTreeView', async () => this.fieldObjectTree.refresh());
 		
 		if (request.moduleHandler.moduleLength() !== 0) {
 			try {
-				if (window.activeTextEditor === undefined) throw 'No active text editor, cannot handle completion';
+				if (window.activeTextEditor === undefined) {
+					throw new Error('No active text editor, cannot handle completion');
+				} 
 				this.currentPagePath = crossPlatformPath(window.activeTextEditor.document.uri.path);
 				this.fileName = this.getFileNameFromPath(this.currentPagePath);
 				this.currentWorkspace = this.getWorkspaceFromFileUri(window.activeTextEditor.document.uri);
-				if (this.currentWorkspace) this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
+				if (this.currentWorkspace) {
+					this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
+				}
 				this.activeEditorListener();
 			} catch (e) {
 				logger.error(e);
@@ -46,10 +50,18 @@ export class CompletionHandler implements CompletionItemProvider {
 			this.instanceUrl = undefined;
 		}	
     }
-
-	async asyncInit () {
+	
+	static async build (request: SimpliciteAPIManager) {
+		const completionHandler = new CompletionHandler(request);
+		await completionHandler.init();
+		return completionHandler;
+	}
+	
+	private async init () {
 		try {
-			if (window.activeTextEditor === undefined) throw 'No active text editor, cannot handle completion';
+			if (window.activeTextEditor === undefined) {
+				throw new Error ('No active text editor, cannot handle completion');
+			}
 			this.completionItemList = await this.completionItemRender();
 		} catch (e) {
 			logger.error(e);
@@ -79,7 +91,9 @@ export class CompletionHandler implements CompletionItemProvider {
 					if (event.document.uri.path.includes('.java')) {
 						self.currentPagePath = crossPlatformPath(event.document.fileName);
 						self.currentWorkspace = self.getWorkspaceFromFileUri(event.document.uri);
-						if (self.currentWorkspace) self.instanceUrl = self.request.moduleHandler.getModuleUrlFromWorkspacePath(self.currentWorkspace);
+						if (self.currentWorkspace) {
+							self.instanceUrl = self.request.moduleHandler.getModuleUrlFromWorkspacePath(self.currentWorkspace);
+						}
 						self.completionItemList = await self.completionItemRender();
 						//await self.request.getBusinessObjectFields(self.instanceUrl);
 					} else {
@@ -91,8 +105,7 @@ export class CompletionHandler implements CompletionItemProvider {
 			} catch (e) {
 				console.log(e);
 			}
-			
-		})
+		});
 	}
 
 	async completionItemRender () {
@@ -123,7 +136,7 @@ export class CompletionHandler implements CompletionItemProvider {
 
 	getFileNameFromPath (filePath?: string) {
 		if (filePath === undefined) {
-			throw 'Cannot identify the open file';
+			throw new Error('Cannot identify the open file');
 		}
 		try {
 			const decomposedPath = filePath.split('/');

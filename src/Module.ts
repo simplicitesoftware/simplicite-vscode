@@ -1,11 +1,11 @@
 'use strict';
 
 export class Module {
-    name: string;
-    workspaceFolderName: string;
-    workspaceFolderPath: string;
-    instanceUrl: string;
-    token: string | null;
+    private name: string;
+    private workspaceFolderName: string;
+    private workspaceFolderPath: string;
+    private instanceUrl: string;
+    private token: string | null;
     constructor (name: string, workspaceFolderName: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
         this.name = name;
         this.workspaceFolderName = workspaceFolderName;

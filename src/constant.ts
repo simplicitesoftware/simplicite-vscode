@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { crossPlatformPath } from './utils';
 
-const THEIA_NAMES = [ 'Eclipse Theia', 'Theia Multi-Language Example' ]
+const THEIA_NAMES = [ 'Eclipse Theia', 'Theia Multi-Language Example' ];
 
 let dir: string;
 
