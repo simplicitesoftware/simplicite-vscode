@@ -25,7 +25,8 @@
 		"onCommand:simplicite-vscode.logOutFromModule",
 		"onCommand:simplicite-vscode.logOutFromInstance",
 		"onCommand::simplicite-vscode.compileWorkspace",
-		"onCommand::simplicite-vscode.refreshTreeView"
+		"onCommand::simplicite-vscode.refreshTreeView",
+		"onView:simplicite-vscode.simpliciteObjectFields"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {

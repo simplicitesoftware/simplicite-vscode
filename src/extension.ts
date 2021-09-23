@@ -1,11 +1,12 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
 import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } from './commands';
 import { BarItem } from './BarItem';
+import { FieldObjectTree } from './FieldObjectTree';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
@@ -14,12 +15,19 @@ export async function activate(context: ExtensionContext) {
 	const barItem = await BarItem.build('Simplicite', context, request);
 	request.setBarItem(barItem);
 	barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+	const fieldObjectTree = new FieldObjectTree(request);
+	window.registerTreeDataProvider(
+		'simpliciteObjectFields',
+		fieldObjectTree
+	);
+	commands.registerCommand('simplicite-vscode.refreshTreeView', async () => await fieldObjectTree.refresh());
+
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	const loginAllModules = loginAllModulesCommand(request);
 	const applyChanges = applyChangesCommand(request);
 	const logout = logoutCommand(request);
 	const connectedInstance = connectedInstanceCommand(request);
-	const logoutFromModule = logoutFromModuleCommand(request);
+	const logoutFromModule = logoutFromModuleCommand(request, fieldObjectTree.refresh, fieldObjectTree);
 	const logInInstance = logInInstanceCommand(request);
 	const compileWorkspace = compileWorkspaceCommand(request);
 	const fieldToClipBoard = fieldToClipBoardCommand();
@@ -37,7 +45,6 @@ export async function activate(context: ExtensionContext) {
 		try {
 			await request.loginHandler();
 			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-			logger.info('Automatic authentication succeeded');
 		} catch (e) {
 			logger.error(e);
 		}
@@ -59,12 +66,13 @@ export async function activate(context: ExtensionContext) {
 			modulesLength = tempModules.length;
 			try {
 				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1]); // We need to connect with the module informations
+				await fieldObjectTree.refresh();
 			} catch(e) {
 				logger.error(e);
 			}
 		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module
 			logger.info('removed workspace');
-			await request.specificLogout(event.removed[0].name);
+			await request.specificLogout(event.removed[0].name, fieldObjectTree.refresh, fieldObjectTree);
 			modulesLength = request.moduleHandler.moduleLength();
 		}
 		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());

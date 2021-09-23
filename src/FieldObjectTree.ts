@@ -14,16 +14,18 @@ export class FieldObjectTree implements TreeDataProvider<CustomItem> {
     request: SimpliciteAPIManager;
     private _onDidChangeTreeData: EventEmitter<CustomItem | undefined | null | void>;
     readonly onDidChangeTreeData: Event<CustomItem | undefined | null | void>;
+    private modules: Array<Module>;
     constructor (request: SimpliciteAPIManager) {
         this.request = request;
+        this.modules = request.moduleHandler.getModules();
         this._onDidChangeTreeData = new EventEmitter<CustomItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     }
 
     async refresh() {
-        this.request.moduleHandler.setModules(await this.request.fileHandler.getSimpliciteModules()); 
+        this.setModules(await this.request.fileHandler.getSimpliciteModules()); 
         this._onDidChangeTreeData.fire();
-        //new CustomItem('test', TreeItemCollapsibleState.None)
+        //
     }
 
     fieldsIntoTreeItem (objectFieldInfo: Array<FieldInfo>, element?: string) {
@@ -63,10 +65,16 @@ export class FieldObjectTree implements TreeDataProvider<CustomItem> {
 
     async getFieldsOfAllModules (modules: Array<Module>) {
         const fieldList = new Array();
-        for (let module of modules) {
-            fieldList.push({ objectFields: await this.request.getBusinessObjectFields(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
+        try {
+            for (let module of modules) {
+                fieldList.push({ objectFields: await this.request.getBusinessObjectFields(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
+            }
+            return fieldList;
+        } catch (e) {
+            logger.error(e);
+            throw new Error('No fieldList, cannot getChildren in Tree View');
         }
-        return fieldList;
+        
     }
 
     getTreeItem (element: CustomItem): CustomItem {
@@ -79,18 +87,23 @@ export class FieldObjectTree implements TreeDataProvider<CustomItem> {
             label = element.label;
         }
         try {
-            const modules = this.request.moduleHandler.getModules();
-            if (modules.length === 0) {
+            if (this.modules.length === 0) {
                 throw new Error('');
             }
-            const objectFieldInfo = await this.getFieldsOfAllModules(modules);
+            const objectFieldInfo = await this.getFieldsOfAllModules(this.modules);
+            if (objectFieldInfo.length === 0) {
+                throw new Error('objectFieldInfo is not defined. ' + this.request.moduleHandler.getConnectedInstancesUrl().length + ' modules are connected');
+            }
             const fields = this.fieldsIntoTreeItem(objectFieldInfo, label);
             return Promise.resolve(fields);
         } catch (e) {
             logger.error(`${e}`);
             return Promise.resolve([new CustomItem('Log in to get the object fields', TreeItemCollapsibleState.None)]);
         }   
-    }    
+    }
+    private setModules (modules: Array<Module>) {
+        this.modules = modules;
+    }
 }
 
 class CustomItem extends TreeItem {
