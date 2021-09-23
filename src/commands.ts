@@ -4,6 +4,7 @@ import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { copy } from 'copy-paste';
+import { FieldObjectTree } from './FieldObjectTree';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -14,8 +15,12 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
 			await request.applyChangesHandler();
-		} catch (e) {
-			logger.error(e);
+		} catch (e: any) {
+            if (e !== '') {
+                window.showErrorMessage(e.message ? e.message : e);
+                logger.error(e);
+            }
+            
 		}
 	});
 };
@@ -29,7 +34,7 @@ export const connectedInstanceCommand = function (request: SimpliciteAPIManager)
 		request.connectedInstance();
 	});
 };
-export const logoutFromModuleCommand = function (request: SimpliciteAPIManager) {
+export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: FieldObjectTree) {
     return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
@@ -39,7 +44,7 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager) 
             if (!input) {
                 throw new Error('Simplicite: Action canceled');
             }
-			await request.specificLogout(input);
+			await request.specificLogout(input, fieldObjectTreeRefresh, fieldObjectTree);
 		    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
         } catch (e: any) {
 			logger.error(e);
@@ -93,8 +98,8 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
 export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
 		try {
-			await request.compileJava();
-            logger.info('Compilation succeeded');
+			const status = await request.compileJava();
+            logger.info(status);
 		} catch (e) {
             logger.error(e);
 		}

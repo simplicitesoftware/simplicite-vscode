@@ -32,10 +32,13 @@ export class FileHandler {
     getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
         try {
             const parsedJson = this.getSimpliciteInfoContent();
+            if (parsedJson === null) {
+                throw new Error('Cannot get token. No simplicite info content found');
+            }
             for (let diskInfo of parsedJson) {
                 for (let preparedModule of toBeWrittenJSON) {
-                    if (preparedModule.getName() === diskInfo.name && diskInfo.token && !preparedModule.getToken()) {
-                        preparedModule.setToken(diskInfo.token);
+                    if (preparedModule.getName() === diskInfo.getName() && diskInfo.getToken() && !preparedModule.getToken()) {
+                        preparedModule.setToken(diskInfo.getToken());
                     }
                 }
             }
@@ -66,8 +69,11 @@ export class FileHandler {
         let moduleArray = this.getSimpliciteInfoContent();
         try {
             let newInfo = [];
+            if (moduleArray === null) {
+                throw new Error('Error getting simplicite info content');
+            }
             for (let module of moduleArray) {
-                if (module.instanceUrl !== instanceUrl) {
+                if (module.getInstanceUrl() !== instanceUrl) {
                     newInfo.push(module);
                 }
             }
@@ -77,12 +83,18 @@ export class FileHandler {
         }
     }
 
-    getSimpliciteInfoContent () {
+    getSimpliciteInfoContent (): Array<Module> | null {
         try {
-            return JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
-        } catch (e: any) {
-            throw e;
+            const modules: Array<Module> = new Array();
+            const jsonContent = JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
+            for (let moduleJson of jsonContent) {
+                modules.push(new Module(moduleJson.name, moduleJson.workspaceFolderName, moduleJson.workspaceFolderPath, moduleJson.instanceUrl, moduleJson.token));
+            }
+            return modules;
+        } catch (e: unknown) {
+            return null;
         }
+        
     }
 
     readFileSync (path: string, encoding?: BufferEncoding | undefined) {
@@ -91,7 +103,7 @@ export class FileHandler {
         } catch (e: any) {
             throw e;
         }
-    } 
+    }
 
     async findFiles (globPatern: GlobPattern) {	
         let foundFile = new Array();
@@ -141,7 +153,6 @@ export class FileHandler {
         const pom = await this.findFiles(relativePattern);
         try {
             const res = await parseStringPromise(pom);
-            console.log(res.project.properties[0]['simplicite.url'][0]);
             return res.project.properties[0]['simplicite.url'][0];
         } catch (e) {
             logger.error(e);
@@ -163,7 +174,7 @@ export class FileHandler {
                 }
             }
             this.saveJSONOnDisk(this.fileList, FILES_SAVE_PATH);
-            logger.info('File change detected');
+            logger.info('File change detected on ' + crossPlatformPath(uri.path));
         } catch (e: any) {
             logger.error(e);
         }
@@ -182,13 +193,13 @@ export class FileHandler {
     }
 
     getModifiedFilesOnStart () {
-        try {
-            const jsonContent = require(FILES_SAVE_PATH);
+        try {   
+            const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
             for (let content of jsonContent) {
                 this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
             }
         } catch (e: any) {
-            logger.info('simplicite-file.json not found');
+            logger.info('simplicite-file.json not found: no modified files');
         }
     }
 

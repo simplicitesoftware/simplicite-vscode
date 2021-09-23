@@ -1,8 +1,7 @@
 'use strict';
 
-import { commands, CompletionItem, window, CompletionItemProvider, TextDocument, Position, CompletionItemKind, Uri, workspace } from 'vscode';
+import { CompletionItem, window, CompletionItemProvider, TextDocument, Position, CompletionItemKind, Uri, workspace } from 'vscode';
 import { crossPlatformPath } from './utils';
-import { FieldObjectTree } from './FieldObjectTree';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 
@@ -12,7 +11,6 @@ export class CompletionHandler implements CompletionItemProvider {
 	request: SimpliciteAPIManager;
 	template: { scheme: string, language: string };
 	completionItemList?: Array<CompletionItem>;
-	fieldObjectTree: any; // peut changer
 	currentPagePath?: string;
 	fileName?: string;
 	currentWorkspace?: string;
@@ -21,13 +19,6 @@ export class CompletionHandler implements CompletionItemProvider {
 		this.request = request;
         this.template = { scheme: 'file', language: 'java' };
 		this.completionItemList = undefined;
-		this.fieldObjectTree = new FieldObjectTree(request);
-		window.registerTreeDataProvider(
-			'simpliciteObjectFields',
-			this.fieldObjectTree
-		);
-		commands.registerCommand('simplicite-vscode.refreshTreeView', async () => this.fieldObjectTree.refresh());
-		
 		if (request.moduleHandler.moduleLength() !== 0) {
 			try {
 				if (window.activeTextEditor === undefined) {
@@ -74,6 +65,7 @@ export class CompletionHandler implements CompletionItemProvider {
 			
 			for (let functionName of triggerFunctions) {
 				if (linePrefix.endsWith(functionName + '(\'')) {
+					console.log('completion');
 					return this.completionItemList;
 				}
 			}
@@ -103,7 +95,7 @@ export class CompletionHandler implements CompletionItemProvider {
 					}			
 				}
 			} catch (e) {
-				console.log(e);
+				logger.error(e);
 			}
 		});
 	}
@@ -111,19 +103,23 @@ export class CompletionHandler implements CompletionItemProvider {
 	async completionItemRender () {
 		const completionItems = new Array();
 		let objectFieldsList;
-		if (this.instanceUrl) {
-			objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
-		}
-		//console.log(objectFieldsList);
-		for (let item of objectFieldsList) {
-			if (item.name === this.fileName) {
-				for (let field of item.fields) {
-					completionItems.push(new CompletionItem(field.name, CompletionItemKind.Text));
-				}
-				
+		try {
+			if (this.instanceUrl) {
+				objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
 			}
+			for (let item of objectFieldsList) {
+				if (item.name === this.fileName) {
+					for (let field of item.fields) {
+						completionItems.push(new CompletionItem(field.name, CompletionItemKind.Text));
+					}
+					
+				}
+			}
+			return completionItems;
+		} catch (e) {
+			logger.error(e);
 		}
-		return completionItems;
+		
 	}
 
 	getWorkspaceFromFileUri (uri: Uri) {

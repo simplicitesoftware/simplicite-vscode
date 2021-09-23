@@ -12,6 +12,5 @@ export function crossPlatformPath (path: string): string {
 
 export function replaceAll(str: string, find: string, replace: string): string {
     const value = str.replace(new RegExp(find, 'g'), replace);
-    console.log(value);
     return str.replace(new RegExp(find, 'g'), replace);
 }

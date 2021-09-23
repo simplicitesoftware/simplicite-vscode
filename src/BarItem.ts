@@ -110,7 +110,6 @@ export class BarItem {
 
     fileName (filePath: string) {
         const fileList = filePath.split('/');
-        console.log('Bar Item, test include');
         if (fileList[fileList.length - 1].includes('.java')) {
             return fileList[fileList.length - 1];
         }
