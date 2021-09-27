@@ -39,10 +39,12 @@ export class BarItem {
             const commandQuickPick = this.commandListQuickPick(commandList);
             const target = await window.showQuickPick(commandQuickPick);
             if (target) {
-                try {
-                    await commands.executeCommand(target.commandId, this.request);
-                } catch (e) {
-                    logger.error(e + 'Error occured while executing command');
+                if (target.commandId === 'simplicite-vscode.fieldNameToClipBoard' || target.commandId === 'simplicite-vscode.columnToClipBoard') {
+                    try {
+                        await commands.executeCommand(target.commandId, this.request);
+                    } catch (e) {
+                        logger.error(e + 'Error occured while executing command');
+                    }
                 }
             }
         } catch(e) {

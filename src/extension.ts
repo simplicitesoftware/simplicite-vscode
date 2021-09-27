@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldToClipBoardCommand } from './commands';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldNameToClipBoardCommand, columnToClipBoardCommand } from './commands';
 import { BarItem } from './BarItem';
 import { FieldObjectTree } from './FieldObjectTree';
 
@@ -30,8 +30,9 @@ export async function activate(context: ExtensionContext) {
 	const logoutFromModule = logoutFromModuleCommand(request, fieldObjectTree.refresh, fieldObjectTree);
 	const logInInstance = logInInstanceCommand(request);
 	const compileWorkspace = compileWorkspaceCommand(request);
-	const fieldToClipBoard = fieldToClipBoardCommand();
-	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard);
+	const fieldToClipBoard = fieldNameToClipBoardCommand();
+	const columnToClipBoard = columnToClipBoardCommand();
+	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, columnToClipBoard);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {

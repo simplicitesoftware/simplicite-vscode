@@ -7,7 +7,7 @@
 	"engines": {
 		"vscode": "^1.60.0"
 	},
-	"icon": "ressources/images/icon256.png",
+	"icon": "resources/images/icon256.png",
 	"categories": [
 		"Other"
 	],
@@ -26,7 +26,8 @@
 		"onCommand:simplicite-vscode.logOutFromInstance",
 		"onCommand::simplicite-vscode.compileWorkspace",
 		"onCommand::simplicite-vscode.refreshTreeView",
-		"onView:simplicite-vscode.simpliciteObjectFields"
+		"onView:simplicite-vscode.simpliciteObjectFields",
+		"onView:simplicite-vscode.copyColumn"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -44,6 +45,28 @@
 					"command": "simplicite-vscode.refreshTreeView",
 					"when": "view == simpliciteObjectFields",
 					"group": "navigation"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "simplicite-vscode.columnToClipBoard",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode.fieldNameToClipBoard",
+					"when": "false"
+				}
+			],
+			"view/item/context": [
+				{
+				  "command": "simplicite-vscode.columnToClipBoard",
+				  "when": "view == simpliciteObjectFields && viewItem == field",
+				  "group": "inline"
+				},
+				{
+				  "command": "simplicite-vscode.fieldNameToClipBoard",
+				  "when": "view == simpliciteObjectFields && viewItem == field",
+				  "group": "inline"
 				}
 			]
 		},
@@ -80,14 +103,25 @@
 				"command": "simplicite-vscode.refreshTreeView",
 				"title": "Simplicite: Refresh object fields Tree View",
 				"icon": {
-					"light": "ressources/light/refresh.svg",
-					"dark": "ressources/dark/refresh.svg"
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
 				}
 			},
 			{
-				"command": "simplicite-vscode.fieldToClipBoard",
-				"title": "Not a title",
-				"when": "false"
+				"command": "simplicite-vscode.fieldNameToClipBoard",
+				"title": "private command",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/light/refresh.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode.columnToClipBoard",
+				"title": "private command",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/light/refresh.svg"
+				}
 			}
 		],
 		"capabilities": {

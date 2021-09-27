@@ -107,10 +107,18 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) 
 	});
 };
 
-export const fieldToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode.fieldToClipBoard', element => {
+export const fieldNameToClipBoardCommand = function () {
+    return commands.registerCommand('simplicite-vscode.fieldNameToClipBoard', element => {
         if (element !== undefined) {
-            copy(element);
+            copy(element.label);
+        }
+    });
+};
+
+export const columnToClipBoardCommand = function () {
+    return commands.registerCommand('simplicite-vscode.columnToClipBoard', element => {
+        if (element !== undefined) {
+            copy(element.description);
         }
     });
 };
