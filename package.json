@@ -27,7 +27,8 @@
 		"onCommand::simplicite-vscode.compileWorkspace",
 		"onCommand::simplicite-vscode.refreshTreeView",
 		"onView:simplicite-vscode.simpliciteObjectFields",
-		"onView:simplicite-vscode.copyColumn"
+		"onView:simplicite-vscode.fieldNameToClipBoard",
+		"onView:simplicite-vscode.columnToClipBoard"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -49,24 +50,25 @@
 			],
 			"commandPalette": [
 				{
-					"command": "simplicite-vscode.columnToClipBoard",
+					"command": "simplicite-vscode.fieldNameToClipBoard",
 					"when": "false"
 				},
 				{
-					"command": "simplicite-vscode.fieldNameToClipBoard",
+					"command": "simplicite-vscode.columnToClipBoard",
 					"when": "false"
 				}
+				
 			],
 			"view/item/context": [
 				{
-				  "command": "simplicite-vscode.columnToClipBoard",
-				  "when": "view == simpliciteObjectFields && viewItem == field",
-				  "group": "inline"
+					"command": "simplicite-vscode.fieldNameToClipBoard",
+					"when": "view == simpliciteObjectFields && viewItem == field",
+					"group": "inline"
 				},
 				{
-				  "command": "simplicite-vscode.fieldNameToClipBoard",
-				  "when": "view == simpliciteObjectFields && viewItem == field",
-				  "group": "inline"
+					"command": "simplicite-vscode.columnToClipBoard",
+					"when": "view == simpliciteObjectFields && viewItem == field",
+					"group": "inline"
 				}
 			]
 		},
@@ -109,18 +111,18 @@
 			},
 			{
 				"command": "simplicite-vscode.fieldNameToClipBoard",
-				"title": "private command",
+				"title": "copy field",
 				"icon": {
-					"light": "resources/light/refresh.svg",
-					"dark": "resources/light/refresh.svg"
+					"light": "resources/light/copy.svg",
+					"dark": "resources/dark/copy.svg"
 				}
 			},
 			{
 				"command": "simplicite-vscode.columnToClipBoard",
-				"title": "private command",
+				"title": "copy column",
 				"icon": {
-					"light": "resources/light/refresh.svg",
-					"dark": "resources/light/refresh.svg"
+					"light": "resources/light/copybis.svg",
+					"dark": "resources/dark/copybis.svg"
 				}
 			}
 		],
