@@ -105,14 +105,13 @@ export class CompletionHandler implements CompletionItemProvider {
 		let objectFieldsList;
 		try {
 			if (this.instanceUrl) {
-				objectFieldsList = await this.request.getBusinessObjectFields(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
+				objectFieldsList = await this.request.getmoduleDevInfo(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
 			}
 			for (let item of objectFieldsList) {
 				if (item.name === this.fileName) {
 					for (let field of item.fields) {
 						completionItems.push(new CompletionItem(field.name, CompletionItemKind.Text));
 					}
-					
 				}
 			}
 			return completionItems;
@@ -138,7 +137,7 @@ export class CompletionHandler implements CompletionItemProvider {
 			const decomposedPath = filePath.split('/');
 			return decomposedPath[decomposedPath.length - 1].replace('.java', '');
 		} catch (e) {
-			console.log(e);
+			logger.warn(e);
 		}
 	}
 }

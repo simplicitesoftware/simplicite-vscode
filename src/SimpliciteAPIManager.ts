@@ -98,13 +98,14 @@ export class SimpliciteAPIManager {
         try {
             const res = await app.login();
             if (!this.devInfo) {
-                await this.getDevInfo(app);
+                await this.setDevInfo(app);
             }
             await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
             this.moduleHandler.spreadToken(moduleInstanceUrl, res.authtoken);
             this.appHandler.setApp(moduleInstanceUrl, app);
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
+            commands.executeCommand('simplicite-vscode.refreshTreeView');
             this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
         } catch (e) {
             app.setAuthToken(null);
@@ -126,7 +127,6 @@ export class SimpliciteAPIManager {
                 }
             }
         } catch(e) {
-            console.log(e);
             throw e;
         }     
     }
@@ -327,20 +327,17 @@ export class SimpliciteAPIManager {
         }     
     }
 
-    async getBusinessObjectFields (connectedInstance: string, moduleName: string) {
+    async getmoduleDevInfo (connectedInstance: string, moduleName: string) {
         const app = this.appHandler.getApp(connectedInstance);
         if (app.authtoken === undefined) {
             throw new Error(`Cannot get object fields, not connected to ${moduleName} (${connectedInstance})`);
         }
-        await this.getDevInfo(app, moduleName);
-        const objectExternal = this.moduleDevInfo.ObjectInternal;
-        if (objectExternal.length === 0) {
-            throw new Error('No object fields has been found on the module ' + moduleName);
-        } 
-        return objectExternal;
+        await this.setDevInfo(app, moduleName);
+        if (this.moduleDevInfo.length === 0) {
+            throw new Error('moduleDevInfo is empty ' + moduleName);
+        }
+        return this.moduleDevInfo;
     }
-
-    
 
     operationsBeforeObjectManipulation (filePath: string): ReturnValueOperationsBeforeObjectManipulation {
         const fileType = this.getBusinessObjectType(filePath);
@@ -394,7 +391,7 @@ export class SimpliciteAPIManager {
         throw new Error('No type has been found');
     }
     
-    async getDevInfo (app: any, moduleName?: string) { // uses the first instance available to fetch the data
+    async setDevInfo (app: any, moduleName?: string) { // uses the first instance available to fetch the data
         try {
             //if (app === undefined) {
             //    app = this.appHandler.getAppList()[0];
