@@ -39,12 +39,10 @@ export class BarItem {
             const commandQuickPick = this.commandListQuickPick(commandList);
             const target = await window.showQuickPick(commandQuickPick);
             if (target) {
-                if (target.commandId === 'simplicite-vscode.fieldNameToClipBoard' || target.commandId === 'simplicite-vscode.columnToClipBoard') {
-                    try {
-                        await commands.executeCommand(target.commandId, this.request);
-                    } catch (e) {
-                        logger.error(e + 'Error occured while executing command');
-                    }
+                try {
+                    await commands.executeCommand(target.commandId, this.request);
+                } catch (e) {
+                    logger.error(e + 'Error occured while executing command');
                 }
             }
         } catch(e) {
@@ -120,7 +118,9 @@ export class BarItem {
     commandListQuickPick (commandList: Array<Command>) {
         const preparedList = new Array();
         for (let command of commandList) {
-            preparedList.push({ label: command.title, commandId: command.command });
+            if (command.title !== 'copy column' && command.title !== 'copy field') {
+                preparedList.push({ label: command.title, commandId: command.command });
+            }
         }
         return preparedList;
     }
