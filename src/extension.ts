@@ -66,7 +66,7 @@ export async function activate(context: ExtensionContext) {
 			logger.info('added workspace');
 			modulesLength = tempModules.length;
 			try {
-				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1]); // We need to connect with the module informations
+				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1], false); // We need to connect with the module informations
 				await fieldObjectTree.refresh();
 			} catch(e) {
 				logger.error(e);

@@ -83,7 +83,7 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
                 }
             }
 			if (module) {
-                await request.loginTokenOrCredentials(module);
+                await request.loginTokenOrCredentials(module, true);
             } 
 			if (!flag) {
                 throw new Error(`Simplicite: There is no module ${moduleName} in your current workspace`);
