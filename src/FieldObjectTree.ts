@@ -79,6 +79,18 @@ const objectFieldBind: Array<ObjectInfo> = [
             light: path.join(__filename, '..', '..', 'resources', 'light', 'script.svg'),
             dark: path.join(__filename, '..', '..', 'resources', 'dark', 'script.svg')
         }
+    },
+    {
+        objectType: 'Disposition',
+        field: '',
+        icons: {
+            light: path.join(__filename, '..', '..', 'resources', 'light', 'adapter.svg'),
+            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'adapter.svg')
+        },
+        fieldIcons: {
+            light: '',
+            dark: ''
+        }
     }    
 ];
 
@@ -200,12 +212,12 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
             if (objectType === label) {
                 for (let item of moduleInfo.objectFields[objectType]) {
                     let collapsibleState: TreeItemCollapsibleState;
-                    if (objectInfo.field === '' || item[objectInfo.field] === undefined && label !== 'Script' && label !== 'Adapter') {
+                    if (objectInfo.field === '' || item[objectInfo.field] === undefined && label !== 'Script' && label !== 'Adapter' || label === 'Disposition') {
                         collapsibleState = TreeItemCollapsibleState.None;
                     } else {
                         collapsibleState = TreeItemCollapsibleState.Collapsed;
                     }
-                    objectItems.push(new ObjectItem(item.name, collapsibleState, moduleInfo.moduleName, objectInfo));
+                    objectItems.push(new ObjectItem(item.name, collapsibleState, moduleInfo.moduleName, objectInfo, item.table));
                 }
             } else {
                 continue;
@@ -319,11 +331,13 @@ class ObjectItem extends ObjectType {
         public readonly label: string,
         public readonly collapsibleState: TreeItemCollapsibleState,
         public readonly moduleName: string | TreeItemLabel,
-        public readonly objectFieldBind: ObjectInfo
+        public readonly objectFieldBind: ObjectInfo,
+        public readonly description: string
       ) {
         super(label, collapsibleState, moduleName);
         this.objectFieldBind = objectFieldBind;
         this.iconPath = objectFieldBind.icons;
+        this.description = description;
     }
 }
 
@@ -339,8 +353,7 @@ class FieldItem extends ObjectItem {
         public readonly technical: boolean,
         public readonly masterObject: string
     ) {
-        super(label, collapsibleState, moduleName, objectFieldBind);
-        this.description = description;
+        super(label, collapsibleState, moduleName, objectFieldBind, description);
         this.technical = technical;
         this.masterObject = masterObject;
     }
