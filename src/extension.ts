@@ -55,8 +55,7 @@ export async function activate(context: ExtensionContext) {
 	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
 	const provider = await CompletionHandler.build(request);
 	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
-	const completionProviderDoubleQuote = languages.registerCompletionItemProvider(provider.template, provider, '\'');
-	context.subscriptions.push(completionProviderSingleQuote, completionProviderDoubleQuote);
+	context.subscriptions.push(completionProviderSingleQuote);
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
