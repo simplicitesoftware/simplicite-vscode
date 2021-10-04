@@ -4,32 +4,13 @@ import { CompletionItem, window, CompletionItemProvider, TextDocument, Position,
 import { crossPlatformPath } from './utils';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { type } from 'os';
-import { stringify } from 'querystring';
+import { objectInfo } from './constant';
 
-interface TriggerFunctionsObject {
+interface ObjectInfo {
 	objectType: string,
 	functions: Array<string>,
 	field: string
 }
-
-const triggerFunctions: Array<TriggerFunctionsObject> = [
-	{
-		objectType: 'ObjectInternal',
-		functions: ['getField', 'getFieldValue', 'setFieldValue'],
-		field: 'fields'
-	},
-	{
-		objectType: 'ObjectExternal',
-		functions: ['getField', 'getFieldValue', 'setFieldValue'],
-		field: 'actions'
-	},
-	{
-		objectType: 'BPMProcess',
-		functions: ['getField', 'getFieldValue', 'setFieldValue'],
-		field: 'activities'
-	},
-];
 
 export class CompletionHandler implements CompletionItemProvider {
 	request: SimpliciteAPIManager;
@@ -40,6 +21,7 @@ export class CompletionHandler implements CompletionItemProvider {
 	currentWorkspace?: string;
 	instanceUrl?: string;
 	currentObjectInfo?: { type: string, field: string };
+	objectFieldsList?: any;
     constructor (request: SimpliciteAPIManager) {
 		this.request = request;
         this.template = { scheme: 'file', language: 'java' };
@@ -60,10 +42,7 @@ export class CompletionHandler implements CompletionItemProvider {
 				logger.error(e);
 			}
 		} else {
-			this.currentPagePath = undefined;
-			this.fileName = undefined;
-			this.currentWorkspace = undefined;
-			this.instanceUrl = undefined;
+			this.reset();
 		}	
     }
 	
@@ -78,22 +57,32 @@ export class CompletionHandler implements CompletionItemProvider {
 			if (window.activeTextEditor === undefined) {
 				throw new Error ('No active text editor, cannot handle completion');
 			}
-			this.completionItemList = await this.completionItemRender();
+			this.objectFieldsList = await this.getObjectFieldsList();
 			this.currentObjectInfo = await this.getFileInfo();
+			this.completionItemList = await this.completionItemRender();
 		} catch (e) {
 			logger.error(e);
 		}
 	}
 
+	private reset () {
+		this.currentPagePath = undefined;
+		this.fileName = undefined;
+		this.currentWorkspace = undefined;
+		this.instanceUrl = undefined;
+		this.currentObjectInfo = undefined;
+		this.completionItemList = undefined;
+	}
+
     provideCompletionItems(document: TextDocument, position: Position) {
 		try {
 			const linePrefix = document.lineAt(position).text.substr(0, position.character);
-			
-			for (let item of triggerFunctions) {
-				for (let func of item.functions) {
-					if (linePrefix.endsWith(func + '(\'')) {
-						console.log('completion');
-						return this.completionItemList;
+			for (let item of objectInfo) {
+				if (item.objectType === this.currentObjectInfo?.type) {
+					for (let func of item.functions) {
+						if (linePrefix.endsWith(func + '("')) {
+							return this.completionItemList;
+						}
 					}
 				}
 			}
@@ -108,16 +97,16 @@ export class CompletionHandler implements CompletionItemProvider {
 				if (event !== undefined) {
 					if (event.document.uri.path.includes('.java')) {
 						this.currentPagePath = crossPlatformPath(event.document.fileName);
+						this.fileName = this.getFileNameFromPath(this.currentPagePath);
 						this.currentWorkspace = this.getWorkspaceFromFileUri(event.document.uri);
 						if (this.currentWorkspace) {
 							this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
 						}
+						this.objectFieldsList = await this.getObjectFieldsList();
 						this.currentObjectInfo = await this.getFileInfo();
 						this.completionItemList = await this.completionItemRender();
 					} else {
-						this.currentPagePath = undefined;
-						this.currentWorkspace = undefined;
-						this.instanceUrl = undefined;
+						this.reset();
 					}			
 				}
 			} catch (e) {
@@ -132,13 +121,15 @@ export class CompletionHandler implements CompletionItemProvider {
 			if (this.currentObjectInfo === undefined) {
 				throw new Error('Cannot process completion items with no info on the current object');
 			}
-			let objectFieldsList: any = await this.getObjectFieldsList();
-			for (let objectType in objectFieldsList) {
+			for (let objectType in this.objectFieldsList) {
 				if (objectType === this.currentObjectInfo.type) {
-					for (let object of objectFieldsList[objectType]) {
-						for (let item of object[this.currentObjectInfo.field]) {
-							completionItems.push(new CompletionItem(item.name, CompletionItemKind.Text));
+					for (let object of this.objectFieldsList[objectType]) {
+						if (object.name === this.fileName) {
+							for (let item of object[this.currentObjectInfo.field]) {
+								completionItems.push(new CompletionItem(item.name, CompletionItemKind.Text));
+							}
 						}
+						
 					}
 				}
 			}
@@ -171,10 +162,9 @@ export class CompletionHandler implements CompletionItemProvider {
 
 	private async getFileInfo (): Promise< { type: string, field: string }> {
 		let fileType: { type: string, field: string } = { type: '', field: '' };
-		let objectFieldsList: any = await this.getObjectFieldsList();
-		for (let type in objectFieldsList) {
-			if (objectFieldsList[type].length !== 0) {
-				for (let object of objectFieldsList[type]) {
+		for (let type in this.objectFieldsList) {
+			if (this.objectFieldsList[type].length !== 0) {
+				for (let object of this.objectFieldsList[type]) {
 					if (object.name === this.fileName) {
 						fileType = { type: type, field: this.getObjectField(type) };
 					}
@@ -186,7 +176,7 @@ export class CompletionHandler implements CompletionItemProvider {
 
 	private getObjectField (type: string) {
 		let field: string = '';
-		for (let item of triggerFunctions) {
+		for (let item of objectInfo) {
 			if (item.objectType === type) {
 				field = item.field;
 			}
@@ -196,13 +186,18 @@ export class CompletionHandler implements CompletionItemProvider {
 
 	private async getObjectFieldsList () {
 		let objectFieldsList: any = new Array();
-		if (this.instanceUrl) {
+		if (this.instanceUrl && this.currentWorkspace) {
 			try {
-				objectFieldsList = await this.request.getmoduleDevInfo(this.instanceUrl, this.request.moduleHandler.getModuleNameFromUrl(this.instanceUrl));
+				objectFieldsList = await this.request.getmoduleDevInfo(this.instanceUrl, getModuleName(this.currentWorkspace));
 			} catch(e) {
-				console.log(e);
+				logger.warn('cannot handle completion, objectFieldList is empty');
 			}
 		}
 		return objectFieldsList;
 	}
+}
+
+function getModuleName (workspaceUrl: string): string {
+	const decomposedUrl = workspaceUrl.split('/');
+	return decomposedUrl[decomposedUrl.length - 1];
 }

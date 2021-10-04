@@ -4,6 +4,7 @@ import { SimpliciteAPIManager } from "./SimpliciteAPIManager";
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemLabel, Uri } from 'vscode';
 import { logger } from './Log';
 import { Module } from "./Module";
+import { objectInfo } from './constant';
 import * as path from 'path';
 
 interface FieldInfo {
@@ -17,82 +18,6 @@ interface ObjectInfo {
     icons: {dark: string | Uri, light: string | Uri},
     fieldIcons: {dark: string | Uri, light: string | Uri}
 };
-
-
-const objectFieldBind: Array<ObjectInfo> = [
-    {
-        objectType: 'BPMProcess',
-        field: 'activities',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'bpm.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'bpm.svg')
-        },
-        fieldIcons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'activity.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'activity.svg')
-        }
-    },
-    {
-        objectType: 'ObjectExternal',
-        field: 'actions',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'external.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'external.svg')
-        },
-        fieldIcons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'action.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'action.svg')
-        }
-    },
-    {
-        objectType: 'ObjectInternal',
-        field: 'fields',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'object.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'object.svg')
-        },
-        fieldIcons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'field.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'field.svg')
-        }
-    },
-    {
-        objectType: 'Script',
-        field: '',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'script.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'script.svg')
-        },
-        fieldIcons: {
-            light: '',
-            dark: ''
-        }
-    },
-    {
-        objectType: 'Adapter',
-        field: '',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'adapter.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'adapter.svg')
-        },
-        fieldIcons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'script.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'script.svg')
-        }
-    },
-    {
-        objectType: 'Disposition',
-        field: '',
-        icons: {
-            light: path.join(__filename, '..', '..', 'resources', 'light', 'adapter.svg'),
-            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'adapter.svg')
-        },
-        fieldIcons: {
-            light: '',
-            dark: ''
-        }
-    }    
-];
 
 export class FieldObjectTree implements TreeDataProvider<TreeItem> {
     request: SimpliciteAPIManager;
@@ -119,13 +44,13 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
             if (element === undefined) {
                 fieldItem = fieldItem.concat(this.getModuleItem(moduleInfo.moduleName));
             } else if (element.technical && element instanceof FieldItem && element.moduleName === moduleInfo.moduleName) {
-                const objectInfo = this.getObjectFieldNameAndIcon(element.objectFieldBind.objectType);
+                const objectInfo = this.getObjectFieldNameAndIcon(element.objectInfo.objectType);
                 if (objectInfo) {
                     fieldItem = fieldItem.concat(this.getTechnicalFieldsItems(moduleInfo, element, objectInfo));
                 }
                 break;
             } else if (element instanceof ObjectItem && element.moduleName === moduleInfo.moduleName) {
-                const objectInfo = this.getObjectFieldNameAndIcon(element.objectFieldBind.objectType);
+                const objectInfo = this.getObjectFieldNameAndIcon(element.objectInfo.objectType);
                 if (objectInfo) {
                     fieldItem = fieldItem.concat(this.getFieldsItems(moduleInfo, element, objectInfo));
                 }
@@ -148,7 +73,9 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
         const fieldList = new Array();
         try {
             for (let module of modules) {
-                fieldList.push({ objectFields: await this.request.getmoduleDevInfo(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
+                if (this.request.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
+                    fieldList.push({ objectFields: await this.request.getmoduleDevInfo(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
+                }
             }
             return fieldList;
         } catch (e) {
@@ -252,13 +179,13 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
 
     private getFieldsItems (moduleInfo: FieldInfo, element: ObjectItem, objectInfo: ObjectInfo): Array<FieldItem> {
         const fielditem = new Array();
-        if (element.objectFieldBind.field !== '') {
+        if (element.objectInfo.field !== '') {
             for (let objectType in moduleInfo.objectFields) {
-                if (objectType === element.objectFieldBind.objectType) {
+                if (objectType === element.objectInfo.objectType) {
                     for (let item of moduleInfo.objectFields[objectType]) {
                         if (item.name === element.label) {
                             let hasTechnicalField = false;
-                            for (let field of item[element.objectFieldBind.field]) {
+                            for (let field of item[element.objectInfo.field]) {
                                 if (field.technical !== undefined) {
                                     if (field.technical) {
                                         hasTechnicalField = true;
@@ -273,7 +200,7 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
                                 fielditem.push(treeItem);
                             }
                             if (hasTechnicalField) {
-                                const technicalTreeItem = new FieldItem('technical fields', TreeItemCollapsibleState.Collapsed, moduleInfo.moduleName, element.objectFieldBind , '', true, element.label);
+                                const technicalTreeItem = new FieldItem('technical fields', TreeItemCollapsibleState.Collapsed, moduleInfo.moduleName, element.objectInfo , '', true, element.label);
                                 fielditem.push(technicalTreeItem);
                             }
                         }
@@ -304,7 +231,7 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
     }
 
     private getObjectFieldNameAndIcon (objectType: string): ObjectInfo | undefined {
-        for (let type of objectFieldBind) {
+        for (let type of objectInfo) {
             if (type.objectType === objectType) {
                 return type;
             }
@@ -331,12 +258,12 @@ class ObjectItem extends ObjectType {
         public readonly label: string,
         public readonly collapsibleState: TreeItemCollapsibleState,
         public readonly moduleName: string | TreeItemLabel,
-        public readonly objectFieldBind: ObjectInfo,
+        public readonly objectInfo: ObjectInfo,
         public readonly description: string
       ) {
         super(label, collapsibleState, moduleName);
-        this.objectFieldBind = objectFieldBind;
-        this.iconPath = objectFieldBind.icons;
+        this.objectInfo = objectInfo;
+        this.iconPath = objectInfo.icons;
         this.description = description;
     }
 }
@@ -348,12 +275,12 @@ class FieldItem extends ObjectItem {
         public readonly label: string,
         public readonly collapsibleState: TreeItemCollapsibleState,
         public readonly moduleName: string | TreeItemLabel,
-        public readonly objectFieldBind: ObjectInfo,
+        public readonly objectInfo: ObjectInfo,
         public readonly description: string,
         public readonly technical: boolean,
         public readonly masterObject: string
     ) {
-        super(label, collapsibleState, moduleName, objectFieldBind, description);
+        super(label, collapsibleState, moduleName, objectInfo, description);
         this.technical = technical;
         this.masterObject = masterObject;
     }

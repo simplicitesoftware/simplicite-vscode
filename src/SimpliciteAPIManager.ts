@@ -51,7 +51,7 @@ export class SimpliciteAPIManager {
         if (this.moduleHandler.moduleLength() === 0) {
             logger.warn('No modules set on initialization');
         }
-        if (this.fileHandler.fileListLength()) {
+        if (this.fileHandler.fileListLength() === 0) {
             logger.warn('No files set on initialization');
         }
     }
@@ -66,12 +66,14 @@ export class SimpliciteAPIManager {
         if (this.moduleHandler.moduleLength() > 0) {
             let activateTreeViewUpdate = true;
             for (let module of this.moduleHandler.getModules()) {
-                try { 
-                    await this.loginTokenOrCredentials(module, activateTreeViewUpdate);
-                    activateTreeViewUpdate = false;
-                } catch (e: any) {
-                    window.showErrorMessage(e.message ? e.message : e);
-                    logger.error(`Module ${module.getName()}: ${e.message ? e.message : e}`);
+                if (!this.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
+                    try { 
+                        await this.loginTokenOrCredentials(module, activateTreeViewUpdate);
+                        activateTreeViewUpdate = false;
+                    } catch (e: any) {
+                        window.showErrorMessage(e.message ? e.message : e);
+                        logger.error(`Module ${module.getName()}: ${e.message ? e.message : e}`);
+                    }
                 }
             }
         } else {
@@ -105,18 +107,19 @@ export class SimpliciteAPIManager {
             await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
             this.moduleHandler.spreadToken(moduleInstanceUrl, res.authtoken);
             this.appHandler.setApp(moduleInstanceUrl, app);
+            this.moduleHandler.addInstanceUrl(moduleInstanceUrl);
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
             if (activateTreeViewUpdate) {
-                commands.executeCommand('simplicite-vscode.refreshTreeView');
+            commands.executeCommand('simplicite-vscode.refreshTreeView');
             }
             this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
         } catch (e) {
             app.setAuthToken(null);
             app.setPassword(null);
             app.setUsername(null);
-            throw e;
-        }                        
+            logger.error(e);
+        }
     }
 
     authenticationWithToken (moduleName: string, app: any) { // check if a token is available in process.env.APPDATA + /Code/User/globalStorage/simplicite-info.json  
@@ -167,6 +170,7 @@ export class SimpliciteAPIManager {
                 this.moduleHandler.spreadToken(app.parameters.url, null);
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
+                this.moduleHandler.removeInstanceUrl(app.parameters.url);
                 this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
             }).catch((e: any) => {
     			logger.error(e);

@@ -169,7 +169,7 @@ export class FileHandler {
                     const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath());
                     if (!this.isFileInFileList(filePath)) {
                         this.fileList.push(file);
-                        console.log(`Change detected on ${filePath}`);
+                        logger.info(`Change detected on ${filePath}`);
                     }
                 }
             }

@@ -5,8 +5,21 @@ import { Module } from "./Module";
 
 export class ModuleHandler {
     modules: Array<Module>;
+    private connectedInstancesUrl: Array<string>;
     constructor () {
+        this.connectedInstancesUrl = new Array();
         this.modules = new Array();
+    }
+
+    addInstanceUrl (instanceUrl: string) {
+        if (!this.connectedInstancesUrl.includes(instanceUrl)) {
+            this.connectedInstancesUrl.push(instanceUrl);
+        }
+    }
+
+    removeInstanceUrl (instanceUrl: string) {
+        const index = this.connectedInstancesUrl.indexOf(instanceUrl);
+        this.connectedInstancesUrl.splice(index, 1);
     }
 
     setModules (modules: Array<Module>) {
@@ -39,13 +52,7 @@ export class ModuleHandler {
     }
 
     getConnectedInstancesUrl (): Array<string> {
-        const connectedInstances = new Array();
-        for (let module of this.modules) {
-            if (module.getToken()) {
-                connectedInstances.push(module.getInstanceUrl());
-            }
-        }
-        return connectedInstances;
+        return this.connectedInstancesUrl;
     }
 
     getModuleUrlFromName (moduleName: string): string {
