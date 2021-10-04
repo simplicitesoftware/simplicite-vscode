@@ -27,8 +27,8 @@
 		"onCommand::simplicite-vscode.compileWorkspace",
 		"onCommand::simplicite-vscode.refreshTreeView",
 		"onView:simplicite-vscode.simpliciteObjectFields",
-		"onView:simplicite-vscode.fieldNameToClipBoard",
-		"onView:simplicite-vscode.columnToClipBoard"
+		"onView:simplicite-vscode.itemLabelToClipBoard",
+		"onView:simplicite-vscode.descriptionToClipBoard"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -50,23 +50,23 @@
 			],
 			"commandPalette": [
 				{
-					"command": "simplicite-vscode.fieldNameToClipBoard",
+					"command": "simplicite-vscode.itemLabelToClipBoard",
 					"when": "false"
 				},
 				{
-					"command": "simplicite-vscode.columnToClipBoard",
+					"command": "simplicite-vscode.descriptionToClipBoard",
 					"when": "false"
 				}
 				
 			],
 			"view/item/context": [
 				{
-					"command": "simplicite-vscode.fieldNameToClipBoard",
+					"command": "simplicite-vscode.itemLabelToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == field",
 					"group": "inline"
 				},
 				{
-					"command": "simplicite-vscode.columnToClipBoard",
+					"command": "simplicite-vscode.descriptionToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == field",
 					"group": "inline"
 				}
@@ -110,16 +110,16 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.fieldNameToClipBoard",
-				"title": "copy field",
+				"command": "simplicite-vscode.itemLabelToClipBoard",
+				"title": "copy label",
 				"icon": {
 					"light": "resources/light/copy.svg",
 					"dark": "resources/dark/copy.svg"
 				}
 			},
 			{
-				"command": "simplicite-vscode.columnToClipBoard",
-				"title": "copy column",
+				"command": "simplicite-vscode.descriptionToClipBoard",
+				"title": "copy description",
 				"icon": {
 					"light": "resources/light/copybis.svg",
 					"dark": "resources/dark/copybis.svg"
@@ -130,7 +130,6 @@
 			"completionProvider": {
 				"resolveProvider": "true",
 				"triggerCharacters": [
-					"'",
 					"\""
 				]
 			}

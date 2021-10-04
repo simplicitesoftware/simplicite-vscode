@@ -4,16 +4,18 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, fieldNameToClipBoardCommand, columnToClipBoardCommand } from './commands';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, connectedInstanceCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand } from './commands';
 import { BarItem } from './BarItem';
 import { FieldObjectTree } from './FieldObjectTree';
+import { QuickPick } from './QuickPick';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
 	const request = await SimpliciteAPIManager.build();
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
-	const barItem = await BarItem.build('Simplicite', context, request);
+	const barItem = await BarItem.build('Simplicite', request);
 	request.setBarItem(barItem);
+	new QuickPick(context, request);
 	barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	const fieldObjectTree = new FieldObjectTree(request);
 	window.registerTreeDataProvider(
@@ -30,9 +32,9 @@ export async function activate(context: ExtensionContext) {
 	const logoutFromModule = logoutFromModuleCommand(request, fieldObjectTree.refresh, fieldObjectTree);
 	const logInInstance = logInInstanceCommand(request);
 	const compileWorkspace = compileWorkspaceCommand(request);
-	const fieldToClipBoard = fieldNameToClipBoardCommand();
-	const columnToClipBoard = columnToClipBoardCommand();
-	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, columnToClipBoard);
+	const fieldToClipBoard = itemLabelToClipBoardCommand();
+	const descriptionToClipBoard = descriptionToClipBoardCommand();
+	context.subscriptions.push(loginAllModules, applyChanges, logout, connectedInstance, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -62,7 +64,7 @@ export async function activate(context: ExtensionContext) {
 		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
-			logger.info('added workspace');
+			logger.info('added module to workspace');
 			modulesLength = tempModules.length;
 			try {
 				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1], false); // We need to connect with the module informations
@@ -70,10 +72,10 @@ export async function activate(context: ExtensionContext) {
 			} catch(e) {
 				logger.error(e);
 			}
-		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module
-			logger.info('removed workspace');
-			await request.specificLogout(event.removed[0].name, fieldObjectTree.refresh, fieldObjectTree);
+		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module	
+			//await request.specificLogout(event.removed[0].name, fieldObjectTree.refresh, fieldObjectTree);
 			modulesLength = request.moduleHandler.moduleLength();
+			logger.info('removed module from workspace');
 		}
 		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());
 		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
