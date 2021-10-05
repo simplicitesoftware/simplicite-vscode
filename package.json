@@ -23,11 +23,12 @@
 		"onCommand:simplicite-vscode.logOut",
 		"onCommand:simplicite-vscode.logOutFromModule",
 		"onCommand:simplicite-vscode.logOutFromInstance",
-		"onCommand::simplicite-vscode.compileWorkspace",
-		"onCommand::simplicite-vscode.refreshTreeView",
+		"onCommand:simplicite-vscode.compileWorkspace",
+		"onCommand:simplicite-vscode.refreshTreeView",
 		"onView:simplicite-vscode.simpliciteObjectFields",
 		"onView:simplicite-vscode.itemLabelToClipBoard",
-		"onView:simplicite-vscode.descriptionToClipBoard"
+		"onView:simplicite-vscode.descriptionToClipBoard",
+		"onView:simplicite-vscode.removeFile"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -36,6 +37,10 @@
 				{
 					"id": "simpliciteObjectFields",
 					"name": "Simplicite object info"
+				},
+				{
+					"id": "simpliciteFile",
+					"name": "Simplicite file handler"
 				}
 			]
 		},
@@ -67,6 +72,11 @@
 				{
 					"command": "simplicite-vscode.descriptionToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == label&description",
+					"group": "inline"
+				},
+				{
+					"command": "simplicite-vscode.removeFile",
+					"when": "view == simpliciteFile && viewItem == file",
 					"group": "inline"
 				}
 			]
@@ -118,6 +128,14 @@
 				"icon": {
 					"light": "resources/light/copybis.svg",
 					"dark": "resources/dark/copybis.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode.removeFile",
+				"title": "Simplicite: untrack file",
+				"icon": {
+					"light": "resources/light/remove.svg",
+					"dark": "resources/dark/remove.svg"
 				}
 			}
 		],

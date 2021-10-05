@@ -4,20 +4,26 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand } from './commands';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand, removeFileCommand } from './commands';
 import { BarItem } from './BarItem';
-import { FieldObjectTree } from './FieldObjectTree';
+import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { QuickPick } from './QuickPick';
+import { FileTree } from './treeView/FileTree';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
-	const request = await SimpliciteAPIManager.build();
+	const fileTree = new FileTree();
+	window.registerTreeDataProvider(
+		'simpliciteFile',
+		fileTree
+	);
+	const request = await SimpliciteAPIManager.build(fileTree);
 	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
 	const barItem = await BarItem.build('Simplicite', request);
 	request.setBarItem(barItem);
 	new QuickPick(context, request);
 	barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-	const fieldObjectTree = new FieldObjectTree(request);
+	const fieldObjectTree = new ObjectInfoTree(request);
 	window.registerTreeDataProvider(
 		'simpliciteObjectFields',
 		fieldObjectTree
@@ -33,12 +39,13 @@ export async function activate(context: ExtensionContext) {
 	const compileWorkspace = compileWorkspaceCommand(request);
 	const fieldToClipBoard = itemLabelToClipBoardCommand();
 	const descriptionToClipBoard = descriptionToClipBoardCommand();
-	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard);
+	const removeFile = removeFileCommand(request);
+	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard, removeFile);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
-			request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
+			await request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
 			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		}
 	});

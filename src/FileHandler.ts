@@ -1,17 +1,21 @@
 'use strict';
 
 import { logger } from './Log';
-import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
+import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder, window } from 'vscode';
 import * as fs from 'fs';
 import { File } from './File';
 import { Module } from './Module';
 import { crossPlatformPath } from './utils';
 import { TOKEN_SAVE_PATH, FILES_SAVE_PATH } from './constant';
 import { parseStringPromise } from 'xml2js';
+import { FileTree } from './treeView/FileTree';
+import { FileAndModule } from './interfaces';
 
 export class FileHandler {
+    fileTree: FileTree;
     private fileList: Array<File>;
-    constructor () {
+    constructor (fileTree: FileTree) {
+        this.fileTree = fileTree;
         this.fileList = new Array();
     }
     async simpliciteInfoGenerator (token: string, appURL: string) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
@@ -162,14 +166,14 @@ export class FileHandler {
         }
     }
 
-    setFileList (modules: Array<Module>, uri: Uri) {
+    async setFileList (modules: Array<Module>, uri: Uri) {
         try {
             for (let module of modules) {
                 const filePath = crossPlatformPath(uri.path);
                 const filePathLowerCase = filePath;
                 const workspaceLowerCase = module.getWorkspaceFolderPath();
                 if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
-                    const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath());
+                    const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath(), module.getName());
                     if (!this.isFileInFileList(filePath)) {
                         this.fileList.push(file);
                         logger.info(`Change detected on ${filePath}`);
@@ -177,10 +181,35 @@ export class FileHandler {
                 }
             }
             this.saveJSONOnDisk(this.fileList, FILES_SAVE_PATH);
-            logger.info('File change detected on ' + crossPlatformPath(uri.path));
+            await this.fileTree.setFileModule(this.bindFileAndModule(modules));
         } catch (e: any) {
             logger.error(e);
         }
+    }
+
+    bindFileAndModule (modules: Array<Module>): FileAndModule[] {
+        const fileModule = new Array();
+        for (let module of modules) {
+            const moduleObject = { moduleName: module.getName(), instanceUrl: module.getInstanceUrl(), fileList: new Array() };
+            for (let file of this.fileList) {
+                if (file.moduleName === module.getName()) {
+                    moduleObject.fileList.push(file);
+                }
+            }
+            fileModule.push(moduleObject);
+        }
+        return fileModule;
+    }
+
+    deleteFile (path: string, modules: Module[]): void {
+        for (let file of this.fileList) {
+            if (file.filePath === path) {
+                const index = this.fileList.indexOf(file);
+                this.fileList.splice(index, 1);
+                break;
+            }
+        }
+        this.fileTree.setFileModule(this.bindFileAndModule(modules));
     }
 
     getFileList () {
@@ -195,12 +224,13 @@ export class FileHandler {
         return this.fileList.length;
     }
 
-    getModifiedFilesOnStart () {
+    async getModifiedFilesOnStart (modules: Module[]) {
         try {   
             const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
             for (let content of jsonContent) {
-                this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath));
+                this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName));
             }
+            await this.fileTree.setFileModule(this.bindFileAndModule(modules));
         } catch (e: any) {
             logger.info('simplicite-file.json not found: no modified files');
         }

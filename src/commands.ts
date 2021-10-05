@@ -4,7 +4,7 @@ import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { copy } from 'copy-paste';
-import { FieldObjectTree } from './FieldObjectTree';
+import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -31,7 +31,7 @@ export const logoutCommand = function (request: SimpliciteAPIManager) {
 		request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
-export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: FieldObjectTree) {
+export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: ObjectInfoTree) {
     return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
@@ -117,5 +117,12 @@ export const descriptionToClipBoardCommand = function () {
         if (element !== undefined) {
             copy(element.description);
         }
+    });
+};
+
+export const removeFileCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.removeFile', function (element: any) {
+        request.fileHandler.deleteFile(element.fullPath, request.moduleHandler.getModules());
+        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
     });
 };
