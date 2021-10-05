@@ -6,12 +6,6 @@ import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { objectInfo } from './constant';
 
-interface ObjectInfo {
-	objectType: string,
-	functions: Array<string>,
-	field: string
-}
-
 export class CompletionHandler implements CompletionItemProvider {
 	request: SimpliciteAPIManager;
 	template: { scheme: string, language: string };
@@ -30,7 +24,7 @@ export class CompletionHandler implements CompletionItemProvider {
 			try {
 				if (window.activeTextEditor === undefined) {
 					throw new Error('No active text editor, cannot handle completion');
-				} 
+				}
 				this.currentPagePath = crossPlatformPath(window.activeTextEditor.document.uri.path);
 				this.fileName = this.getFileNameFromPath(this.currentPagePath);
 				this.currentWorkspace = this.getWorkspaceFromFileUri(window.activeTextEditor.document.uri);

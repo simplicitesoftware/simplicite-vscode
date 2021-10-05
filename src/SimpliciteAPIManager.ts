@@ -11,18 +11,10 @@ import { logger } from './Log';
 import { File } from './File';
 import { replaceAll } from './utils';
 import { BarItem } from './BarItem';
-import { FieldObjectTree } from './FieldObjectTree';
+import { ObjectInfoTree } from './treeView/ObjectInfoTree';
+import { FileTree } from './treeView/FileTree';
+import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 
-interface CustomMessage {
-    message: string;
-    button: string;
-}
-
-interface ReturnValueOperationsBeforeObjectManipulation {
-    fileType: string;
-    fileName: string;
-    properNameField: string;
-}
 
 export class SimpliciteAPIManager {
     cache: Cache;
@@ -32,19 +24,19 @@ export class SimpliciteAPIManager {
     fileHandler: FileHandler;
     moduleHandler: ModuleHandler;
     barItem?: BarItem;
-    constructor () {
+    constructor (fileTree: FileTree) {
         this.cache = new Cache();
         this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
         this.moduleDevInfo = null; // fetched in getDevInfo when module is defined
         this.appHandler = new AppHandler();
-        this.fileHandler = new FileHandler();
+        this.fileHandler = new FileHandler(fileTree);
         this.moduleHandler = new ModuleHandler();
         this.barItem = undefined;
     }
 
     async init () {
         await this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules());
-        this.fileHandler.getModifiedFilesOnStart();
+        await this.fileHandler.getModifiedFilesOnStart(this.moduleHandler.getModules());
         if (this.moduleHandler.moduleLength() !== 0 && this.fileHandler.fileListLength() !== 0) {
             logger.info('Modules and files set on initialization');
         }
@@ -56,8 +48,8 @@ export class SimpliciteAPIManager {
         }
     }
 
-    static async build () {
-        const simpliciteAPIManager = new SimpliciteAPIManager();
+    static async build (fileTree: FileTree) {
+        const simpliciteAPIManager = new SimpliciteAPIManager(fileTree);
         await simpliciteAPIManager.init();
         return simpliciteAPIManager;
     }
@@ -182,7 +174,7 @@ export class SimpliciteAPIManager {
         }
     }
     
-    async specificLogout(input: string, fieldObjectTreeRefresh: () => Promise<void>, treeContext: FieldObjectTree) {
+    async specificLogout(input: string, fieldObjectTreeRefresh: () => Promise<void>, treeContext: ObjectInfoTree) {
         try {
             let instanceUrl: string;
             instanceUrl = this.moduleHandler.getModuleUrlFromName(input);
