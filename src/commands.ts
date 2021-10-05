@@ -15,6 +15,7 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
 			await request.applyChangesHandler();
+		    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		} catch (e: any) {
             if (e !== '') {
                 window.showErrorMessage(e.message ? e.message : e);
@@ -27,11 +28,7 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
 export const logoutCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logOut', function () {	
 		request.logout();
-	});
-};
-export const connectedInstanceCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.connectedInstance', function () {	
-		request.connectedInstance();
+		request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
 export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: FieldObjectTree) {

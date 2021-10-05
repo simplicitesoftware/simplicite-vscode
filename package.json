@@ -21,7 +21,6 @@
 		"onCommand:simplicite-vscode.logIn",
 		"onCommand:simplicite-vscode.applyChanges",
 		"onCommand:simplicite-vscode.logOut",
-		"onCommand:simplicite-vscode.connectedInstance",
 		"onCommand:simplicite-vscode.logOutFromModule",
 		"onCommand:simplicite-vscode.logOutFromInstance",
 		"onCommand::simplicite-vscode.compileWorkspace",
@@ -96,10 +95,6 @@
 			{
 				"command": "simplicite-vscode.logOutFromInstance",
 				"title": "Simplicite: Log out from specific instance"
-			},
-			{
-				"command": "simplicite-vscode.connectedInstance",
-				"title": "Simplicite: Get list of connected instances"
 			},
 			{
 				"command": "simplicite-vscode.refreshTreeView",
