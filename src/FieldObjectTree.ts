@@ -10,6 +10,7 @@ import * as path from 'path';
 interface FieldInfo {
     moduleName: string;
     objectFields: Array<any>;
+    instanceUrl: string;
 }
 
 interface ObjectInfo {
@@ -42,7 +43,7 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
         let fieldItem = new Array();
         for (let moduleInfo of objectFieldInfo) {
             if (element === undefined) {
-                fieldItem = fieldItem.concat(this.getModuleItem(moduleInfo.moduleName));
+                fieldItem = fieldItem.concat(this.getModuleItem(moduleInfo.moduleName, moduleInfo.instanceUrl));
             } else if (element.technical && element instanceof FieldItem && element.moduleName === moduleInfo.moduleName) {
                 const objectInfo = this.getObjectFieldNameAndIcon(element.objectInfo.objectType);
                 if (objectInfo) {
@@ -74,7 +75,7 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
         try {
             for (let module of modules) {
                 if (this.request.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
-                    fieldList.push({ objectFields: await this.request.getmoduleDevInfo(module.getInstanceUrl(), module.getName()), moduleName: module.getName() });
+                    fieldList.push({ objectFields: await this.request.getmoduleDevInfo(module.getInstanceUrl(), module.getName()), moduleName: module.getName(), instanceUrl: module.getInstanceUrl() });
                 }
             }
             return fieldList;
@@ -86,14 +87,10 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
     }
 
     getTreeItem (element: TreeItem | ObjectItem | FieldItem | ObjectType): TreeItem | ObjectItem | FieldItem | ObjectType {
-        if (element instanceof FieldItem && element.label !== 'technical fields') {
-            element.contextValue = 'field';
-        } else if (element.label === 'technical fields') {
-            element.contextValue = 'treeItem';
-        } else if (element instanceof ObjectItem) {
-            element.contextValue = 'object';
-        } else {
-            element.contextValue = 'treeItem';
+        if (element.label && !element.description && element.label !== 'technical fields') {
+            element.contextValue = 'label';
+        } else if (element.label && element.description) {
+            element.contextValue = 'label&description';
         }
         return element;
     }
@@ -153,12 +150,13 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
         return objectItems;
     }
 
-    private getModuleItem (moduleName: string): TreeItem {
+    private getModuleItem (moduleName: string, instanceUrl: string): TreeItem {
         const treeItem = new TreeItem(moduleName, TreeItemCollapsibleState.Collapsed);
         treeItem.iconPath = {
             light: path.join(__filename, '..', '..', 'resources', 'light', 'module.svg'),
             dark: path.join(__filename, '..', '..', 'resources', 'dark', 'module.svg')
         };
+        treeItem.description = instanceUrl;
         return treeItem;
     }
 
@@ -192,11 +190,6 @@ export class FieldObjectTree implements TreeDataProvider<TreeItem> {
                                     }
                                 }
                                 const treeItem = new FieldItem(field.name, TreeItemCollapsibleState.None, moduleInfo.moduleName, objectInfo, field.column, true, element.label); 
-                                treeItem.command = {
-                                    command: 'simplicite-vscode.fieldToClipBoard',
-                                    title: 'Not a title',
-                                    arguments: [field.name]
-                                };
                                 fielditem.push(treeItem);
                             }
                             if (hasTechnicalField) {

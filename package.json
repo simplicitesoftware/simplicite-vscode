@@ -62,12 +62,12 @@
 			"view/item/context": [
 				{
 					"command": "simplicite-vscode.itemLabelToClipBoard",
-					"when": "view == simpliciteObjectFields && viewItem == field",
+					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label",
 					"group": "inline"
 				},
 				{
 					"command": "simplicite-vscode.descriptionToClipBoard",
-					"when": "view == simpliciteObjectFields && viewItem == field",
+					"when": "view == simpliciteObjectFields && viewItem == label&description",
 					"group": "inline"
 				}
 			]
