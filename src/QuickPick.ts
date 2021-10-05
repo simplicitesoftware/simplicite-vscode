@@ -16,7 +16,7 @@ export class QuickPick {
     commandListQuickPick (commandList: Array<Command>) {
         const preparedList = new Array();
         for (let command of commandList) {
-            if (command.title !== 'copy column' && command.title !== 'copy field') {
+            if (command.title !== 'copy label' && command.title !== 'copy description') {
                 preparedList.push({ label: command.title, commandId: command.command });
             }
         }
