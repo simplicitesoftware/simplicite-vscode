@@ -1,6 +1,6 @@
 'use strict';
 
-import { window, MarkdownString, commands, extensions, StatusBarItem, ExtensionContext, Command } from 'vscode';
+import { window, MarkdownString, StatusBarItem } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { File } from './File';
 import { Module } from './Module';
