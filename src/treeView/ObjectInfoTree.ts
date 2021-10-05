@@ -1,26 +1,14 @@
 'use strict';
 
-import { SimpliciteAPIManager } from "./SimpliciteAPIManager";
+import { SimpliciteAPIManager } from "../SimpliciteAPIManager";
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemLabel, Uri } from 'vscode';
-import { logger } from './Log';
-import { Module } from "./Module";
-import { objectInfo } from './constant';
+import { logger } from '../Log';
+import { Module } from "../Module";
+import { objectInfo } from '../constant';
 import * as path from 'path';
+import { FieldInfo, ObjectInfo } from '../interfaces';
 
-interface FieldInfo {
-    moduleName: string;
-    objectFields: Array<any>;
-    instanceUrl: string;
-}
-
-interface ObjectInfo {
-    objectType: string,
-    field: string,
-    icons: {dark: string | Uri, light: string | Uri},
-    fieldIcons: {dark: string | Uri, light: string | Uri}
-};
-
-export class FieldObjectTree implements TreeDataProvider<TreeItem> {
+export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
     request: SimpliciteAPIManager;
     private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
@@ -240,7 +228,7 @@ class ObjectType extends TreeItem {
         public readonly label: string,
         public readonly collapsibleState: TreeItemCollapsibleState,
         public readonly moduleName: string | TreeItemLabel,
-      ) {
+    ) {
         super(label, collapsibleState);
         this.moduleName = moduleName;
     }
@@ -253,7 +241,7 @@ class ObjectItem extends ObjectType {
         public readonly moduleName: string | TreeItemLabel,
         public readonly objectInfo: ObjectInfo,
         public readonly description: string
-      ) {
+    ) {
         super(label, collapsibleState, moduleName);
         this.objectInfo = objectInfo;
         this.iconPath = objectInfo.icons;
