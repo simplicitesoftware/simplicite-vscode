@@ -90,6 +90,9 @@ export class FileHandler {
             for (let moduleJson of jsonContent) {
                 modules.push(new Module(moduleJson.name, moduleJson.workspaceFolderName, moduleJson.workspaceFolderPath, moduleJson.instanceUrl, moduleJson.token));
             }
+            if (modules.length === 0) {
+                return null;
+            }
             return modules;
         } catch (e: unknown) {
             return null;
