@@ -1,20 +1,21 @@
 {
-	"name": "simplicite-vscode",
-	"publisher": "simpliciteExtensionTest",
-	"displayName": "simplicite-vscode",
-	"description": "Making life easier for simplicite's designers in an IDE environment",
-	"version": "0.0.1",
+	"name": "simplicite-vscode-tools",
+	"publisher": "simpliciteSoftware",
+	"displayName": "Simplicite VSCode tools",
+	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.60.0"
 	},
-	"icon": "resources/images/icon256.png",
+	"license": "Apache-2.0",
+	"icon": "icon.png",
 	"categories": [
 		"Other"
 	],
 	"keywords": [
 		"simplicite",
-		"make your own business",
-		"simplicite extension"
+		"simplicite extension",
+		"low code"
 	],
 	"activationEvents": [
 		"onStartupFinished"
@@ -50,7 +51,6 @@
 					"command": "simplicite-vscode.descriptionToClipBoard",
 					"when": "false"
 				}
-				
 			],
 			"view/item/context": [
 				{
@@ -82,7 +82,6 @@
 					"when": "view == simpliciteFile && viewItem == module",
 					"group": "inline"
 				}
-
 			]
 		},
 		"commands": [
@@ -154,7 +153,6 @@
 				"command": "simplicite-vscode.addFileToChangedFiles",
 				"title": "Simplicite: Track file"
 			}
-			
 		],
 		"capabilities": {
 			"completionProvider": {
