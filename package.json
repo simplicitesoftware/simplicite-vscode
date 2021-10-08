@@ -148,7 +148,7 @@
 			},
 			{
 				"command": "simplicite-vscode.removeFileFromChangedFiles",
-				"title": "Simplicite: Mark as unmodified"
+				"title": "Simplicite: Mark file as unmodified"
 			},
 			{
 				"command": "simplicite-vscode.addFileToChangedFiles",
