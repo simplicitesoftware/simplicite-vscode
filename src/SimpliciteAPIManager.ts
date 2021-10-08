@@ -414,7 +414,7 @@ export class SimpliciteAPIManager {
     }
     
     getProperScriptField (fileType: string) {
-        for (let object of this.devInfo.getObject()) {
+        for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
                 return object.sourcefield;
             }
@@ -422,7 +422,7 @@ export class SimpliciteAPIManager {
     }
 
     getProperNameField (fileType: string) {
-        for (let object of this.devInfo.getObject()) {
+        for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
                 return object.keyfield;
             }
@@ -431,10 +431,9 @@ export class SimpliciteAPIManager {
 
     // Change path into Java package modele to find object type with dev info
     getBusinessObjectType (fileName: string) { 
-        let urlForPackageComparaison;
-        fileName.includes('/') ? urlForPackageComparaison = replaceAll(fileName, '/\\/', '.') : urlForPackageComparaison = replaceAll(fileName, '/\\/', '.'); 
-        for (let object of this.devInfo.object) {
-            if (urlForPackageComparaison.includes(object.package)) {
+        for (let object of this.devInfo.objects) {
+            const comparePackage = object.package.replaceAll('.', '/');
+            if (fileName.includes(comparePackage)) {
                 return object.object;
             } 
         }
