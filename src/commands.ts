@@ -1,10 +1,12 @@
 'use strict';
 
-import { commands, window } from 'vscode';
+import { commands, Uri, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { copy } from 'copy-paste';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
+import { crossPlatformPath } from './utils';
+import { Module } from './Module';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
@@ -14,7 +16,7 @@ export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
 export const applyChangesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
-			await request.applyChangesHandler();
+			await request.applyChangesHandler(undefined, undefined);
 		    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		} catch (e: any) {
             if (e !== '') {
@@ -35,7 +37,7 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, 
     return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
-                placeHolder: 'module name',  
+                placeHolder: 'module name',
                 title: 'Simplicite: Type the name of the module'
             });
             if (!input) {
@@ -120,9 +122,78 @@ export const descriptionToClipBoardCommand = function () {
     });
 };
 
-export const removeFileCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.removeFile', function (element: any) {
-        request.fileHandler.deleteFile(element.fullPath, request.moduleHandler.getModules());
+export const dontApplyFilesCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.dontApplyFile', async function (element: any) {
+        if (element.fullPath) {
+            request.fileHandler.deleteFileRouter(element.fullPath, request.moduleHandler.getModules(), true);
+            request.fileHandler.fileTree.setFileModule(request.fileHandler.bindFileAndModule(request.moduleHandler.getModules()));
+
+        } else {
+            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
+            request.fileHandler.deleteFileRouter(input, request.moduleHandler.getModules(), true);
+            request.fileHandler.fileTree.setFileModule(request.fileHandler.bindFileAndModule(request.moduleHandler.getModules()));
+        }
         request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
     });
 };
+
+export const removeFileFromChangedCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.removeFileFromChangedFiles', async function (element: any) {
+        if (element.fullPath) {
+            request.fileHandler.deleteFileFromListAndDisk(element.fullPath, request.moduleHandler.getModules());
+        } else {
+            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
+            request.fileHandler.deleteFileFromListAndDisk(input, request.moduleHandler.getModules());
+        }
+        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+    });
+};
+
+export const addFileToChangedFilesCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.addFileToChangedFiles', async function (element: any) {
+        if (element.fullPath) {
+            request.fileHandler.setFileList(request.moduleHandler.getModules(), element.fullPath);            
+        } else {
+            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
+            request.fileHandler.setFileList(request.moduleHandler.getModules(), input);            
+        }
+        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+    });
+};
+
+export const applySpecificModuleCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.applySpecificModule', async function (element: SimpliciteAPIManager | any) {
+        try  {
+            if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
+                element = await inputFilePath('Simplicite: Type in the module name', 'module name');
+                const moduleObject: Module | boolean = request.moduleHandler.getModuleFromName(element);
+                if (!moduleObject) {
+                    const msg = 'Simplicite: Cannot find module named ' + element;
+                    throw new Error(msg);
+                }
+                if (moduleObject instanceof Module) {
+                    await request.applyChangesHandler(moduleObject.getName(), moduleObject.getInstanceUrl());
+                }
+            } else {
+                await request.applyChangesHandler(element.label, element.description);
+            }
+            request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+        } catch (e: any) {
+            window.showErrorMessage(e.message);
+            logger.error(e);
+        }
+    });
+};
+
+async function inputFilePath (title: string, placeHolder: string) {
+    const fileInput = await window.showInputBox({ 
+        placeHolder: placeHolder,  
+        title: title
+    });
+    if (!fileInput) {
+        throw new Error('Simplicite: file input cancelled');
+    }
+    return crossPlatformPath(fileInput);
+}
+
+

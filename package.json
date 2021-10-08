@@ -17,18 +17,7 @@
 		"simplicite extension"
 	],
 	"activationEvents": [
-		"onStartupFinished",
-		"onCommand:simplicite-vscode.logIn",
-		"onCommand:simplicite-vscode.applyChanges",
-		"onCommand:simplicite-vscode.logOut",
-		"onCommand:simplicite-vscode.logOutFromModule",
-		"onCommand:simplicite-vscode.logOutFromInstance",
-		"onCommand:simplicite-vscode.compileWorkspace",
-		"onCommand:simplicite-vscode.refreshTreeView",
-		"onView:simplicite-vscode.simpliciteObjectFields",
-		"onView:simplicite-vscode.itemLabelToClipBoard",
-		"onView:simplicite-vscode.descriptionToClipBoard",
-		"onView:simplicite-vscode.removeFile"
+		"onStartupFinished"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -40,7 +29,7 @@
 				},
 				{
 					"id": "simpliciteFile",
-					"name": "Simplicite file handler"
+					"name": "Simplicite modified file handler"
 				}
 			]
 		},
@@ -66,25 +55,48 @@
 			"view/item/context": [
 				{
 					"command": "simplicite-vscode.itemLabelToClipBoard",
-					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label",
-					"group": "inline"
+					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label"
 				},
 				{
 					"command": "simplicite-vscode.descriptionToClipBoard",
-					"when": "view == simpliciteObjectFields && viewItem == label&description",
-					"group": "inline"
+					"when": "view == simpliciteObjectFields && viewItem == label&description"
 				},
 				{
-					"command": "simplicite-vscode.removeFile",
-					"when": "view == simpliciteFile && viewItem == file",
+					"command": "simplicite-vscode.dontApplyFile",
+					"when": "view == simpliciteFile && viewItem == file"
+				},
+				{
+					"command": "simplicite-vscode.removeFileFromChangedFiles",
+					"when": "view == simpliciteFile && viewItem == file"
+				},
+				{
+					"command": "simplicite-vscode.addFileToChangedFiles",
+					"when": "view == simpliciteFile && viewItem == untrackedFile"
+				},
+				{
+					"command": "simplicite-vscode.removeFileFromChangedFiles",
+					"when": "view == simpliciteFile && viewItem == untrackedFile"
+				},
+				{
+					"command": "simplicite-vscode.applySpecificModule",
+					"when": "view == simpliciteFile && viewItem == module",
 					"group": "inline"
 				}
+
 			]
 		},
 		"commands": [
 			{
 				"command": "simplicite-vscode.applyChanges",
 				"title": "Simplicite: Apply changes"
+			},
+			{
+				"command": "simplicite-vscode.applySpecificModule",
+				"title": "Simplicite: Apply specific module changes",
+				"icon": {
+					"light": "resources/light/file-upload.svg",
+					"dark": "resources/dark/file-upload.svg"
+				}
 			},
 			{
 				"command": "simplicite-vscode.compileWorkspace",
@@ -131,13 +143,18 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.removeFile",
-				"title": "Simplicite: untrack file",
-				"icon": {
-					"light": "resources/light/remove.svg",
-					"dark": "resources/dark/remove.svg"
-				}
+				"command": "simplicite-vscode.dontApplyFile",
+				"title": "Simplicite: Untrack file"
+			},
+			{
+				"command": "simplicite-vscode.removeFileFromChangedFiles",
+				"title": "Simplicite: Mark as unmodified"
+			},
+			{
+				"command": "simplicite-vscode.addFileToChangedFiles",
+				"title": "Simplicite: Track file"
 			}
+			
 		],
 		"capabilities": {
 			"completionProvider": {

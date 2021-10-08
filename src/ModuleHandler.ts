@@ -64,6 +64,23 @@ export class ModuleHandler {
         logger.error('Cannot get module url from name');
         return '';
     }
+    getModuleFromName (moduleName: string): Module | boolean {
+        for (let module of this.modules) {
+            if (module.getName() === moduleName) {
+                return module;
+            }
+        }
+        return false;
+    }
+
+    getModuleFromUrl (instanceUrl: string): Module | false {
+        for (let module of this.modules) {
+            if (module.getInstanceUrl() === instanceUrl) {
+                return module;
+            }
+        }
+        return false;
+    }
 
     getModuleNameFromUrl (instanceUrl: string): string {
         for (let module of this.modules) {
@@ -84,7 +101,23 @@ export class ModuleHandler {
             }
         } catch (e) {
             logger.error(e);
+        }    
+    }
+
+    getModuleFromNameOrUrl (element: string): Module | boolean {
+        let value = this.getModuleFromName(element);
+        if (value) {
+            return value;
+        } 
+        value = this.getModuleFromUrl(element);
+        if (value) {
+            return value;
         }
-        
+        return value;
+    }
+
+    removeConnectedInstancesUrl (instanceUrl: string) {
+        const index = this.connectedInstancesUrl.indexOf(instanceUrl);
+        this.connectedInstancesUrl.splice(index, 1);
     }
 }

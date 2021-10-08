@@ -15,7 +15,6 @@ import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { FileTree } from './treeView/FileTree';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 
-
 export class SimpliciteAPIManager {
     cache: Cache;
     devInfo: any;
@@ -190,7 +189,7 @@ export class SimpliciteAPIManager {
                 this.fileHandler.deleteInstanceJSON(instanceUrl);
                 this.appHandler.getAppList().delete(instanceUrl);
                 this.moduleHandler.spreadToken(instanceUrl, null);
-                this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
                 this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
@@ -211,50 +210,91 @@ export class SimpliciteAPIManager {
         this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
     }
 
-    async applyChangesHandler () {
+    async applyChangesHandler (moduleName: string | undefined, instanceUrl: string | undefined) {
         try {
-            this.beforeApply(this.fileHandler.getFileList());
-            if (!workspace.getConfiguration('simplicite-vscode').get('disableCompilation')) {
-                await this.compileJava(
-                    { 
-                        message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',
-                        button: 'Settings'
-                    });
-            }  
-            const fileModule = this.bindFileWithModule(this.fileHandler.getFileList());
-            let numberOfErrors = 0;
-            for (let connectedModule of this.moduleHandler.getConnectedInstancesUrl()) {
-                const app = await this.appHandler.getApp(connectedModule);
-                if (fileModule.get(connectedModule)) {
-                    for (let filePath of fileModule.get(connectedModule) || []) {
-                        try {
-                            await this.attachFileAndSend(filePath, app);
-		                    this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
-                            logger.info('Successfully applied' + filePath);
-                        } catch (e: any) {
-                            window.showErrorMessage(`Simplicite: Error sending ${filePath} \n ${e.message ? e.message : e}`);
-                            logger.error(e);
-                            numberOfErrors++;
-                        }
-                    }
-                    await this.triggerBackendCompilation(app);
-                } else {
-                    continue;
+            await this.beforeApply(this.fileHandler.getFileList());
+            if (moduleName && instanceUrl) {
+                if (!checkFileModuleSpecific(moduleName, this.fileHandler.getFileList())) {
+                    throw new Error('Simplicite: No file has changed, cannot apply changes');
                 }
-            }
-            const fileListLength = this.fileHandler.fileListLength();
-            if (numberOfErrors === fileListLength) {
-                window.showInformationMessage('Simplicite: Cannot apply any change');
+                await this.applyModuleFiles(moduleName, instanceUrl);
             } else {
-                window.showInformationMessage(`Simplicite: Changed ${fileListLength - numberOfErrors} files over ${fileListLength}`);
-                this.fileHandler.deleteModifiedFiles();
-                this.fileHandler.resetFileList();
+                await this.applyInstanceFiles();
             }
             this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
             return;
         } catch(e) {
             throw e;
         }  
+    }
+
+    async applyModuleFiles (moduleName: string, instanceUrl: string) {
+        const app = await this.appHandler.getApp(instanceUrl);
+        let error = 0;
+        let cptFile = 0;
+        const toDelete = new Array();
+        for (let file of this.fileHandler.getFileList()) {
+            if (file.moduleName === moduleName && file.tracked) {
+                cptFile++;
+                try {
+                    await this.sendFile(file, app);
+                    toDelete.push(file);
+                } catch (e) {
+                    error++;
+                    logger.error('Cannot apply ' + file.getFilePath());
+                }
+            }
+        }
+        for (let file of toDelete) {
+            this.fileHandler.deleteFileFromListAndDisk(file.getFilePath(), this.moduleHandler.getModules());
+        }
+        try {
+            const res: any = await this.triggerBackendCompilation(app); 
+            window.showInformationMessage(res);
+        } catch (e: any) {
+            window.showInformationMessage(e.message);
+        }
+        if (error > 0) {
+            window.showWarningMessage(`Simplicite: could not send ${error} out of ${cptFile} files`);
+        }
+    }
+
+    async applyInstanceFiles () {
+        const fileModule = this.bindFileWithModule(this.fileHandler.getFileList());
+        let errors = 0;
+        for (let instanceUrl of this.moduleHandler.getConnectedInstancesUrl()) {
+            const toDelete = new Array();
+            const app = await this.appHandler.getApp(instanceUrl);
+            if (fileModule.get(instanceUrl)) {
+                for (let file of fileModule.get(instanceUrl)!) {
+                    await this.sendFile(file, app);
+                    toDelete.push(file);
+                }
+            for (let file of toDelete) {
+                this.fileHandler.deleteFileFromListAndDisk(file.getFilePath(), this.moduleHandler.getModules());
+            }
+            } else {
+                continue;
+            }
+            try {
+                await this.triggerBackendCompilation(app);
+                logger.info('Backend compilation succeded');
+            } catch(e: any) {
+                window.showErrorMessage(e.message);
+                logger.error(e.message);
+            }
+        }
+    }
+
+    async sendFile (file: File, app: any) {
+        try {
+            await this.attachFileAndSend(file.filePath, app);
+            this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+            logger.info('Successfully applied' + file.filePath);
+        } catch (e: any) {
+            window.showErrorMessage(`Simplicite: Error sending ${file.filePath} \n ${e.message ? e.message : e}`);
+            logger.error(e);
+        }
     }
 
     async triggerBackendCompilation (app: any) {
@@ -269,21 +309,31 @@ export class SimpliciteAPIManager {
         }
     }
 
-    beforeApply (fileList: Array<File>) {
+    async beforeApply (fileList: Array<File>) {
         if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
             throw new Error('Simplicite: No module connected, cannot apply changes');
         } else if (fileList.length === 0) {
             throw new Error('Simplicite: No file has changed, cannot apply changes');
         };
+        if (!workspace.getConfiguration('simplicite-vscode').get('disableCompilation')) {
+            const res = await this.compileJava(
+            { 
+                message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',
+                button: 'Settings'
+            });
+            if (res !== 'Compilation succeeded') {
+                throw new Error('');
+            }
+        }  
     }
 
-    bindFileWithModule (fileList: Array<File>): Map<string, Array<string>> {
+    bindFileWithModule (fileList: Array<File>): Map<string, Array<File>> {
         let flag = false;
-        let fileModule: Map<string, Array<string>>;
+        let fileModule: Map<string,Array<File>>;
         fileModule = new Map();
-        for (let {instanceUrl, filePath} of fileList) {
-            if (this.moduleHandler.getConnectedInstancesUrl().includes(instanceUrl)) {
-                fileModule.get(instanceUrl) ? fileModule.get(instanceUrl)?.push(filePath) : fileModule.set(instanceUrl, [filePath]);                 
+        for (let file of fileList) {
+            if (this.moduleHandler.getConnectedInstancesUrl().includes(file.getInstanceUrl())) {
+                fileModule.get(file.getInstanceUrl()) ? fileModule.get(file.getInstanceUrl())?.push(file) : fileModule.set(file.getInstanceUrl(), [file]);                 
                 flag = true;
             }
         }
@@ -423,7 +473,6 @@ export class SimpliciteAPIManager {
                     window.showErrorMessage('Simplicite: Compilation failed');
                     return 'Compilation failed';
                 case 1:
-                    window.showInformationMessage('Simplicite: Compilation succeeded');
                     return 'Compilation succeeded';
                 case 3:
                     window.showErrorMessage('Simplicite: Compilation cancelled');
@@ -457,4 +506,13 @@ function openSettings () {
     } catch (e) {
         logger.error(e);
     }   
+}
+
+function checkFileModuleSpecific (moduleName: string, files: File[]) {
+    for(let file of files) {
+        if (file.moduleName === moduleName) {
+            return true;
+        }
+    }
+    return false;
 }

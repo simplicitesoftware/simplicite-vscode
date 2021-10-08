@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand, removeFileCommand } from './commands';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand, removeFileFromChangedCommand, dontApplyFilesCommand, addFileToChangedFilesCommand, applySpecificModuleCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { QuickPick } from './QuickPick';
@@ -39,8 +39,11 @@ export async function activate(context: ExtensionContext) {
 	const compileWorkspace = compileWorkspaceCommand(request);
 	const fieldToClipBoard = itemLabelToClipBoardCommand();
 	const descriptionToClipBoard = descriptionToClipBoardCommand();
-	const removeFile = removeFileCommand(request);
-	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard, removeFile);
+	const removeFileFromChangedFiles = removeFileFromChangedCommand(request);
+	const dontApplyFile = dontApplyFilesCommand(request);
+	const addFileToChangedFiles = addFileToChangedFilesCommand(request);
+	const applySpecificModule = applySpecificModuleCommand(request);
+	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard, dontApplyFile, removeFileFromChangedFiles, addFileToChangedFiles, applySpecificModule);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {

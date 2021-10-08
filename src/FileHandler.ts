@@ -14,9 +14,11 @@ import { FileAndModule } from './interfaces';
 export class FileHandler {
     fileTree: FileTree;
     private fileList: Array<File>;
+    private untrackedFiles: Array<File>;
     constructor (fileTree: FileTree) {
         this.fileTree = fileTree;
         this.fileList = new Array();
+        this.untrackedFiles = new Array();
     }
     async simpliciteInfoGenerator (token: string, appURL: string) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
         let toBeWrittenJSON = new Array();
@@ -166,17 +168,33 @@ export class FileHandler {
         }
     }
 
-    async setFileList (modules: Array<Module>, uri: Uri) {
+    async setFileList (modules: Array<Module>, uri: Uri | string) {
         try {
             for (let module of modules) {
-                const filePath = crossPlatformPath(uri.path);
+                let filePath = '';
+                if (uri instanceof Uri) {
+                    filePath = crossPlatformPath(uri.path);
+                } else if (typeof(uri) === 'string') {
+                    filePath = uri;
+                }
+                this.cleanUntrackedFiles(filePath);
                 const filePathLowerCase = filePath;
                 const workspaceLowerCase = module.getWorkspaceFolderPath();
                 if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
-                    const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath(), module.getName());
+                    const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath(), module.getName(), true);
                     if (!this.isFileInFileList(filePath)) {
                         this.fileList.push(file);
                         logger.info(`Change detected on ${filePath}`);
+                    }
+                } else {
+                    for (let file of this.untrackedFiles) {
+                        if (getObjectName(filePath, file.filePath)) {
+                            const index = this.untrackedFiles.indexOf(file);
+                            file.tracked = true;
+                            this.fileList.push(file);
+                            this.untrackedFiles.splice(index, 1);
+                            break;
+                        }
                     }
                 }
             }
@@ -184,6 +202,20 @@ export class FileHandler {
             await this.fileTree.setFileModule(this.bindFileAndModule(modules));
         } catch (e: any) {
             logger.error(e);
+        }
+    }
+
+    cleanUntrackedFiles (filePath: string) {
+        for (let file of this.untrackedFiles) {
+            if (file.getFilePath() === filePath) {
+                const index = this.untrackedFiles.indexOf(file);
+                this.untrackedFiles.splice(index, 1);
+            }
+        }
+        for (let file of this.fileList) {
+            if (file.getFilePath() === filePath) {
+                file.tracked = true;
+            }
         }
     }
 
@@ -196,20 +228,72 @@ export class FileHandler {
                     moduleObject.fileList.push(file);
                 }
             }
+            for (let file of this.untrackedFiles) {
+                if (file.moduleName === module.getName()) {
+                    moduleObject.fileList.push(file);
+                }
+            }
             fileModule.push(moduleObject);
         }
         return fileModule;
     }
 
-    deleteFile (path: string, modules: Module[]): void {
+    deleteFileRouter (inputPath: string, modules: Module[], addUntrackFile: boolean): void {
         for (let file of this.fileList) {
-            if (file.filePath === path) {
-                const index = this.fileList.indexOf(file);
-                this.fileList.splice(index, 1);
-                break;
+            if (file.filePath.toLowerCase() === inputPath.toLowerCase() || getObjectName(inputPath, file.filePath)) {
+                this.deleteFile(file, addUntrackFile);
+            }
+        }
+    }
+
+    deleteFile (file: File, addUntrackFile: boolean) {
+        if (addUntrackFile) {
+            file.tracked = false;
+            this.untrackedFiles.push(file);
+            let jsonContent;
+            try {
+                 jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+            } catch (e) {
+                console.log(e);
+            }
+            for (let content of jsonContent) {
+                if (content.filePath.toLowerCase() === file.getFilePath().toLowerCase()) {
+                    content.tracked = false;
+                }
+            }
+            try {
+                this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);   
+            } catch(e) {
+                console.log(e);
+            }
+        }
+        const index = this.fileList.indexOf(file);
+        this.fileList.splice(index, 1);
+    }
+
+    deleteFileFromDisk (path: string) {
+        const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+        for (let content of jsonContent) {
+            if (content.filePath.toLowerCase() === path.toLowerCase()) {
+                const index = jsonContent.indexOf(content);
+                jsonContent.splice(index, 1);
+            }
+        }
+        this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
+    }
+
+    deleteFileFromListAndDisk (path: string, modules: Module[]) {
+        this.deleteFileFromDisk(path);
+        this.deleteFileRouter(path, modules, false);
+        for (let file of this.untrackedFiles) {
+            if (file.filePath.toLowerCase() === path.toLowerCase() || getObjectName(path, file.filePath)) {
+                const index = this.untrackedFiles.indexOf(file);
+                this.untrackedFiles.splice(index, 1);
             }
         }
         this.fileTree.setFileModule(this.bindFileAndModule(modules));
+
+        
     }
 
     getFileList () {
@@ -228,7 +312,11 @@ export class FileHandler {
         try {   
             const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
             for (let content of jsonContent) {
-                this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName));
+                if (content.tracked) {
+                    this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName, content.tracked));
+                } if (!content.tracked) {
+                    this.untrackedFiles.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName, content.tracked));
+                }
             }
             await this.fileTree.setFileModule(this.bindFileAndModule(modules));
         } catch (e: any) {
@@ -238,7 +326,7 @@ export class FileHandler {
 
     readModifiedFiles () {
         try {
-            return this.readFileSync(FILES_SAVE_PATH);
+            return this.readFileSync(FILES_SAVE_PATH, 'utf8');
         } catch (e: any) {
             throw e;
         }
@@ -270,5 +358,22 @@ export class FileHandler {
         }
         return filesPath;
     }
+    
+}
+
+function getObjectName (inputPath: string, testFilePath: string) {
+    const decomposedInput = inputPath.toLowerCase().split('/');
+    const decomposedTest = testFilePath.toLowerCase().split('/');
+    let lastInput = decomposedInput[decomposedInput.length - 1];
+    let lastTest = decomposedTest[decomposedTest.length - 1];
+    if (lastInput === lastTest) {
+        return true;
+    } else if (!lastInput.endsWith('.java')) {
+        lastTest = lastTest.replace('.java', '');
+        if (lastInput === lastTest) {
+            return true;
+        }
+    }
+    return false;
     
 }
