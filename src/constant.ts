@@ -29,7 +29,7 @@ if (process.platform === 'win32'){
 export const TOKEN_SAVE_PATH = crossPlatformPath(dir + 'simplicite-info.json');
 export const FILES_SAVE_PATH = crossPlatformPath(dir + 'simplicite-files.json');
 export const LOGS_PATH = crossPlatformPath(dir + 'simplicite.logs');
-export const EXTENSION_ID = 'simpliciteExtensionTest.simplicite-vscode';
+export const EXTENSION_ID = 'simpliciteSoftware.simplicite-vscode-tools';
 
 export const objectInfo = [
     {
