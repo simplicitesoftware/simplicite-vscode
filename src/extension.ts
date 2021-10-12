@@ -4,11 +4,14 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, itemLabelToClipBoardCommand, descriptionToClipBoardCommand, removeFileFromChangedCommand, dontApplyFilesCommand, addFileToChangedFilesCommand, applySpecificModuleCommand } from './commands';
+import { loginAllModulesCommand, applyChangesCommand, logoutCommand, logoutFromModuleCommand, logInInstanceCommand, compileWorkspaceCommand, labelToClipBoardCommand, descriptionToClipBoardCommand, untrackFilesCommand, trackFileCommand, applySpecificModuleCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
+import { FileHandler } from './FileHandler';
+import { ModuleHandler } from './ModuleHandler';
+import { crossPlatformPath } from './utils';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
@@ -17,8 +20,9 @@ export async function activate(context: ExtensionContext) {
 		'simpliciteFile',
 		fileTree
 	);
-	const request = await SimpliciteAPIManager.build(fileTree);
-	let modulesLength = request.moduleHandler.moduleLength(); // useful to compare module change on onDidChangeWorkspaceFolders
+	const moduleHandler = new ModuleHandler();
+	const fileHandler = await FileHandler.build(fileTree, moduleHandler);
+	const request = await SimpliciteAPIManager.build(fileHandler, moduleHandler);
 	const barItem = await BarItem.build('Simplicite', request);
 	request.setBarItem(barItem);
 	new QuickPick(context, request);
@@ -37,23 +41,22 @@ export async function activate(context: ExtensionContext) {
 	const logoutFromModule = logoutFromModuleCommand(request, fieldObjectTree.refresh, fieldObjectTree);
 	const logInInstance = logInInstanceCommand(request);
 	const compileWorkspace = compileWorkspaceCommand(request);
-	const fieldToClipBoard = itemLabelToClipBoardCommand();
+	const fieldToClipBoard = labelToClipBoardCommand();
 	const descriptionToClipBoard = descriptionToClipBoardCommand();
-	const removeFileFromChangedFiles = removeFileFromChangedCommand(request);
-	const dontApplyFile = dontApplyFilesCommand(request);
-	const addFileToChangedFiles = addFileToChangedFilesCommand(request);
+	const untrackFile = untrackFilesCommand(request);
+	const trackFile = trackFileCommand(request);
 	const applySpecificModule = applySpecificModuleCommand(request);
-	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard, dontApplyFile, removeFileFromChangedFiles, addFileToChangedFiles, applySpecificModule);
+	context.subscriptions.push(loginAllModules, applyChanges, logout, logoutFromModule, logInInstance, compileWorkspace, fieldToClipBoard, descriptionToClipBoard, untrackFile, trackFile, applySpecificModule);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
-			await request.fileHandler.setFileList(request.moduleHandler.getModules(), event.uri);
+			await request.fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true);
 			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		}
 	});
 
-	if(!workspace.getConfiguration('simplicite-vscode').get('disableAutoConnect')) {
+	if(!workspace.getConfiguration('simplicite-vscode').get('api.autoConnect')) {
 		try {
 			await request.loginHandler();
 			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
@@ -69,6 +72,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(completionProviderSingleQuote);
 
 	// workspace handler
+	let modulesLength = request.moduleHandler.moduleLength(); // usefull to compare module change on onDidChangeWorkspaceFolders
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
 		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 		const tempModules = await request.fileHandler.getSimpliciteModules();

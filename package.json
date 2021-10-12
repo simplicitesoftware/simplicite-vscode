@@ -44,7 +44,7 @@
 			],
 			"commandPalette": [
 				{
-					"command": "simplicite-vscode.itemLabelToClipBoard",
+					"command": "simplicite-vscode.labelToClipBoard",
 					"when": "false"
 				},
 				{
@@ -54,7 +54,7 @@
 			],
 			"view/item/context": [
 				{
-					"command": "simplicite-vscode.itemLabelToClipBoard",
+					"command": "simplicite-vscode.labelToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label"
 				},
 				{
@@ -62,19 +62,11 @@
 					"when": "view == simpliciteObjectFields && viewItem == label&description"
 				},
 				{
-					"command": "simplicite-vscode.dontApplyFile",
+					"command": "simplicite-vscode.untrackFile",
 					"when": "view == simpliciteFile && viewItem == file"
 				},
 				{
-					"command": "simplicite-vscode.removeFileFromChangedFiles",
-					"when": "view == simpliciteFile && viewItem == file"
-				},
-				{
-					"command": "simplicite-vscode.addFileToChangedFiles",
-					"when": "view == simpliciteFile && viewItem == untrackedFile"
-				},
-				{
-					"command": "simplicite-vscode.removeFileFromChangedFiles",
+					"command": "simplicite-vscode.trackFile",
 					"when": "view == simpliciteFile && viewItem == untrackedFile"
 				},
 				{
@@ -99,7 +91,7 @@
 			},
 			{
 				"command": "simplicite-vscode.compileWorkspace",
-				"title": "Simplicite: Compile java code in current workspace"
+				"title": "Simplicite: Compile java code in workspace"
 			},
 			{
 				"command": "simplicite-vscode.logIn",
@@ -126,7 +118,7 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.itemLabelToClipBoard",
+				"command": "simplicite-vscode.labelToClipBoard",
 				"title": "copy label",
 				"icon": {
 					"light": "resources/light/copy.svg",
@@ -142,15 +134,11 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.dontApplyFile",
+				"command": "simplicite-vscode.untrackFile",
 				"title": "Simplicite: Untrack file"
 			},
 			{
-				"command": "simplicite-vscode.removeFileFromChangedFiles",
-				"title": "Simplicite: Mark file as unmodified"
-			},
-			{
-				"command": "simplicite-vscode.addFileToChangedFiles",
+				"command": "simplicite-vscode.trackFile",
 				"title": "Simplicite: Track file"
 			}
 		],
@@ -164,12 +152,12 @@
 		},
 		"configuration": {
 			"properties": {
-				"simplicite-vscode.disableCompilation": {
+				"simplicite-vscode.compilation.enabled": {
 					"type": "boolean",
-					"default": false,
+					"default": true,
 					"description": "Disable local compilation before applying changes."
 				},
-				"simplicite-vscode.disableAutoConnect": {
+				"simplicite-vscode.api.autoConnect": {
 					"type": "boolean",
 					"default": false,
 					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."

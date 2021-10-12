@@ -7,12 +7,14 @@ import { copy } from 'copy-paste';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { crossPlatformPath } from './utils';
 import { Module } from './Module';
+import { File } from './File';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logIn', async () => {	
         await request.loginHandler();
     });
 };
+
 export const applyChangesCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.applyChanges', async function () {
 		try {
@@ -27,12 +29,14 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
 		}
 	});
 };
+
 export const logoutCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logOut', function () {	
 		request.logout();
 		request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
+
 export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: ObjectInfoTree) {
     return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
 		try {
@@ -51,6 +55,7 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, 
         }
 	});
 };
+
 export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.logInInstance', async function () {	
 		try {
@@ -94,6 +99,7 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
         request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
+
 export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
 		try {
@@ -106,8 +112,8 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) 
 	});
 };
 
-export const itemLabelToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode.itemLabelToClipBoard', element => {
+export const labelToClipBoardCommand = function () {
+    return commands.registerCommand('simplicite-vscode.labelToClipBoard', element => {
         if (element !== undefined) {
             copy(element.label);
         }
@@ -122,41 +128,18 @@ export const descriptionToClipBoardCommand = function () {
     });
 };
 
-export const dontApplyFilesCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.dontApplyFile', async function (element: any) {
-        if (element.fullPath) {
-            request.fileHandler.deleteFileRouter(element.fullPath, request.moduleHandler.getModules(), true);
-            request.fileHandler.fileTree.setFileModule(request.fileHandler.bindFileAndModule(request.moduleHandler.getModules()));
-
-        } else {
-            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
-            request.fileHandler.deleteFileRouter(input, request.moduleHandler.getModules(), true);
-            request.fileHandler.fileTree.setFileModule(request.fileHandler.bindFileAndModule(request.moduleHandler.getModules()));
-        }
+export const untrackFilesCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.untrackFile', async function (element: any) {
+        const inputFile = await getInputFile(request, element);
+        request.fileHandler.setTrackedStatus(inputFile.getFilePath(), false);                 
         request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
     });
 };
 
-export const removeFileFromChangedCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.removeFileFromChangedFiles', async function (element: any) {
-        if (element.fullPath) {
-            request.fileHandler.deleteFileFromListAndDisk(element.fullPath, request.moduleHandler.getModules());
-        } else {
-            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
-            request.fileHandler.deleteFileFromListAndDisk(input, request.moduleHandler.getModules());
-        }
-        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-    });
-};
-
-export const addFileToChangedFilesCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.addFileToChangedFiles', async function (element: any) {
-        if (element.fullPath) {
-            request.fileHandler.setFileList(request.moduleHandler.getModules(), element.fullPath);            
-        } else {
-            const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
-            request.fileHandler.setFileList(request.moduleHandler.getModules(), input);            
-        }
+export const trackFileCommand = function (request: SimpliciteAPIManager) {
+    return commands.registerCommand('simplicite-vscode.trackFile', async function (element: any) {
+        const inputFile = await getInputFile(request, element);
+        request.fileHandler.setTrackedStatus(inputFile.getFilePath(), true);                 
         request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
     });
 };
@@ -184,6 +167,16 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
         }
     });
 };
+
+async function getInputFile (request: SimpliciteAPIManager, element: any): Promise<File> {
+    let inputFile: File;
+    if (element.fullPath) {
+        return request.fileHandler.getFileFromInput(element.fullPath);
+    } else {
+        const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
+        return request.fileHandler.getFileFromInput(input);
+    }
+}
 
 async function inputFilePath (title: string, placeHolder: string) {
     const fileInput = await window.showInputBox({ 
