@@ -2,6 +2,7 @@
 
 import { logger } from "./Log";
 import { Module } from "./Module";
+import { crossPlatformPath } from "./utils";
 
 export class ModuleHandler {
     modules: Array<Module>;
@@ -25,6 +26,7 @@ export class ModuleHandler {
     setModules (modules: Array<Module>) {
         this.modules = modules;
     }
+    
     getModules () {
         return this.modules;
     }
@@ -92,16 +94,17 @@ export class ModuleHandler {
         return '';
     }
 
-    getModuleUrlFromWorkspacePath (workspacePath: string) {
+    getModuleUrlFromWorkspacePath (workspacePath: string): string {
         try {
             for (let module of this.modules) {
-                if (module.getWorkspaceFolderPath() === workspacePath) {
+                if (module.getWorkspaceFolderPath() === crossPlatformPath(workspacePath)) {
                     return module.getInstanceUrl();
                 }
             }
         } catch (e) {
             logger.error(e);
-        }    
+        }
+        return '';
     }
 
     getModuleFromNameOrUrl (element: string): Module | boolean {

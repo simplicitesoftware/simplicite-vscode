@@ -12,7 +12,6 @@ import { File } from './File';
 import { replaceAll } from './utils';
 import { BarItem } from './BarItem';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
-import { FileTree } from './treeView/FileTree';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 
 export class SimpliciteAPIManager {
@@ -23,33 +22,28 @@ export class SimpliciteAPIManager {
     fileHandler: FileHandler;
     moduleHandler: ModuleHandler;
     barItem?: BarItem;
-    constructor (fileTree: FileTree) {
+    constructor (fileHandler: FileHandler, moduleHandler: ModuleHandler) {
         this.cache = new Cache();
         this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
         this.moduleDevInfo = null; // fetched in getDevInfo when module is defined
         this.appHandler = new AppHandler();
-        this.fileHandler = new FileHandler(fileTree);
-        this.moduleHandler = new ModuleHandler();
+        this.fileHandler = fileHandler;
+        this.moduleHandler = moduleHandler;
         this.barItem = undefined;
     }
 
-    async init () {
-        await this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules());
-        await this.fileHandler.getModifiedFilesOnStart(this.moduleHandler.getModules());
-        if (this.moduleHandler.moduleLength() !== 0 && this.fileHandler.fileListLength() !== 0) {
+    static async build (fileHandler: FileHandler,  moduleHandler: ModuleHandler) {
+        const simpliciteAPIManager = new SimpliciteAPIManager(fileHandler, moduleHandler);
+        await simpliciteAPIManager.moduleHandler.setModules(await simpliciteAPIManager.fileHandler.getSimpliciteModules());
+        if (simpliciteAPIManager.moduleHandler.moduleLength() !== 0 && simpliciteAPIManager.fileHandler.fileListLength() !== 0) {
             logger.info('Modules and files set on initialization');
         }
-        if (this.moduleHandler.moduleLength() === 0) {
+        if (simpliciteAPIManager.moduleHandler.moduleLength() === 0) {
             logger.warn('No modules set on initialization');
         }
-        if (this.fileHandler.fileListLength() === 0) {
+        if (simpliciteAPIManager.fileHandler.fileListLength() === 0) {
             logger.warn('No files set on initialization');
         }
-    }
-
-    static async build (fileTree: FileTree) {
-        const simpliciteAPIManager = new SimpliciteAPIManager(fileTree);
-        await simpliciteAPIManager.init();
         return simpliciteAPIManager;
     }
 
@@ -232,21 +226,17 @@ export class SimpliciteAPIManager {
         const app = await this.appHandler.getApp(instanceUrl);
         let error = 0;
         let cptFile = 0;
-        const toDelete = new Array();
         for (let file of this.fileHandler.getFileList()) {
             if (file.moduleName === moduleName && file.tracked) {
                 cptFile++;
                 try {
                     await this.sendFile(file, app);
-                    toDelete.push(file);
+                    this.fileHandler.setTrackedStatus(file.getFilePath(), false);
                 } catch (e) {
                     error++;
                     logger.error('Cannot apply ' + file.getFilePath());
                 }
             }
-        }
-        for (let file of toDelete) {
-            this.fileHandler.deleteFileFromListAndDisk(file.getFilePath(), this.moduleHandler.getModules());
         }
         try {
             const res: any = await this.triggerBackendCompilation(app); 
@@ -261,18 +251,13 @@ export class SimpliciteAPIManager {
 
     async applyInstanceFiles () {
         const fileModule = this.bindFileWithModule(this.fileHandler.getFileList());
-        let errors = 0;
         for (let instanceUrl of this.moduleHandler.getConnectedInstancesUrl()) {
-            const toDelete = new Array();
             const app = await this.appHandler.getApp(instanceUrl);
             if (fileModule.get(instanceUrl)) {
                 for (let file of fileModule.get(instanceUrl)!) {
                     await this.sendFile(file, app);
-                    toDelete.push(file);
+                    this.fileHandler.setTrackedStatus(file.getFilePath(), false);
                 }
-            for (let file of toDelete) {
-                this.fileHandler.deleteFileFromListAndDisk(file.getFilePath(), this.moduleHandler.getModules());
-            }
             } else {
                 continue;
             }
@@ -315,7 +300,7 @@ export class SimpliciteAPIManager {
         } else if (fileList.length === 0) {
             throw new Error('Simplicite: No file has changed, cannot apply changes');
         };
-        if (!workspace.getConfiguration('simplicite-vscode').get('disableCompilation')) {
+        if (!workspace.getConfiguration('simplicite-vscode').get('compilation.enabled')) {
             const res = await this.compileJava(
             { 
                 message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',

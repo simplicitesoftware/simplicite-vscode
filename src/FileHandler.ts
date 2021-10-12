@@ -10,16 +10,29 @@ import { TOKEN_SAVE_PATH, FILES_SAVE_PATH } from './constant';
 import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
+import { ModuleHandler } from './ModuleHandler';
 
 export class FileHandler {
     fileTree: FileTree;
     private fileList: Array<File>;
-    private untrackedFiles: Array<File>;
-    constructor (fileTree: FileTree) {
+    moduleHandler: ModuleHandler;
+    constructor (fileTree: FileTree, moduleHandler: ModuleHandler) {
         this.fileTree = fileTree;
         this.fileList = new Array();
-        this.untrackedFiles = new Array();
+        this.moduleHandler = moduleHandler;
     }
+
+    static async build (fileTree: FileTree, moduleHandler: ModuleHandler): Promise<FileHandler> {
+        const fileHandler = new FileHandler(fileTree, moduleHandler);
+        try {
+            fileHandler.moduleHandler.setModules(await fileHandler.getSimpliciteModules()); // need modules to create File
+            fileHandler.fileList = await fileHandler.getFileOnStart();
+        } catch (e) {
+            logger.error(e);
+        }
+        return fileHandler;
+    }
+
     async simpliciteInfoGenerator (token: string, appURL: string) { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
         let toBeWrittenJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
@@ -168,57 +181,6 @@ export class FileHandler {
         }
     }
 
-    async setFileList (modules: Array<Module>, uri: Uri | string) {
-        try {
-            for (let module of modules) {
-                let filePath = '';
-                if (uri instanceof Uri) {
-                    filePath = crossPlatformPath(uri.path);
-                } else if (typeof(uri) === 'string') {
-                    filePath = uri;
-                }
-                this.cleanUntrackedFiles(filePath);
-                const filePathLowerCase = filePath;
-                const workspaceLowerCase = module.getWorkspaceFolderPath();
-                if (filePathLowerCase.toLowerCase().search(workspaceLowerCase.toLowerCase()) !== -1) {
-                    const file = new File(filePath, module.getInstanceUrl(), module.getWorkspaceFolderPath(), module.getName(), true);
-                    if (!this.isFileInFileList(filePath)) {
-                        this.fileList.push(file);
-                        logger.info(`Change detected on ${filePath}`);
-                    }
-                } else {
-                    for (let file of this.untrackedFiles) {
-                        if (getObjectName(filePath, file.filePath)) {
-                            const index = this.untrackedFiles.indexOf(file);
-                            file.tracked = true;
-                            this.fileList.push(file);
-                            this.untrackedFiles.splice(index, 1);
-                            break;
-                        }
-                    }
-                }
-            }
-            this.saveJSONOnDisk(this.fileList, FILES_SAVE_PATH);
-            await this.fileTree.setFileModule(this.bindFileAndModule(modules));
-        } catch (e: any) {
-            logger.error(e);
-        }
-    }
-
-    cleanUntrackedFiles (filePath: string) {
-        for (let file of this.untrackedFiles) {
-            if (file.getFilePath() === filePath) {
-                const index = this.untrackedFiles.indexOf(file);
-                this.untrackedFiles.splice(index, 1);
-            }
-        }
-        for (let file of this.fileList) {
-            if (file.getFilePath() === filePath) {
-                file.tracked = true;
-            }
-        }
-    }
-
     bindFileAndModule (modules: Array<Module>): FileAndModule[] {
         const fileModule = new Array();
         for (let module of modules) {
@@ -228,28 +190,15 @@ export class FileHandler {
                     moduleObject.fileList.push(file);
                 }
             }
-            for (let file of this.untrackedFiles) {
-                if (file.moduleName === module.getName()) {
-                    moduleObject.fileList.push(file);
-                }
-            }
             fileModule.push(moduleObject);
         }
         return fileModule;
     }
 
-    deleteFileRouter (inputPath: string, modules: Module[], addUntrackFile: boolean): void {
-        for (let file of this.fileList) {
-            if (file.filePath.toLowerCase() === inputPath.toLowerCase() || getObjectName(inputPath, file.filePath)) {
-                this.deleteFile(file, addUntrackFile);
-            }
-        }
-    }
-
     deleteFile (file: File, addUntrackFile: boolean) {
         if (addUntrackFile) {
             file.tracked = false;
-            this.untrackedFiles.push(file);
+            //this.untrackedFiles.push(file);
             let jsonContent;
             try {
                  jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
@@ -282,18 +231,14 @@ export class FileHandler {
         this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
     }
 
-    deleteFileFromListAndDisk (path: string, modules: Module[]) {
-        this.deleteFileFromDisk(path);
-        this.deleteFileRouter(path, modules, false);
-        for (let file of this.untrackedFiles) {
-            if (file.filePath.toLowerCase() === path.toLowerCase() || getObjectName(path, file.filePath)) {
-                const index = this.untrackedFiles.indexOf(file);
-                this.untrackedFiles.splice(index, 1);
+    updateFileStatusOnDisk () {
+        const jsonContent = new Array();
+        for (let file of this.fileList) {
+            if (file.tracked) {
+                jsonContent.push({filePath: file.getFilePath(), tracked: file.tracked});
             }
         }
-        this.fileTree.setFileModule(this.bindFileAndModule(modules));
-
-        
+        this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
     }
 
     getFileList () {
@@ -308,22 +253,6 @@ export class FileHandler {
         return this.fileList.length;
     }
 
-    async getModifiedFilesOnStart (modules: Module[]) {
-        try {   
-            const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
-            for (let content of jsonContent) {
-                if (content.tracked) {
-                    this.fileList.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName, content.tracked));
-                } if (!content.tracked) {
-                    this.untrackedFiles.push(new File(content.filePath, content.instanceUrl, content.workspaceFolderPath, content.moduleName, content.tracked));
-                }
-            }
-            await this.fileTree.setFileModule(this.bindFileAndModule(modules));
-        } catch (e: any) {
-            logger.info('simplicite-file.json not found: no modified files');
-        }
-    }
-
     readModifiedFiles () {
         try {
             return this.readFileSync(FILES_SAVE_PATH, 'utf8');
@@ -332,7 +261,7 @@ export class FileHandler {
         }
     }
 
-    deleteModifiedFiles () {
+    static deleteModifiedFiles () {
         try {
             fs.unlinkSync(FILES_SAVE_PATH);
         } catch (e: any) {
@@ -358,22 +287,65 @@ export class FileHandler {
         }
         return filesPath;
     }
-    
-}
 
-function getObjectName (inputPath: string, testFilePath: string) {
-    const decomposedInput = inputPath.toLowerCase().split('/');
-    const decomposedTest = testFilePath.toLowerCase().split('/');
-    let lastInput = decomposedInput[decomposedInput.length - 1];
-    let lastTest = decomposedTest[decomposedTest.length - 1];
-    if (lastInput === lastTest) {
-        return true;
-    } else if (!lastInput.endsWith('.java')) {
-        lastTest = lastTest.replace('.java', '');
-        if (lastInput === lastTest) {
-            return true;
+    async getFileOnStart (): Promise<File[]> { // called 
+        if (workspace.workspaceFolders === undefined) {
+            throw new Error('no workspace detected');
         }
+        const globPatern = '**/*.java';
+        let fileList = new Array();
+        for (let workspaceFolder of workspace.workspaceFolders) {
+            const relativePattern = new RelativePattern(workspaceFolder, globPatern);
+            const files = await workspace.findFiles(relativePattern);
+            for (let file of files) {
+                fileList.push(new File(file.path, this.moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
+            }
+        }
+        return this.setTrackedStatusFromDisk(fileList);
     }
-    return false;
-    
+
+    setTrackedStatusFromDisk (fileList: File[]): File[] { 
+        const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+        for (let file of fileList) {
+            for (let content of jsonContent) {
+                if (file.getFilePath() === content.filePath) {
+                    file.tracked = content.tracked;
+                    break;
+                }
+            }
+        }
+        return fileList;
+    }
+
+    setTrackedStatus (filePath: string, status: boolean): void {
+        for (let file of this.fileList) {
+            if (file.getFilePath() === filePath) {
+                file.tracked = status;
+            }
+        }
+        this.updateFileStatusOnDisk();
+    }
+
+    getFileFromInput (input: string): File { // returns the file matching the name
+        const decomposedInput = input.toLowerCase().split('/');
+        const lastInput = decomposedInput[decomposedInput.length - 1];
+        for (let file of this.fileList) {
+            if (file.getFilePath() === input) {
+                return file;
+            }
+            const decomposedFile = file.getFilePath().toLowerCase().split('/');
+            const lastFile = decomposedFile[decomposedFile.length - 1];
+            if (lastInput.endsWith('.java')) {    
+                if (lastFile === lastInput) {
+                    return file;
+                }
+            } else {
+                const lastInputWithoutJava = lastFile.replace('.java', '');
+                if (lastFile === lastInputWithoutJava) {
+                    return file;
+                }
+            }
+        }
+        throw new Error('getFileFromInput did not found any matching file');
+    }
 }
