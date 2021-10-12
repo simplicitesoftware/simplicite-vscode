@@ -38,7 +38,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                 return Promise.resolve(this.getUntrackedFiles(element.moduleName));
             }
         }
-        return Promise.resolve([new TreeItem('No file has been changed', TreeItemCollapsibleState.None)]);
+        return Promise.resolve([new TreeItem('Nothing to display', TreeItemCollapsibleState.None)]);
     }
 
     private getModulesItem (): TreeItem[] {
@@ -82,7 +82,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         if (fileItems.length === 0) {
             fileItems.push(new TreeItem('No files to display', TreeItemCollapsibleState.None));
         }
-        return fileItems;
+        return this.orderAlphab(fileItems);
     }
 
     private getUntrackedFiles (moduleName: string | TreeItemLabel): TreeItem[] {
@@ -103,7 +103,33 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                 }
             }
         }
-        return untrackedFiles;
+        
+        return this.orderAlphab(untrackedFiles);
+    }
+
+    orderAlphab (fileItems: TreeItem[]): TreeItem[] {
+        const fileItemPath = new Array();
+        let untrackedItem: TreeItem | undefined = undefined;
+        for (let file of fileItems) {
+            if (file.label === 'Untracked files') {
+                untrackedItem = file;
+                continue;
+            }
+            fileItemPath.push(file.label);
+        }
+        fileItemPath.sort();
+        const orderedFileItems = new Array();
+        for (let ordered of fileItemPath) {
+            for (let file of fileItems) {
+                if (ordered === file.label) {
+                    orderedFileItems.push(file);
+                }
+            }
+        }
+        if (untrackedItem) {
+            orderedFileItems.push(untrackedItem);
+        }
+        return orderedFileItems;
     }
 
     private legibleFileName (filePäth: string) {
@@ -112,7 +138,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         return decomposedPath[index- 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
     }
 
-    async setFileModule (fileModule: any) {
+    async setFileModule (fileModule: FileAndModule[]) {
         this.fileModule = fileModule;
         await this.refresh();
     }
