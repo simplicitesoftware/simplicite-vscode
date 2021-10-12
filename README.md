@@ -1,58 +1,62 @@
 # Simplicite VSCode
 
-This extension provides an easy way to edit the java files of one or multiple simplicite modules and apply changes without having to commit & push.
+Simplicite low code platform tools to make life easier for designers in an IDE environment
 
 ---
 
 ## Features
 - Simplified workflow for designers who prefer to edit java code in their favorite IDE.
-- Field completion on your modules objects fields.
-- Automatic authentication on the Simplicite API.
+- Object field completion.
+- Tree view gathering informations on modules objects.
+- Tree view to manage your modified files.
 
-![login-apply](resources/images/login-apply.gif)
+<!-- ![login-apply](resources/images/login-apply.gif) -->
 
 ---
 
 ## How does it work ?
 
-Simply add your modules into the vscode workspace. Then authenticate yourself using the credentials of **each simplicite instance** you need to log in.
-Opening the same workspace will **automatically connect you**.
+Simply add your modules into the vscode workspace then authenticate yourself using the credentials of **each simplicite instance** you need to log in.
+Opening the same workspace later will **automatically connect you**.
 
 From now on, you can edit your java files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).
+ 
+Your files will get marked as modified on save.
+You can manage them in the *"SIMPLICITE FILE HANDLER"* tree view.
 
-*NB: the extension only works with java files*
 
 ---
 
 ## Available commands
-* `Simplicite: Apply changes`: loads the java files into their modules. Requires to be logged in.
-* `Simplicite: Compile java code in current workspace`: executes the compilation command of the [vscode-java extension](https://github.com/redhat-developer/vscode-java).
+* `Simplicite: Apply changes`: loads the java files into their modules. Requires to be logged in. Running this command will trigger local compilation, you can disable this step in the settings. Once all your files are applied, your Simplicite instance(s) will run another compilation.
+* `Simplicite: Apply specific module changes`: same as the above command but you'll be asked to type in the module name.
+* `Simplicite: Compile java code in workspace`: executes the compilation command of the [vscode-java extension](https://github.com/redhat-developer/vscode-java#available-commands).
 * `Simplicite: Log into detected instances`: logs into the instances that have been detected in the modules contained in the workspace.
 * `Simplicite: Log into specific instance`: logs into a specific instance. Both module name and instance url are accepted.
 * `Simplicite: Log out from all instances`: logs out all the instances.
-* `Simplicite: Log out from specific instance`: logs out a specific instance. Both module name and instance url are accepted. 
-
-* `Simplicite: Get list of connected instances`: gives you the list of the connected instances.
+* `Simplicite: Log out from specific instance`: logs out a specific instance. Both module name and instance url are accepted.
+* `Simplicite: Refresh module tree view`: refresh module tree view.
+* `Simplicite: Untrack file`: removes file from tracked file list. The file remains marked as modified but won't be applied. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
+* `Simplicite: Mark file as unmodified`: removes file from the modified file list. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
+* `Simplicite: Track file`: add a file to the tracked file list. The input field accepts file absolute path. If the file is marked as untracked, the input also accepts file name (ex: *Demo.java* or just *Demo*). 
 
 
 ---
 
 ## Extension Settings
 
-Incoming
+* `simplicite-vscode.compilation.enabled`: Enable/disable local compilation before applying changes.
+* `simplicite-vscode.api.autoConnect`: Enable/disable automatic connexion features.
 
 ---
 
 ## Known Issues
 
-* Using multiple VSCode instances with various simplicite modules will result in some conflict.
-
 ---
 
 ## Release Notes
 
-### 0.0.1
-
+### 1.0.0
 Initial release
 
 ---
