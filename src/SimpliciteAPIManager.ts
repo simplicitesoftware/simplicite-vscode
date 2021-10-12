@@ -96,7 +96,7 @@ export class SimpliciteAPIManager {
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
             if (activateTreeViewUpdate) {
-            commands.executeCommand('simplicite-vscode.refreshTreeView');
+            commands.executeCommand('simplicite-vscode-tools.refreshTreeView');
             }
             this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
         } catch (e) {
@@ -206,13 +206,14 @@ export class SimpliciteAPIManager {
 
     async applyChangesHandler (moduleName: string | undefined, instanceUrl: string | undefined) {
         try {
-            await this.beforeApply(this.fileHandler.getFileList());
             if (moduleName && instanceUrl) {
                 if (!checkFileModuleSpecific(moduleName, this.fileHandler.getFileList())) {
                     throw new Error('Simplicite: No file has changed, cannot apply changes');
                 }
+                await this.beforeApply(this.fileHandler.getFileList(), moduleName);
                 await this.applyModuleFiles(moduleName, instanceUrl);
             } else {
+                await this.beforeApply(this.fileHandler.getFileList(), undefined);
                 await this.applyInstanceFiles();
             }
             this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
@@ -231,7 +232,7 @@ export class SimpliciteAPIManager {
                 cptFile++;
                 try {
                     await this.sendFile(file, app);
-                    this.fileHandler.setTrackedStatus(file.getFilePath(), false);
+                    await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
                 } catch (e) {
                     error++;
                     logger.error('Cannot apply ' + file.getFilePath());
@@ -256,7 +257,7 @@ export class SimpliciteAPIManager {
             if (fileModule.get(instanceUrl)) {
                 for (let file of fileModule.get(instanceUrl)!) {
                     await this.sendFile(file, app);
-                    this.fileHandler.setTrackedStatus(file.getFilePath(), false);
+                    await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
                 }
             } else {
                 continue;
@@ -294,13 +295,31 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async beforeApply (fileList: Array<File>) {
+    async beforeApply (fileList: Array<File>, moduleName: string | undefined) {
         if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
             throw new Error('Simplicite: No module connected, cannot apply changes');
-        } else if (fileList.length === 0) {
-            throw new Error('Simplicite: No file has changed, cannot apply changes');
-        };
-        if (!workspace.getConfiguration('simplicite-vscode').get('compilation.enabled')) {
+        } else if (moduleName) { // module apply
+            let isTracked = false;
+            for (let file of fileList) {
+                if (file.tracked && file.moduleName === moduleName) {
+                    isTracked = true;
+                }
+            }
+            if (!isTracked) {
+                throw new Error('Simplicite: No file has changed, cannot apply changes');
+            }
+        } else if (moduleName === undefined) { // apply
+            let isTracked = false;
+            for (let file of fileList) {
+                if (file.tracked && file.moduleName) {
+                    isTracked = true;
+                }
+            }
+            if (!isTracked) {
+                throw new Error('Simplicite: No file has changed, cannot apply changes');
+            }
+        }
+        if (!workspace.getConfiguration('simplicite-vscode-tools').get('compilation.enabled')) {
             const res = await this.compileJava(
             { 
                 message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',
@@ -486,7 +505,7 @@ export class SimpliciteAPIManager {
 
 function openSettings () {
     try {
-        commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteextensiontest.simplicite-vscode');
+        commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteextensiontest.simplicite-vscode-tools');
     } catch (e) {
         logger.error(e);
     }   

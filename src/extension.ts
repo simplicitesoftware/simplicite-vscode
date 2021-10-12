@@ -15,24 +15,29 @@ import { crossPlatformPath } from './utils';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
+	
 	const fileTree = new FileTree();
 	window.registerTreeDataProvider(
 		'simpliciteFile',
 		fileTree
 	);
+
 	const moduleHandler = new ModuleHandler();
 	const fileHandler = await FileHandler.build(fileTree, moduleHandler);
 	const request = await SimpliciteAPIManager.build(fileHandler, moduleHandler);
-	const barItem = await BarItem.build('Simplicite', request);
-	request.setBarItem(barItem);
+
+	const barItem = new BarItem('Simplicite', request);
+	request.setBarItem(barItem); // needs to be set on SimpliciteAPIManager to refresh
+	barItem.show(fileHandler.getFileList(), moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+	
 	new QuickPick(context, request);
-	barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+
 	const fieldObjectTree = new ObjectInfoTree(request);
 	window.registerTreeDataProvider(
 		'simpliciteObjectFields',
 		fieldObjectTree
 	);
-	commands.registerCommand('simplicite-vscode.refreshTreeView', async () => await fieldObjectTree.refresh());
+	commands.registerCommand('simplicite-vscode-tools.refreshTreeView', async () => await fieldObjectTree.refresh());
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	const loginAllModules = loginAllModulesCommand(request);
@@ -51,15 +56,16 @@ export async function activate(context: ExtensionContext) {
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
-			await request.fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true);
-			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			await fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true, fileHandler.bindFileAndModule(moduleHandler.getModules()));
+			barItem.show(fileHandler.getFileList(), moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 		}
 	});
 
-	if(!workspace.getConfiguration('simplicite-vscode').get('api.autoConnect')) {
+	// settings are in the package.json
+	if(!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
 		try {
 			await request.loginHandler();
-			barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+			barItem.show(fileHandler.getFileList(), moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 		} catch (e) {
 			logger.error(e);
 		}
@@ -72,25 +78,25 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(completionProviderSingleQuote);
 
 	// workspace handler
-	let modulesLength = request.moduleHandler.moduleLength(); // usefull to compare module change on onDidChangeWorkspaceFolders
+	let modulesLength = moduleHandler.moduleLength(); // usefull to compare module change on onDidChangeWorkspaceFolders
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
-		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
-		const tempModules = await request.fileHandler.getSimpliciteModules();
+		barItem.show(fileHandler.getFileList(), moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+		const tempModules = await fileHandler.getSimpliciteModules();
 		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
 			logger.info('added module to workspace');
 			modulesLength = tempModules.length;
 			try {
-				await request.loginTokenOrCredentials(request.moduleHandler.getModules()[request.moduleHandler.moduleLength() - 1], false); // We need to connect with the module informations
+				await request.loginTokenOrCredentials(moduleHandler.getModules()[moduleHandler.moduleLength() - 1], false); // We need to connect with the module informations
 				await fieldObjectTree.refresh();
 			} catch(e) {
 				logger.error(e);
 			}
 		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module	
-			//await request.specificLogout(event.removed[0].name, fieldObjectTree.refresh, fieldObjectTree);
-			modulesLength = request.moduleHandler.moduleLength();
+			modulesLength = moduleHandler.moduleLength();
 			logger.info('removed module from workspace');
 		}
-		request.moduleHandler.setModules(await request.fileHandler.getSimpliciteModules());
-		barItem.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+		moduleHandler.setModules(await fileHandler.getSimpliciteModules());
+		barItem.show(fileHandler.getFileList(), moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
 	});
 }

@@ -27,6 +27,7 @@ export class FileHandler {
         try {
             fileHandler.moduleHandler.setModules(await fileHandler.getSimpliciteModules()); // need modules to create File
             fileHandler.fileList = await fileHandler.getFileOnStart();
+            await fileHandler.fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
         } catch (e) {
             logger.error(e);
         }
@@ -288,7 +289,7 @@ export class FileHandler {
         return filesPath;
     }
 
-    async getFileOnStart (): Promise<File[]> { // called 
+    async getFileOnStart (): Promise<File[]> {
         if (workspace.workspaceFolders === undefined) {
             throw new Error('no workspace detected');
         }
@@ -301,29 +302,40 @@ export class FileHandler {
                 fileList.push(new File(file.path, this.moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
             }
         }
-        return this.setTrackedStatusFromDisk(fileList);
+        try {
+            return this.setTrackedStatusFromDisk(fileList);
+        } catch (e) {
+            logger.warn('getFileOnStart: ' + e);
+            return fileList;
+        }
     }
 
     setTrackedStatusFromDisk (fileList: File[]): File[] { 
-        const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
-        for (let file of fileList) {
-            for (let content of jsonContent) {
-                if (file.getFilePath() === content.filePath) {
-                    file.tracked = content.tracked;
-                    break;
+        try {
+            const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+            for (let file of fileList) {
+                for (let content of jsonContent) {
+                    if (file.getFilePath() === content.filePath) {
+                        file.tracked = content.tracked;
+                        break;
+                    }
                 }
             }
+        } catch (e: any) {
+            throw new Error(e.message);
         }
         return fileList;
     }
 
-    setTrackedStatus (filePath: string, status: boolean): void {
+    async setTrackedStatus (filePath: string, status: boolean, fileModule: FileAndModule[]): Promise<void> {
         for (let file of this.fileList) {
-            if (file.getFilePath() === filePath) {
+            if (file.getFilePath().toLowerCase() === filePath.toLowerCase()) {
                 file.tracked = status;
             }
         }
         this.updateFileStatusOnDisk();
+        await this.fileTree.setFileModule(fileModule);
+        Promise.resolve();
     }
 
     getFileFromInput (input: string): File { // returns the file matching the name
@@ -341,7 +353,7 @@ export class FileHandler {
                 }
             } else {
                 const lastInputWithoutJava = lastFile.replace('.java', '');
-                if (lastFile === lastInputWithoutJava) {
+                if (lastInput === lastInputWithoutJava) {
                     return file;
                 }
             }

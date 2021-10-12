@@ -8,21 +8,11 @@ import { Module } from './Module';
 export class BarItem {
     barItem: StatusBarItem;
     request: SimpliciteAPIManager | undefined;
-    constructor (text: string) {
+    constructor (text: string, request: SimpliciteAPIManager) {
         this.barItem = window.createStatusBarItem(2);
         this.barItem.text = text;
-        this.request = undefined;
-    }
-    
-    static async build(text: string, request: SimpliciteAPIManager) {
-        const barItem = new BarItem(text);
-        await barItem.init(request);
-        return barItem;
-    }
-
-    private async init (request: SimpliciteAPIManager) {
+        this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands';
         this.request = request;
-        this.barItem.command = 'simplicite-vscode.showSimpliciteCommands';
     }
 
     show (fileList: Array<File>, modules: Array<Module>, connectedInstancesUrl: Array<string>) {
@@ -31,20 +21,8 @@ export class BarItem {
     }
     
     markdownGenerator (fileList: Array<File>, modules: Array<Module>, connectedInstancesUrl: Array<string>) {
-        return this.fileListMarkdown(fileList) + '\n\n---\n\n' 
-        + this.urlModulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n' 
+        return this.urlModulesMarkdown(modules, connectedInstancesUrl) + '\n\n---\n\n' 
         + this.modulesMarkdown(modules, connectedInstancesUrl);
-    }
-
-    fileListMarkdown (fileList: Array<File>) {
-        let fileMarkdown = 'Modified files:\n\n';
-        if (fileList.length === 0) {
-            return fileMarkdown + '- none';
-        }
-        for (let file of fileList) {
-            fileMarkdown += '- ' + this.fileName(file.filePath)+ '\n\n';
-        }
-        return fileMarkdown;
     }
 
     urlModulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
