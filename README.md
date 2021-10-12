@@ -24,7 +24,6 @@ From now on, you can edit your java files and run the command: `Simplicite: Appl
 Your files will get marked as modified on save.
 You can manage them in the *"SIMPLICITE FILE HANDLER"* tree view.
 
-
 ---
 
 ## Available commands
@@ -35,18 +34,15 @@ You can manage them in the *"SIMPLICITE FILE HANDLER"* tree view.
 * `Simplicite: Log into specific instance`: logs into a specific instance. Both module name and instance url are accepted.
 * `Simplicite: Log out from all instances`: logs out all the instances.
 * `Simplicite: Log out from specific instance`: logs out a specific instance. Both module name and instance url are accepted.
-* `Simplicite: Refresh module tree view`: refresh module tree view.
-* `Simplicite: Untrack file`: removes file from tracked file list. The file remains marked as modified but won't be applied. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
-* `Simplicite: Mark file as unmodified`: removes file from the modified file list. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
-* `Simplicite: Track file`: add a file to the tracked file list. The input field accepts file absolute path. If the file is marked as untracked, the input also accepts file name (ex: *Demo.java* or just *Demo*). 
-
+* `Simplicite: Track file`: marks the file as modified. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
+* `Simplicite: Untrack file`: marks the file as unmodified. The input field accepts file absolute path or file name (ex: *Demo.java* or just *Demo*).
 
 ---
 
 ## Extension Settings
 
-* `simplicite-vscode.compilation.enabled`: Enable/disable local compilation before applying changes.
-* `simplicite-vscode.api.autoConnect`: Enable/disable automatic connexion features.
+* `simplicite-vscode-tools.compilation.enabled`: Enable/disable local compilation before applying changes.
+* `simplicite-vscode-tools.api.autoConnect`: Enable/disable automatic connexion features.
 
 ---
 

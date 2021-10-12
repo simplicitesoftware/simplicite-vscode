@@ -37,40 +37,47 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "simplicite-vscode.refreshTreeView",
+					"command": "simplicite-vscode-tools.refreshTreeView",
 					"when": "view == simpliciteObjectFields",
 					"group": "navigation"
 				}
 			],
 			"commandPalette": [
 				{
-					"command": "simplicite-vscode.labelToClipBoard",
+					"command": "simplicite-vscode-tools.labelToClipBoard",
 					"when": "false"
 				},
 				{
-					"command": "simplicite-vscode.descriptionToClipBoard",
+					"command": "simplicite-vscode-tools.descriptionToClipBoard",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.refreshTreeView",
 					"when": "false"
 				}
+				
 			],
 			"view/item/context": [
 				{
-					"command": "simplicite-vscode.labelToClipBoard",
+					"command": "simplicite-vscode-tools.labelToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label"
 				},
 				{
-					"command": "simplicite-vscode.descriptionToClipBoard",
+					"command": "simplicite-vscode-tools.descriptionToClipBoard",
 					"when": "view == simpliciteObjectFields && viewItem == label&description"
 				},
 				{
-					"command": "simplicite-vscode.untrackFile",
-					"when": "view == simpliciteFile && viewItem == file"
+					"command": "simplicite-vscode-tools.untrackFile",
+					"when": "view == simpliciteFile && viewItem == file",
+					"group": "inline"
 				},
 				{
-					"command": "simplicite-vscode.trackFile",
-					"when": "view == simpliciteFile && viewItem == untrackedFile"
+					"command": "simplicite-vscode-tools.trackFile",
+					"when": "view == simpliciteFile && viewItem == untrackedFile",
+					"group": "inline"
 				},
 				{
-					"command": "simplicite-vscode.applySpecificModule",
+					"command": "simplicite-vscode-tools.applySpecificModule",
 					"when": "view == simpliciteFile && viewItem == module",
 					"group": "inline"
 				}
@@ -78,11 +85,11 @@
 		},
 		"commands": [
 			{
-				"command": "simplicite-vscode.applyChanges",
+				"command": "simplicite-vscode-tools.applyChanges",
 				"title": "Simplicite: Apply changes"
 			},
 			{
-				"command": "simplicite-vscode.applySpecificModule",
+				"command": "simplicite-vscode-tools.applySpecificModule",
 				"title": "Simplicite: Apply specific module changes",
 				"icon": {
 					"light": "resources/light/file-upload.svg",
@@ -90,27 +97,27 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.compileWorkspace",
+				"command": "simplicite-vscode-tools.compileWorkspace",
 				"title": "Simplicite: Compile java code in workspace"
 			},
 			{
-				"command": "simplicite-vscode.logIn",
+				"command": "simplicite-vscode-tools.logIn",
 				"title": "Simplicite: Log into detected instances"
 			},
 			{
-				"command": "simplicite-vscode.logInInstance",
+				"command": "simplicite-vscode-tools.logInInstance",
 				"title": "Simplicite: Log into specific instance"
 			},
 			{
-				"command": "simplicite-vscode.logOut",
+				"command": "simplicite-vscode-tools.logOut",
 				"title": "Simplicite: Log out from all instances"
 			},
 			{
-				"command": "simplicite-vscode.logOutFromInstance",
+				"command": "simplicite-vscode-tools.logOutFromInstance",
 				"title": "Simplicite: Log out from specific instance"
 			},
 			{
-				"command": "simplicite-vscode.refreshTreeView",
+				"command": "simplicite-vscode-tools.refreshTreeView",
 				"title": "Simplicite: Refresh object fields Tree View",
 				"icon": {
 					"light": "resources/light/refresh.svg",
@@ -118,7 +125,7 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.labelToClipBoard",
+				"command": "simplicite-vscode-tools.labelToClipBoard",
 				"title": "copy label",
 				"icon": {
 					"light": "resources/light/copy.svg",
@@ -126,7 +133,7 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.descriptionToClipBoard",
+				"command": "simplicite-vscode-tools.descriptionToClipBoard",
 				"title": "copy description",
 				"icon": {
 					"light": "resources/light/copybis.svg",
@@ -134,13 +141,22 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode.untrackFile",
-				"title": "Simplicite: Untrack file"
+				"command": "simplicite-vscode-tools.trackFile",
+				"title": "Simplicite: Track file",
+				"icon": {
+					"light": "resources/light/add.svg",
+					"dark": "resources/dark/add.svg"
+				}
 			},
 			{
-				"command": "simplicite-vscode.trackFile",
-				"title": "Simplicite: Track file"
+				"command": "simplicite-vscode-tools.untrackFile",
+				"title": "Simplicite: Untrack file",
+				"icon": {
+					"light": "resources/light/remove.svg",
+					"dark": "resources/dark/remove.svg"
+				}
 			}
+			
 		],
 		"capabilities": {
 			"completionProvider": {
@@ -152,12 +168,12 @@
 		},
 		"configuration": {
 			"properties": {
-				"simplicite-vscode.compilation.enabled": {
+				"simplicite-vscode-tools.compilation.enabled": {
 					"type": "boolean",
 					"default": true,
 					"description": "Disable local compilation before applying changes."
 				},
-				"simplicite-vscode.api.autoConnect": {
+				"simplicite-vscode-tools.api.autoConnect": {
 					"type": "boolean",
 					"default": false,
 					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."
@@ -166,7 +182,7 @@
 		},
 		"keybindings": [
 			{
-				"command": "simplicite-vscode.showSimpliciteCommands",
+				"command": "simplicite-vscode-tools.showSimpliciteCommands",
 				"key": "Ctrl+Shift+space",
 				"mac": "Ctrl+Shift+space",
 				"linux": "Ctrl+Shift+space"
@@ -213,6 +229,6 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
+		"url": "https://github.com/simplicitesoftware/simplicite-vscode-tools.git"
 	}
 }

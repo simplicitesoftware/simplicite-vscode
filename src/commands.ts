@@ -10,13 +10,13 @@ import { Module } from './Module';
 import { File } from './File';
 
 export const loginAllModulesCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.logIn', async () => {	
+    return commands.registerCommand('simplicite-vscode-tools.logIn', async () => {	
         await request.loginHandler();
     });
 };
 
 export const applyChangesCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.applyChanges', async function () {
+    return commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		try {
 			await request.applyChangesHandler(undefined, undefined);
 		    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
@@ -31,14 +31,14 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager) {
 };
 
 export const logoutCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.logOut', function () {	
+    return commands.registerCommand('simplicite-vscode-tools.logOut', function () {	
 		request.logout();
 		request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 	});
 };
 
 export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: ObjectInfoTree) {
-    return commands.registerCommand('simplicite-vscode.logOutFromInstance', async function () {	
+    return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
                 placeHolder: 'module name',
@@ -57,7 +57,7 @@ export const logoutFromModuleCommand = function (request: SimpliciteAPIManager, 
 };
 
 export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.logInInstance', async function () {	
+    return commands.registerCommand('simplicite-vscode-tools.logInInstance', async function () {	
 		try {
             const moduleName = await window.showInputBox({ 
                 placeHolder: 'module name',  
@@ -101,7 +101,7 @@ export const logInInstanceCommand = function (request: SimpliciteAPIManager) {
 };
 
 export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.compileWorkspace', async function () {
+    return commands.registerCommand('simplicite-vscode-tools.compileWorkspace', async function () {
 		try {
 			const status = await request.compileJava();
             logger.info(status);
@@ -113,7 +113,7 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager) 
 };
 
 export const labelToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode.labelToClipBoard', element => {
+    return commands.registerCommand('simplicite-vscode-tools.labelToClipBoard', element => {
         if (element !== undefined) {
             copy(element.label);
         }
@@ -121,31 +121,48 @@ export const labelToClipBoardCommand = function () {
 };
 
 export const descriptionToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode.descriptionToClipBoard', element => {
+    return commands.registerCommand('simplicite-vscode-tools.descriptionToClipBoard', element => {
         if (element !== undefined) {
             copy(element.description);
         }
     });
 };
 
+// ------------------------------
+
 export const untrackFilesCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.untrackFile', async function (element: any) {
-        const inputFile = await getInputFile(request, element);
-        request.fileHandler.setTrackedStatus(inputFile.getFilePath(), false);                 
-        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+    return commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: any) {
+        try {
+            await trackAction(request, element, false);            
+        } catch (e) {
+            logger.error(e);
+            console.log(e);
+        }
     });
 };
 
 export const trackFileCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.trackFile', async function (element: any) {
-        const inputFile = await getInputFile(request, element);
-        request.fileHandler.setTrackedStatus(inputFile.getFilePath(), true);                 
-        request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+    return commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: any) {
+        try {
+            await trackAction(request, element, true);            
+        } catch (e) {
+            logger.error(e);
+            console.log(e);
+        }
     });
 };
 
+async function trackAction (request: SimpliciteAPIManager, element: any, trackedValue: boolean) {
+    const inputFile = await getInputFile(request, element);
+    const fileModule = request.fileHandler.bindFileAndModule(request.moduleHandler.getModules());
+    await request.fileHandler.setTrackedStatus(inputFile.getFilePath(), trackedValue, fileModule);                 
+    request.barItem!.show(request.fileHandler.getFileList(), request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
+}
+
+// ------------------------------
+
 export const applySpecificModuleCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode.applySpecificModule', async function (element: SimpliciteAPIManager | any) {
+    return commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteAPIManager | any) {
         try  {
             if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
                 element = await inputFilePath('Simplicite: Type in the module name', 'module name');
@@ -169,7 +186,6 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
 };
 
 async function getInputFile (request: SimpliciteAPIManager, element: any): Promise<File> {
-    let inputFile: File;
     if (element.fullPath) {
         return request.fileHandler.getFileFromInput(element.fullPath);
     } else {

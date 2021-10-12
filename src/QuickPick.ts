@@ -9,14 +9,14 @@ export class QuickPick {
     request: SimpliciteAPIManager;
     constructor (context: ExtensionContext, request: SimpliciteAPIManager) {
         this.request = request;
-        const commandId = 'simplicite-vscode.showSimpliciteCommands';
+        const commandId = 'simplicite-vscode-tools.showSimpliciteCommands';
         context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
     }
 
     commandListQuickPick (commandList: Array<Command>) {
         const preparedList = new Array();
         for (let command of commandList) {
-            if (command.title !== 'copy label' && command.title !== 'copy description') {
+            if (command.title !== 'copy label' && command.title !== 'copy description' && command.title !== 'Simplicite: Refresh object fields Tree View') {
                 preparedList.push({ label: command.title, commandId: command.command });
             }
         }
