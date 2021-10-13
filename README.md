@@ -8,8 +8,10 @@ Simplicite low code platform tools to make life easier for designers in an IDE e
 - Simplified workflow for designers who prefer to edit java code in their favorite IDE.
 - Object field completion.
 - Tree view gathering informations on modules objects.
-- Tree view to manage your modified files.
+![object-info](resources/images/object-info.jpg)
 
+- Tree view to manage your modified files.
+![file-handler](resources/images/file-handler.jpg)
 <!-- ![login-apply](resources/images/login-apply.gif) -->
 
 ---
@@ -22,7 +24,7 @@ Opening the same workspace later will **automatically connect you**.
 From now on, you can edit your java files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).
  
 Your files will get marked as modified on save.
-You can manage them in the *"SIMPLICITE FILE HANDLER"* tree view.
+You can manage them in the *SIMPLICITE FILE HANDLER* tree view.
 
 ---
 
