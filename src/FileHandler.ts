@@ -49,7 +49,7 @@ export class FileHandler {
         this.saveJSONOnDisk(toBeWrittenJSON, TOKEN_SAVE_PATH);
     }
 
-    getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
+    private getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
         try {
             const parsedJson = this.getSimpliciteInfoContent();
             if (parsedJson === null) {
@@ -85,7 +85,7 @@ export class FileHandler {
         }
     }
 
-    deleteInstanceJSON (instanceUrl: string) {
+    deleteModuleJSON (instanceUrl: string | undefined, moduleName: string | undefined) {
         let moduleArray = this.getSimpliciteInfoContent();
         try {
             let newInfo = [];
@@ -93,9 +93,16 @@ export class FileHandler {
                 throw new Error('Error getting simplicite info content');
             }
             for (let module of moduleArray) {
-                if (module.getInstanceUrl() !== instanceUrl) {
-                    newInfo.push(module);
+                if (instanceUrl) {
+                    if (module.getInstanceUrl() !== instanceUrl) {
+                        newInfo.push(module);
+                    }
+                } else if (moduleName) {
+                    if (module.getName() !== moduleName) {
+                        newInfo.push(module);
+                    }
                 }
+                
             }
             this.saveJSONOnDisk(newInfo, TOKEN_SAVE_PATH);
         } catch (e: any) {
@@ -170,7 +177,7 @@ export class FileHandler {
         return modules;
     }
 
-    async getModuleInstanceUrl (workspaceFolder: WorkspaceFolder): Promise<string | any> { // searches into pom.xml and returns the simplicite's instance url
+    private async getModuleInstanceUrl (workspaceFolder: WorkspaceFolder): Promise<string | any> { // searches into pom.xml and returns the simplicite's instance url
         const globPatern = '**pom.xml';
         const relativePattern = new RelativePattern(workspaceFolder, globPatern);
         const pom = await this.findFiles(relativePattern);
@@ -196,43 +203,7 @@ export class FileHandler {
         return fileModule;
     }
 
-    deleteFile (file: File, addUntrackFile: boolean) {
-        if (addUntrackFile) {
-            file.tracked = false;
-            //this.untrackedFiles.push(file);
-            let jsonContent;
-            try {
-                 jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
-            } catch (e) {
-                console.log(e);
-            }
-            for (let content of jsonContent) {
-                if (content.filePath.toLowerCase() === file.getFilePath().toLowerCase()) {
-                    content.tracked = false;
-                }
-            }
-            try {
-                this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);   
-            } catch(e) {
-                console.log(e);
-            }
-        }
-        const index = this.fileList.indexOf(file);
-        this.fileList.splice(index, 1);
-    }
-
-    deleteFileFromDisk (path: string) {
-        const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
-        for (let content of jsonContent) {
-            if (content.filePath.toLowerCase() === path.toLowerCase()) {
-                const index = jsonContent.indexOf(content);
-                jsonContent.splice(index, 1);
-            }
-        }
-        this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
-    }
-
-    updateFileStatusOnDisk () {
+    private updateFileStatusOnDisk () {
         const jsonContent = new Array();
         for (let file of this.fileList) {
             if (file.tracked) {
@@ -246,47 +217,8 @@ export class FileHandler {
         return this.fileList;
     }
 
-    resetFileList () {
-        this.fileList = new Array();
-    }
-
     fileListLength () {
         return this.fileList.length;
-    }
-
-    readModifiedFiles () {
-        try {
-            return this.readFileSync(FILES_SAVE_PATH, 'utf8');
-        } catch (e: any) {
-            throw e;
-        }
-    }
-
-    static deleteModifiedFiles () {
-        try {
-            fs.unlinkSync(FILES_SAVE_PATH);
-        } catch (e: any) {
-            logger.error(e);
-        }
-    }
-
-    isFileInFileList (filePath: string) {
-        for (let fileListelement of this.fileList) {
-            if (fileListelement.getFilePath() === filePath) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    getOnlyFilesPath (workspaceFolderPath: string) {
-        let filesPath = new Array();
-        for (let file of this.fileList) {
-            if (workspaceFolderPath === file.getWorkspaceFolderPath()) {
-                filesPath.push(file.getFilePath());
-            }
-        }
-        return filesPath;
     }
 
     async getFileOnStart (): Promise<File[]> {
@@ -310,7 +242,7 @@ export class FileHandler {
         }
     }
 
-    setTrackedStatusFromDisk (fileList: File[]): File[] { 
+    private setTrackedStatusFromDisk (fileList: File[]): File[] { 
         try {
             const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
             for (let file of fileList) {

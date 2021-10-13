@@ -47,12 +47,12 @@ export class SimpliciteAPIManager {
         return simpliciteAPIManager;
     }
 
-    async loginHandler () {
+    async loginHandler (): Promise<void> {
         if (this.moduleHandler.moduleLength() > 0) {
             let activateTreeViewUpdate = true;
             for (let module of this.moduleHandler.getModules()) {
                 if (!this.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
-                    try { 
+                    try {
                         await this.loginTokenOrCredentials(module, activateTreeViewUpdate);
                         activateTreeViewUpdate = false;
                     } catch (e: any) {
@@ -66,16 +66,16 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async loginTokenOrCredentials (module: Module, activateTreeViewUpdate: boolean) {
+    async loginTokenOrCredentials (module: Module, activateTreeViewUpdate: boolean): Promise<void> {
         const app = await this.appHandler.getApp(module.getInstanceUrl()); // handleApp returns the app correct instance (one for every simplicite instance)
         try {
             await this.authenticationWithToken(module.getName(), app);
-            await this.login(module.getInstanceUrl(), app, activateTreeViewUpdate);
+            await this.login(module.getInstanceUrl(), module.getName(), app, activateTreeViewUpdate);
             logger.info('Token connection succeeded');
         } catch (e) {
             try {
                 await this.authenticationWithCredentials(module.getName(), app);
-                await this.login(module.getInstanceUrl(), app, activateTreeViewUpdate);
+                await this.login(module.getInstanceUrl(), module.getName(), app, activateTreeViewUpdate);
                 logger.info('Credentials connection succeeded');
             } catch (e) {
                 throw e;
@@ -83,7 +83,7 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async login (moduleInstanceUrl: string, app: any, activateTreeViewUpdate: boolean) {
+    async login (moduleInstanceUrl: string, moduleName: string, app: any, activateTreeViewUpdate: boolean): Promise<void> {
         try {
             const res = await app.login();
             if (!this.devInfo) {
@@ -98,12 +98,21 @@ export class SimpliciteAPIManager {
             if (activateTreeViewUpdate) {
             commands.executeCommand('simplicite-vscode-tools.refreshTreeView');
             }
-            this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
-        } catch (e) {
-            app.setAuthToken(null);
-            app.setPassword(null);
-            app.setUsername(null);
-            logger.error(e);
+            this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+        } catch (e: any) {
+            if (e.message === 'Simplicite authentication error: Invalid token') { // reset authentication info related to the module and instance
+                this.fileHandler.deleteModuleJSON(undefined, moduleName);
+                this.appHandler.getAppList().delete(moduleInstanceUrl);
+                this.moduleHandler.spreadToken(moduleInstanceUrl, null);
+                logger.warn('Authentication token is invalid, trying to reconnect');
+                await this.loginHandler();
+            } else {
+                app.setAuthToken(null);
+                app.setPassword(null);
+                app.setUsername(null);
+                logger.error(e);
+                throw new Error(e.message);
+            }
         }
     }
 
@@ -156,14 +165,14 @@ export class SimpliciteAPIManager {
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
                 this.moduleHandler.removeInstanceUrl(app.parameters.url);
-                this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
             }).catch((e: any) => {
     			logger.error(e);
                 window.showErrorMessage(e.message ? e.message : e);        
             });
         });
         if (this.appHandler.getAppList().size === 0) {
-            window.showInformationMessage('Simplicite: You are not connected to any module');
+            window.showErrorMessage('Simplicite: You are not connected to any module');
         }
     }
     
@@ -180,13 +189,13 @@ export class SimpliciteAPIManager {
             } 
             const app = await this.appHandler.getApp(instanceUrl);
             app.logout().then(async (res: any) => {
-                this.fileHandler.deleteInstanceJSON(instanceUrl);
+                this.fileHandler.deleteModuleJSON(instanceUrl, undefined);
                 this.appHandler.getAppList().delete(instanceUrl);
                 this.moduleHandler.spreadToken(instanceUrl, null);
                 this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
-                this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
                 await fieldObjectTreeRefresh.call(treeContext);
 
             }).catch((e: any) => {
@@ -201,7 +210,6 @@ export class SimpliciteAPIManager {
 			logger.error(e);
             window.showErrorMessage(`${e}`);
         }
-        this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
     }
 
     async applyChangesHandler (moduleName: string | undefined, instanceUrl: string | undefined) {
@@ -216,7 +224,6 @@ export class SimpliciteAPIManager {
                 await this.beforeApply(this.fileHandler.getFileList(), undefined);
                 await this.applyInstanceFiles();
             }
-            this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
             return;
         } catch(e) {
             throw e;
@@ -275,7 +282,6 @@ export class SimpliciteAPIManager {
     async sendFile (file: File, app: any) {
         try {
             await this.attachFileAndSend(file.filePath, app);
-            this.barItem!.show(this.fileHandler.getFileList(), this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
             logger.info('Successfully applied' + file.filePath);
         } catch (e: any) {
             window.showErrorMessage(`Simplicite: Error sending ${file.filePath} \n ${e.message ? e.message : e}`);
