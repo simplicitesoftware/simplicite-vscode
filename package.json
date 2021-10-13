@@ -104,7 +104,7 @@
 				"title": "Simplicite: Log into detected instances"
 			},
 			{
-				"command": "simplicite-vscode-tools.logInInstance",
+				"command": "simplicite-vscode-tools.logIntoSpecificInstance",
 				"title": "Simplicite: Log into specific instance"
 			},
 			{
