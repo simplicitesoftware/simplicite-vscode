@@ -8,10 +8,9 @@ Simplicite low code platform tools to make life easier for designers in an IDE e
 - Simplified workflow for designers who prefer to edit java code in their favorite IDE.
 - Object field completion.
 - Tree view gathering informations on modules objects.
-![object-info](resources/images/object-info.jpg)
 
 - Tree view to manage your modified files.
-![file-handler](resources/images/file-handler.jpg)
+
 <!-- ![login-apply](resources/images/login-apply.gif) -->
 
 ---
@@ -25,6 +24,8 @@ From now on, you can edit your java files and run the command: `Simplicite: Appl
  
 Your files will get marked as modified on save.
 You can manage them in the *SIMPLICITE FILE HANDLER* tree view.
+
+Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will display a contextual menu giving you the ability to copy the item field or description (if there is one).
 
 ---
 
