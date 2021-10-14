@@ -10,26 +10,28 @@ export class BarItem {
     constructor (text: string, request: SimpliciteAPIManager) {
         this.barItem = window.createStatusBarItem(2);
         this.barItem.text = text;
-        this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands';
+        this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands'; // opens quick pick
         this.request = request;
     }
 
-    show (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
+    // refreshs the BarItem
+    show (modules: Array<Module>, connectedInstancesUrl: Array<string>): void {
         this.barItem.tooltip = new MarkdownString(this.markdownGenerator(modules, connectedInstancesUrl));
         this.barItem.show();
     }
     
-    markdownGenerator (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
+    private markdownGenerator (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
         if (modules.length === 0 && connectedInstancesUrl.length === 0) {
             return 'No Simplicite module detected';
         }
-        return this.urlModulesMarkdown(modules, connectedInstancesUrl) + this.modulesMarkdown(modules, connectedInstancesUrl);
+        return this.connectedInstancesAndModules(modules, connectedInstancesUrl) + this.disconnectedInstancesAndModules(modules, connectedInstancesUrl);
     }
 
-    urlModulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
+    // creates the markdown of the connected instances and their modules
+    private connectedInstancesAndModules (modules: Array<Module>, connectedInstancesUrl: Array<string>): string {
         let moduleMarkdown = '';
         if (connectedInstancesUrl.length > 0) {
-            moduleMarkdown = 'Connected Simplicite\'s instances and their corresponding modules:\n\n';
+            moduleMarkdown = 'Connected Simplicite\'s instances:\n\n';
             for (let url of connectedInstancesUrl) {
                 moduleMarkdown += url + ':\n';
                 for (let module of modules) {
@@ -43,7 +45,8 @@ export class BarItem {
         return moduleMarkdown;
     } 
 
-    modulesMarkdown (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
+    // creates the markdown of the connected instances and their modules
+    private disconnectedInstancesAndModules (modules: Array<Module>, connectedInstancesUrl: Array<string>): string {
         let moduleMarkdown = '';
         let disconnectedModule = false;        
         if (modules.length > 0) {
@@ -67,7 +70,4 @@ export class BarItem {
             return fileList[fileList.length - 1];
         }
     }
-
-    
-
 }
