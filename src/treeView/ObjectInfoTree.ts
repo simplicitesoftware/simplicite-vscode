@@ -1,30 +1,36 @@
 'use strict';
 
 import { SimpliciteAPIManager } from "../SimpliciteAPIManager";
-import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemLabel, Uri } from 'vscode';
+import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, workspace, window, TextEdit } from 'vscode';
 import { logger } from '../Log';
 import { Module } from "../Module";
 import { objectInfo } from '../constant';
 import * as path from 'path';
 import { FieldInfo, ObjectInfo } from '../interfaces';
+import { ObjectItem, ObjectType, FieldItem } from '../classes';
 
+// Object Info tree view
 export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
     request: SimpliciteAPIManager;
     private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
     private modules: Array<Module>;
-    private objectFieldInfoCache: Array<any> | undefined;
+    private previousSelection: number;
     constructor (request: SimpliciteAPIManager) {
-        this.request = request;
-        this.modules = request.moduleHandler.getModules();
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-        this.objectFieldInfoCache = undefined;
+        this.request = request;
+        this.modules = request.moduleHandler.getModules();
+        this.previousSelection = new Date().getTime();
     }
 
     async refresh() {
-        this.setModules(await this.request.fileHandler.getSimpliciteModules()); 
+        this.setModules(await this.request.fileHandler.getSimpliciteModules());
         this._onDidChangeTreeData.fire();
+    }
+
+    private setModules (modules: Array<Module>) {
+        this.modules = modules;
     }
 
     fieldsIntoTreeItem (objectFieldInfo: Array<FieldInfo>, element: any | TreeItem | ObjectItem | FieldItem | ObjectType) {
@@ -58,6 +64,37 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
         return fieldItem;
     }
 
+    getTreeItem (element: TreeItem | ObjectItem | FieldItem | ObjectType): TreeItem | ObjectItem | FieldItem | ObjectType {
+        if (element.label && !element.description && element.label !== 'technical fields') {
+            element.contextValue = 'label';
+        } else if (element.label && element.description) {
+            element.contextValue = 'label&description';
+        }
+        return element;
+    }
+
+    async getChildren (element: TreeItem | ObjectItem | FieldItem | ObjectType): Promise<Array<TreeItem | ObjectItem | FieldItem | ObjectType>> {
+        let objectFieldInfo = new Array();
+        try {
+            if (this.modules.length === 0) {
+                throw new Error('');
+            }
+            try {
+                objectFieldInfo = await this.getFieldsOfAllModules(this.modules);
+            } catch (e) {
+                throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
+            } 
+            if (objectFieldInfo.length === 0) {
+                throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
+            }
+            const fields = this.fieldsIntoTreeItem(objectFieldInfo, element);
+            return Promise.resolve(fields);
+        } catch (e: any) {
+            logger.error(`${e}`);
+            return Promise.resolve([new TreeItem(e.message, TreeItemCollapsibleState.None)]);
+        }
+    }
+
     async getFieldsOfAllModules (modules: Array<Module>) {
         const fieldList = new Array();
         try {
@@ -71,51 +108,6 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
             logger.error(e);
             throw new Error('No fieldList, cannot getChildren in Tree View');
         }
-        
-    }
-
-    getTreeItem (element: TreeItem | ObjectItem | FieldItem | ObjectType): TreeItem | ObjectItem | FieldItem | ObjectType {
-        if (element.label && !element.description && element.label !== 'technical fields') {
-            element.contextValue = 'label';
-        } else if (element.label && element.description) {
-            element.contextValue = 'label&description';
-        }
-        return element;
-    }
-
-    async getChildren (element: TreeItem | ObjectItem | FieldItem | ObjectType): Promise<Array<TreeItem | ObjectItem | FieldItem | ObjectType>> {
-        let label = undefined;
-        let objectFieldInfo = new Array();
-        if (element) {
-            label = element.label;
-        }
-        try {
-            if (this.modules.length === 0) {
-                throw new Error('');
-            }
-            try {
-                objectFieldInfo = await this.getFieldsOfAllModules(this.modules);
-                this.objectFieldInfoCache = objectFieldInfo;
-            } catch (e) {
-                if (!this.objectFieldInfoCache) {
-                    logger.info('getFieldOFAllModules failed, using cache');
-                } else {
-                    throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
-                }
-            }
-            
-            if (objectFieldInfo.length === 0) {
-                throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
-            }
-            const fields = this.fieldsIntoTreeItem(objectFieldInfo, element);
-            return Promise.resolve(fields);
-        } catch (e: any) {
-            logger.error(`${e}`);
-            return Promise.resolve([new TreeItem(e.message, TreeItemCollapsibleState.None)]);
-        }
-    }
-    private setModules (modules: Array<Module>) {
-        this.modules = modules;
     }
 
     private getObjectItems (moduleInfo: FieldInfo, label: string, objectInfo: ObjectInfo): Array<ObjectItem> {
@@ -155,7 +147,7 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
             if (objF.name === element.masterObject) {
                 for (let field of objF.fields) {
                     if (field.technical) {
-                        technicalFields.push(new FieldItem(field.name, TreeItemCollapsibleState.None, moduleInfo.moduleName, objectInfo, field.column, true, element.masterObject));
+                        technicalFields.push(new FieldItem(field.name, TreeItemCollapsibleState.None, moduleInfo.moduleName, objectInfo, field.column, true, element.masterObject, 'simplicite-vscode-tools.itemDoubleClickTrigger', field.jsonname));
                     }
                 }
             }
@@ -177,11 +169,11 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
                                         hasTechnicalField = true;
                                     }
                                 }
-                                const treeItem = new FieldItem(field.name, TreeItemCollapsibleState.None, moduleInfo.moduleName, objectInfo, field.column, true, element.label); 
+                                const treeItem = new FieldItem(field.name, TreeItemCollapsibleState.None, moduleInfo.moduleName, objectInfo, field.column, true, element.label, 'simplicite-vscode-tools.itemDoubleClickTrigger', field.jsonname); 
                                 fielditem.push(treeItem);
                             }
                             if (hasTechnicalField) {
-                                const technicalTreeItem = new FieldItem('technical fields', TreeItemCollapsibleState.Collapsed, moduleInfo.moduleName, element.objectInfo , '', true, element.label);
+                                const technicalTreeItem = new FieldItem('technical fields', TreeItemCollapsibleState.Collapsed, moduleInfo.moduleName, element.objectInfo , '', true, element.label, '', '');
                                 fielditem.push(technicalTreeItem);
                             }
                         }
@@ -219,50 +211,15 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
         }
         return;
     }
-}
 
-
-
-class ObjectType extends TreeItem {
-    constructor(
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly moduleName: string | TreeItemLabel,
-    ) {
-        super(label, collapsibleState);
-        this.moduleName = moduleName;
+    insertFieldInDocument (logicName: string) {
+        const editor = window.activeTextEditor;
+        if (editor?.selection.isEmpty) {
+            const position = editor.selection.active;
+            editor.edit(e => {
+                e.insert(position, logicName);
+            });
+        }
     }
 }
 
-class ObjectItem extends ObjectType {
-    constructor(
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly moduleName: string | TreeItemLabel,
-        public readonly objectInfo: ObjectInfo,
-        public readonly description: string
-    ) {
-        super(label, collapsibleState, moduleName);
-        this.objectInfo = objectInfo;
-        this.iconPath = objectInfo.icons;
-        this.description = description;
-    }
-}
-
-
-
-class FieldItem extends ObjectItem {
-    constructor(
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly moduleName: string | TreeItemLabel,
-        public readonly objectInfo: ObjectInfo,
-        public readonly description: string,
-        public readonly technical: boolean,
-        public readonly masterObject: string
-    ) {
-        super(label, collapsibleState, moduleName, objectInfo, description);
-        this.technical = technical;
-        this.masterObject = masterObject;
-    }
-}

@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionHandler } from './CompletionHandler';
-import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, labelToClipBoardCommand, descriptionToClipBoardCommand } from './commands';
+import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand  } from './commands';
 import { BarItem } from './BarItem';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { QuickPick } from './QuickPick';
@@ -32,12 +32,12 @@ export async function activate(context: ExtensionContext) {
 	
 	new QuickPick(context, request);
 
-	const fieldObjectTree = new ObjectInfoTree(request);
+	const objectInfoTree = new ObjectInfoTree(request);
 	window.registerTreeDataProvider(
 		'simpliciteObjectFields',
-		fieldObjectTree
+		objectInfoTree
 	);
-	commands.registerCommand('simplicite-vscode-tools.refreshTreeView', async () => await fieldObjectTree.refresh());
+	commands.registerCommand('simplicite-vscode-tools.refreshTreeView', async () => await objectInfoTree.refresh());
 
 	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
 	
@@ -47,14 +47,16 @@ export async function activate(context: ExtensionContext) {
 	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
 	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
 	const logout = logoutCommand(request);
-	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, fieldObjectTree.refresh, fieldObjectTree);
+	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, objectInfoTree.refresh, objectInfoTree);
 	const trackFile = trackFileCommand(request);
 	const untrackFile = untrackFilesCommand(request);
 
-	const fieldToClipBoard = labelToClipBoardCommand();
-	const descriptionToClipBoard = descriptionToClipBoardCommand();
+	const fieldToClipBoard = copyLogicalNameCommand();
+	const copyPhysicalName = copyPhysicalNameCommand();
+	const copyJsonName = copyJsonNameCommand();
+	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(objectInfoTree);
 	
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, descriptionToClipBoard);
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -88,8 +90,7 @@ export async function activate(context: ExtensionContext) {
 			logger.info('added module to workspace');
 			modulesLength = tempModules.length;
 			try {
-				await request.loginTokenOrCredentials(moduleHandler.getModules()[moduleHandler.moduleLength() - 1], false); // We need to connect with the module informations
-				await fieldObjectTree.refresh();
+				await request.loginTokenOrCredentials(moduleHandler.getModules()[moduleHandler.moduleLength() - 1]); // We need to connect with the module informations
 			} catch(e) {
 				logger.error(e);
 			}
@@ -98,7 +99,9 @@ export async function activate(context: ExtensionContext) {
 			logger.info('removed module from workspace');
 		}
 		moduleHandler.setModules(await fileHandler.getSimpliciteModules());
-		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
+		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+		await objectInfoTree.refresh();
+		await fileHandler.getFileOnStart();
 	});
 }

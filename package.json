@@ -44,11 +44,11 @@
 			],
 			"commandPalette": [
 				{
-					"command": "simplicite-vscode-tools.labelToClipBoard",
+					"command": "simplicite-vscode-tools.copyLogicalName",
 					"when": "false"
 				},
 				{
-					"command": "simplicite-vscode-tools.descriptionToClipBoard",
+					"command": "simplicite-vscode-tools.copyPhysicalName",
 					"when": "false"
 				},
 				{
@@ -58,11 +58,15 @@
 			],
 			"view/item/context": [
 				{
-					"command": "simplicite-vscode-tools.labelToClipBoard",
+					"command": "simplicite-vscode-tools.copyLogicalName",
 					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label"
 				},
 				{
-					"command": "simplicite-vscode-tools.descriptionToClipBoard",
+					"command": "simplicite-vscode-tools.copyPhysicalName",
+					"when": "view == simpliciteObjectFields && viewItem == label&description"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyJsonName",
 					"when": "view == simpliciteObjectFields && viewItem == label&description"
 				},
 				{
@@ -124,20 +128,18 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode-tools.labelToClipBoard",
-				"title": "copy label",
-				"icon": {
-					"light": "resources/light/copy.svg",
-					"dark": "resources/dark/copy.svg"
-				}
+				"command": "simplicite-vscode-tools.copyLogicalName",
+				"title": "copy logical name"
 			},
 			{
-				"command": "simplicite-vscode-tools.descriptionToClipBoard",
-				"title": "copy description",
-				"icon": {
-					"light": "resources/light/copybis.svg",
-					"dark": "resources/dark/copybis.svg"
-				}
+				"command": "simplicite-vscode-tools.copyPhysicalName",
+				"title": "copy physical name"
+	
+			},
+			{
+				"command": "simplicite-vscode-tools.copyJsonName",
+				"title": "copy json name"
+	
 			},
 			{
 				"command": "simplicite-vscode-tools.trackFile",
@@ -154,6 +156,10 @@
 					"light": "resources/light/remove.svg",
 					"dark": "resources/dark/remove.svg"
 				}
+			},
+			{
+				"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
+				"title": "double click trigger command"
 			}
 		],
 		"capabilities": {

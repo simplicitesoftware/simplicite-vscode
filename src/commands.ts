@@ -8,6 +8,7 @@ import { ObjectInfoTree } from './treeView/ObjectInfoTree';
 import { crossPlatformPath } from './utils';
 import { Module } from './Module';
 import { File } from './File';
+import { FieldItem } from './classes';
 
 // All these commands are added in extension.ts into the vscode context
 // These also have to be declared as contributions in the package.json
@@ -104,7 +105,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
                 }
             }
 			if (module) {
-                await request.loginTokenOrCredentials(module, true);
+                await request.loginTokenOrCredentials(module);
             } 
 			if (!flag) {
                 throw new Error(`Simplicite: There is no module ${moduleName} in your current workspace`);
@@ -122,7 +123,7 @@ export const logoutCommand = function (request: SimpliciteAPIManager) {
 	});
 };
 
-export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager, fieldObjectTreeRefresh: () => Promise<void>, fieldObjectTree: ObjectInfoTree) {
+export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager, objectInfoTreeRefresh: () => Promise<void>, objectInfoTree: ObjectInfoTree) {
     return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
@@ -132,7 +133,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
             if (!input) {
                 throw new Error('Simplicite: Action canceled');
             }
-			await request.specificLogout(input, fieldObjectTreeRefresh, fieldObjectTree);
+			await request.specificLogout(input, objectInfoTreeRefresh, objectInfoTree);
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
@@ -164,21 +165,49 @@ export const untrackFilesCommand = function (request: SimpliciteAPIManager) {
 
 // ------------------------------
 // Tree view commands
-export const labelToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode-tools.labelToClipBoard', element => {
-        if (element !== undefined) {
-            copy(element.label);
+export const copyLogicalNameCommand = function () {
+    return commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element: FieldItem) => {
+        copy(element.label);
+    });
+};
+
+export const copyPhysicalNameCommand = function () {
+    return commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element: FieldItem) => {
+        copy(element.description);
+    });
+};
+
+export const copyJsonNameCommand = function () {
+    return commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element: FieldItem) => {
+        copy(element.jsonName);
+    });
+}
+// ------------------------------
+
+export const itemDoubleClickTriggerCommand = function (objectInfoTree: ObjectInfoTree) {
+    return commands.registerCommand('simplicite-vscode-tools.itemDoubleClickTrigger', (logicName: string) => {
+        if (doubleClickTrigger()) {
+            try {
+                objectInfoTree.insertFieldInDocument(logicName);
+            } catch (e) {
+                logger.error(e);
+            }
         }
     });
 };
 
-export const descriptionToClipBoardCommand = function () {
-    return commands.registerCommand('simplicite-vscode-tools.descriptionToClipBoard', element => {
-        if (element !== undefined) {
-            copy(element.description);
-        }
-    });
-};
+let firstClickTime = new Date().getTime();
+
+function doubleClickTrigger (): boolean {
+    const doubleClickTime = 500;
+    const currentTime = new Date().getTime();
+    if ((currentTime - firstClickTime) <= doubleClickTime) {
+        return true;
+    } else {
+        firstClickTime = new Date().getTime();
+        return false;
+    }
+}
 
 // ------------------------------
 
@@ -207,5 +236,7 @@ async function inputFilePath (title: string, placeHolder: string) {
     }
     return crossPlatformPath(fileInput);
 }
+
+
 
 
