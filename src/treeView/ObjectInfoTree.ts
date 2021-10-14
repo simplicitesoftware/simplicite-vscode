@@ -100,12 +100,12 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
                 if (!this.objectFieldInfoCache) {
                     logger.info('getFieldOFAllModules failed, using cache');
                 } else {
-                    throw new Error('Cannot provide items, make sure you are connected');
+                    throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
                 }
             }
             
             if (objectFieldInfo.length === 0) {
-                throw new Error('Cannot provide items, make sure you are connected');
+                throw new Error('Cannot provide items, make sure you are connected or that you have the rights to access this module');
             }
             const fields = this.fieldsIntoTreeItem(objectFieldInfo, element);
             return Promise.resolve(fields);
