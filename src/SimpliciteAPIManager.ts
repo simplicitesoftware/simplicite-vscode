@@ -49,12 +49,10 @@ export class SimpliciteAPIManager {
 
     async loginHandler (): Promise<void> {
         if (this.moduleHandler.moduleLength() > 0) {
-            let activateTreeViewUpdate = true;
             for (let module of this.moduleHandler.getModules()) {
                 if (!this.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
                     try {
-                        await this.loginTokenOrCredentials(module, activateTreeViewUpdate);
-                        activateTreeViewUpdate = false;
+                        await this.loginTokenOrCredentials(module);
                     } catch (e: any) {
                         window.showErrorMessage(e.message ? e.message : e);
                         logger.error(`Module ${module.getName()}: ${e.message ? e.message : e}`);
@@ -66,16 +64,16 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async loginTokenOrCredentials (module: Module, activateTreeViewUpdate: boolean): Promise<void> {
+    async loginTokenOrCredentials (module: Module): Promise<void> {
         const app = await this.appHandler.getApp(module.getInstanceUrl()); // handleApp returns the app correct instance (one for every simplicite instance)
         try {
             await this.authenticationWithToken(module.getName(), app);
-            await this.login(module.getInstanceUrl(), module.getName(), app, activateTreeViewUpdate);
+            await this.login(module.getInstanceUrl(), module.getName(), app);
             logger.info('Token connection succeeded');
         } catch (e) {
             try {
                 await this.authenticationWithCredentials(module.getName(), app);
-                await this.login(module.getInstanceUrl(), module.getName(), app, activateTreeViewUpdate);
+                await this.login(module.getInstanceUrl(), module.getName(), app);
                 logger.info('Credentials connection succeeded');
             } catch (e) {
                 throw e;
@@ -83,7 +81,7 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async login (moduleInstanceUrl: string, moduleName: string, app: any, activateTreeViewUpdate: boolean): Promise<void> {
+    async login (moduleInstanceUrl: string, moduleName: string, app: any): Promise<void> {
         try {
             const res = await app.login();
             if (!this.devInfo) {
@@ -95,9 +93,7 @@ export class SimpliciteAPIManager {
             this.moduleHandler.addInstanceUrl(moduleInstanceUrl);
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
-            if (activateTreeViewUpdate) {
             commands.executeCommand('simplicite-vscode-tools.refreshTreeView');
-            }
             this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
         } catch (e: any) {
             if (e.message === 'Simplicite authentication error: Invalid token') { // reset authentication info related to the module and instance
@@ -176,7 +172,7 @@ export class SimpliciteAPIManager {
         }
     }
     
-    async specificLogout(input: string, fieldObjectTreeRefresh: () => Promise<void>, treeContext: ObjectInfoTree) {
+    async specificLogout(input: string, objectInfoTreeRefresh: () => Promise<void>, treeContext: ObjectInfoTree) {
         try {
             let instanceUrl: string;
             instanceUrl = this.moduleHandler.getModuleUrlFromName(input);
@@ -196,7 +192,7 @@ export class SimpliciteAPIManager {
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
                 this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
-                await fieldObjectTreeRefresh.call(treeContext);
+                await objectInfoTreeRefresh.call(treeContext);
 
             }).catch((e: any) => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
