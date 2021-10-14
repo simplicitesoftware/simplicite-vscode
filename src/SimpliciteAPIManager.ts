@@ -232,60 +232,69 @@ export class SimpliciteAPIManager {
 
     async applyModuleFiles (moduleName: string, instanceUrl: string) {
         const app = await this.appHandler.getApp(instanceUrl);
-        let error = 0;
-        let cptFile = 0;
+        let success = 0;
         for (let file of this.fileHandler.getFileList()) {
             if (file.moduleName === moduleName && file.tracked) {
-                cptFile++;
-                try {
-                    await this.sendFile(file, app);
-                    await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
-                } catch (e) {
-                    error++;
-                    logger.error('Cannot apply ' + file.getFilePath());
-                }
+                success = await this.sendFileMessageWrapper(file, app);
             }
         }
-        try {
-            const res: any = await this.triggerBackendCompilation(app); 
-            window.showInformationMessage(res);
-        } catch (e: any) {
-            window.showInformationMessage(e.message);
-        }
-        if (error > 0) {
-            window.showWarningMessage(`Simplicite: could not send ${error} out of ${cptFile} files`);
+        if (success > 0) {
+            try {
+                const res: any = await this.triggerBackendCompilation(app); 
+                window.showInformationMessage(res);
+            } catch (e: any) {
+                window.showInformationMessage(e.message);
+            }
         }
     }
 
     async applyInstanceFiles () {
         const fileModule = this.bindFileWithModule(this.fileHandler.getFileList());
+        let success = 0;
         for (let instanceUrl of this.moduleHandler.getConnectedInstancesUrl()) {
             const app = await this.appHandler.getApp(instanceUrl);
             if (fileModule.get(instanceUrl)) {
                 for (let file of fileModule.get(instanceUrl)!) {
-                    await this.sendFile(file, app);
-                    await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
+                    if (file.tracked) {
+                        success = await this.sendFileMessageWrapper(file, app);   
+                    }
                 }
-            } else {
-                continue;
             }
-            try {
-                await this.triggerBackendCompilation(app);
-                logger.info('Backend compilation succeded');
-            } catch(e: any) {
-                window.showErrorMessage(e.message);
-                logger.error(e.message);
-            }
+            if (success > 0) {
+                try {
+                    await this.triggerBackendCompilation(app);
+                    logger.info('Backend compilation succeded');
+                } catch(e: any) {
+                    window.showErrorMessage(e.message);
+                    logger.error(e.message);
+                }
+            }  
         }
     }
 
-    async sendFile (file: File, app: any) {
+    async sendFileMessageWrapper (file: File, app: any): Promise<number> { // easy way to handle messages when an error occurs when applying a file
+        let success = 0;
+        try {
+            const res = await this.sendFile(file, app);
+            if (res) {
+                success++;
+            }
+            await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
+        } catch (e) {
+            logger.error('Cannot apply ' + file.getFilePath());
+        }
+        return Promise.resolve(success);
+    }
+
+    async sendFile (file: File, app: any): Promise<boolean> {
         try {
             await this.attachFileAndSend(file.filePath, app);
             logger.info('Successfully applied' + file.filePath);
+            return Promise.resolve(true);
         } catch (e: any) {
-            window.showErrorMessage(`Simplicite: Error sending ${file.filePath} \n ${e.message ? e.message : e}`);
+            window.showErrorMessage(`Simplicite: Error sending ${file.filePath}. ${e.message ? e.message : e}.`);
             logger.error(e);
+            return Promise.reject(false);
         }
     }
 
@@ -383,7 +392,7 @@ export class SimpliciteAPIManager {
                 throw e;
             });
         } catch (e) {
-            Promise.reject(e);
+            throw e;
         }     
     }
 
@@ -441,6 +450,9 @@ export class SimpliciteAPIManager {
 
     // Change path into Java package modele to find object type with dev info
     getBusinessObjectType (fileName: string) { 
+        if (!this.devInfo) { 
+            throw new Error('devInfo is undefined, make sure that you have the right to access this module');
+        }
         for (let object of this.devInfo.objects) {
             const comparePackage = object.package.replaceAll('.', '/');
             if (fileName.includes(comparePackage)) {
@@ -470,8 +482,6 @@ export class SimpliciteAPIManager {
             window.showInformationMessage('Simplicite: You are connected to: ' + url);     
         }
     }
-
-    
 
     async compileJava (customMessage?: CustomMessage) {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
