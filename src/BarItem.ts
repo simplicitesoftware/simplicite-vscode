@@ -2,7 +2,6 @@
 
 import { window, MarkdownString, StatusBarItem } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { File } from './File';
 import { Module } from './Module';
 
 export class BarItem {
@@ -56,7 +55,7 @@ export class BarItem {
                 } 
             }
             if (!disconnectedModule) {
-                return;
+                return '';
             }
         }
         return moduleMarkdown;
