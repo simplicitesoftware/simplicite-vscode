@@ -186,7 +186,6 @@ async function trackAction (request: SimpliciteAPIManager, element: any, tracked
     const inputFile = await getInputFile(request, element);
     const fileModule = request.fileHandler.bindFileAndModule(request.moduleHandler.getModules());
     await request.fileHandler.setTrackedStatus(inputFile.getFilePath(), trackedValue, fileModule);                 
-    request.barItem!.show(request.moduleHandler.getModules(), request.moduleHandler.getConnectedInstancesUrl());
 }
 
 async function getInputFile (request: SimpliciteAPIManager, element: any): Promise<File> {
