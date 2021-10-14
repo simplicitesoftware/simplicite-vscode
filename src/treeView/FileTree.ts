@@ -3,20 +3,28 @@
 import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel } from "vscode";
 import { FileAndModule } from '../interfaces';
 import * as path from 'path';
+import { UntrackedItem, ModuleItem, FileItem } from "../classes";
 
+// File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
-    private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
+    private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // these 2 attributes are mandatory to refresh the component
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
-    fileModule?: FileAndModule[];
+    fileModule?: FileAndModule[]; // is set in setFileModule, which is called on every file changes (FileHandler: build() & setTrackedStatus())
     constructor () {
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     }
 
-    async refresh() {
+    refresh() {
         this._onDidChangeTreeData.fire();
     }
 
+    async setFileModule (fileModule: FileAndModule[]) {
+        this.fileModule = fileModule;
+        this.refresh();
+    }
+
+    // sets the viewItem value use in package.json to handle the commands linked to a specific item type
     getTreeItem (element: UntrackedItem): UntrackedItem {
         if (element.tracked === undefined && element.label !== 'Untracked files' && element.label !== 'No files to display' && element.label !== 'No file has been changed') {
             element.contextValue = 'module';
@@ -28,6 +36,10 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         return element;
     }
 
+    // this method is called:
+    //   - on the component initialisation (automatically)
+    //   - when the items are clicked and the collapsible state collapsibleState !== None
+    //   - when refreshing the tree view 
     getChildren (element: TreeItem): Thenable<TreeItem[]> { 
         if (this.fileModule) {
             if (element === undefined) {
@@ -72,7 +84,9 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                     }
                 }
             }
-            if (untrackedFlag) {
+            // if there is at least one untracked file
+            // add a specific item to these type of files 
+            if (untrackedFlag) { 
                 const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, '', false, label);
                 fileItems.push(treeItem);
                 untrackedFlag = false;
@@ -103,10 +117,10 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                 }
             }
         }
-        
         return this.orderAlphab(untrackedFiles);
     }
 
+    // sorts the fileItems in alphabetical order
     orderAlphab (fileItems: TreeItem[]): TreeItem[] {
         const fileItemPath = new Array();
         let untrackedItem: TreeItem | undefined = undefined;
@@ -132,51 +146,11 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         return orderedFileItems;
     }
 
+    // returns a part of the file path for tree view readability
     private legibleFileName (filePäth: string) {
         const decomposedPath = filePäth.split('/');
         const index = decomposedPath.length - 1;
         return decomposedPath[index- 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
     }
-
-    async setFileModule (fileModule: FileAndModule[]) {
-        this.fileModule = fileModule;
-        await this.refresh();
-    }
 }
 
-class ModuleItem extends TreeItem {
-    constructor (
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly description: string,
-    ) {
-        super(label, collapsibleState);    
-        this.description = description;
-    }
-}
-
-class FileItem extends TreeItem {
-    constructor (
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly fullPath: string,
-        public readonly tracked: boolean,
-        public readonly moduleName: string | TreeItemLabel
-    ) {
-        super(label, collapsibleState);
-        this.fullPath = fullPath;
-        this.moduleName = moduleName;
-    }
-}
-
-class UntrackedItem extends FileItem {
-    constructor (
-        public readonly label: string,
-        public readonly collapsibleState: TreeItemCollapsibleState,
-        public readonly fullPath: string,
-        public readonly tracked: boolean,
-        public readonly moduleName: string | TreeItemLabel
-    ) {
-        super(label, collapsibleState, fullPath, tracked, moduleName);
-    }
-}
