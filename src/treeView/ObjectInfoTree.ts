@@ -65,10 +65,12 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
     }
 
     getTreeItem (element: TreeItem | ObjectItem | FieldItem | ObjectType): TreeItem | ObjectItem | FieldItem | ObjectType {
-        if (element.label && !element.description && element.label !== 'technical fields') {
-            element.contextValue = 'label';
+        if (element.label && element.description && element.hasOwnProperty('jsonName') && element.label !== 'technical field') {
+            element.contextValue = 'label&description&jsonName';
         } else if (element.label && element.description) {
             element.contextValue = 'label&description';
+        } else {
+            element.contextValue = 'label';
         }
         return element;
     }

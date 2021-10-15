@@ -59,15 +59,15 @@
 			"view/item/context": [
 				{
 					"command": "simplicite-vscode-tools.copyLogicalName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description || viewItem == label"
+					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName || viewItem == label&description || viewItem == label"
 				},
 				{
 					"command": "simplicite-vscode-tools.copyPhysicalName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description"
+					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName || viewItem == label&description"
 				},
 				{
 					"command": "simplicite-vscode-tools.copyJsonName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description"
+					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName"
 				},
 				{
 					"command": "simplicite-vscode-tools.untrackFile",
