@@ -9,6 +9,11 @@
 	},
 	"license": "Apache-2.0",
 	"icon": "icon.png",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
+	},
+	"bugs": "https://github.com/simplicitesoftware/simplicite-vscode/issues",
 	"categories": [
 		"Other"
 	],
@@ -162,14 +167,6 @@
 				"title": "double click trigger command"
 			}
 		],
-		"capabilities": {
-			"completionProvider": {
-				"resolveProvider": "true",
-				"triggerCharacters": [
-					"\""
-				]
-			}
-		},
 		"configuration": {
 			"properties": {
 				"simplicite-vscode-tools.compilation.enabled": {
@@ -230,9 +227,5 @@
 	},
 	"extensionDependencies": [
 		"redhat.java"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/simplicitesoftware/simplicite-vscode-tools.git"
-	}
+	]
 }
