@@ -68,12 +68,12 @@ export class SimpliciteAPIManager {
         const app = await this.appHandler.getApp(module.getInstanceUrl()); // handleApp returns the app correct instance (one for every simplicite instance)
         try {
             await this.authenticationWithToken(module.getName(), app);
-            await this.login(module.getInstanceUrl(), module.getName(), app);
+            await this.login(module, app);
             logger.info('Token connection succeeded');
         } catch (e) {
             try {
                 await this.authenticationWithCredentials(module.getName(), app);
-                await this.login(module.getInstanceUrl(), module.getName(), app);
+                await this.login(module, app);
                 logger.info('Credentials connection succeeded');
             } catch (e) {
                 throw e;
@@ -81,25 +81,26 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async login (moduleInstanceUrl: string, moduleName: string, app: any): Promise<void> {
+    async login (module: Module, app: any): Promise<void> {
         try {
             const res = await app.login();
             if (!this.devInfo) {
                 await this.setDevInfo(app);
             }
             await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
-            this.moduleHandler.spreadToken(moduleInstanceUrl, res.authtoken);
-            this.appHandler.setApp(moduleInstanceUrl, app);
-            this.moduleHandler.addInstanceUrl(moduleInstanceUrl);
+            this.moduleHandler.spreadToken(module.getInstanceUrl(), res.authtoken);
+            this.appHandler.setApp(module.getInstanceUrl(), app);
+            this.moduleHandler.addInstanceUrl(module.getInstanceUrl());
+            // moduleDevInfo
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
-            commands.executeCommand('simplicite-vscode-tools.refreshTreeView');
+            await commands.executeCommand('simplicite-vscode-tools.refreshTreeView');
             this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
         } catch (e: any) {
             if (e.message === 'Simplicite authentication error: Invalid token') { // reset authentication info related to the module and instance
-                this.fileHandler.deleteModuleJSON(undefined, moduleName);
-                this.appHandler.getAppList().delete(moduleInstanceUrl);
-                this.moduleHandler.spreadToken(moduleInstanceUrl, null);
+                this.fileHandler.deleteModuleJSON(undefined, module.getName());
+                this.appHandler.getAppList().delete(module.getInstanceUrl());
+                this.moduleHandler.spreadToken(module.getInstanceUrl(), null);
                 logger.warn('Authentication token is invalid, trying to reconnect');
                 await this.loginHandler();
             } else {
