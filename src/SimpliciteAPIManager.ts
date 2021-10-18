@@ -471,6 +471,14 @@ export class SimpliciteAPIManager {
         }
     }
 
+    async moduleDevInfoSpecific (connectedInstance: string, moduleName: string): Promise<void> { // need for completion handler in extension.ts
+        const app = this.appHandler.getApp(connectedInstance);
+        if (app.authtoken === undefined) {
+            throw new Error(`Cannot get object fields, not connected to ${moduleName} (${connectedInstance})`);
+        }
+        await this.setDevInfo(app, moduleName);
+    }
+
     connectedInstance () {
         if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
             window.showInformationMessage('Simplicite: No connected instance');     
