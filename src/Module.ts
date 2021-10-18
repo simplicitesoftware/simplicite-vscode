@@ -6,6 +6,7 @@ export class Module {
     private workspaceFolderPath: string;
     private instanceUrl: string;
     private token: string | null;
+    moduleDevInfo: any;
     constructor (name: string, workspaceFolderName: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
         this.name = name;
         this.workspaceFolderName = workspaceFolderName;

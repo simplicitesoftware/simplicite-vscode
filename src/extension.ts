@@ -1,9 +1,9 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands, Uri } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { CompletionHandler } from './CompletionHandler';
+import { DevCompletionProvider } from './DevCompletionProvider';
 import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand  } from './commands';
 import { BarItem } from './BarItem';
 import { ObjectInfoTree } from './treeView/ObjectInfoTree';
@@ -12,6 +12,8 @@ import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { crossPlatformPath } from './utils';
+import { OpenFileContext } from './interfaces';
+import { template } from './constant';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
@@ -58,6 +60,15 @@ export async function activate(context: ExtensionContext) {
 	
 	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
 
+	// settings are set in the package.json
+	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
+		try {
+			await request.loginHandler();
+		} catch (e) {
+			logger.error(e);
+		}
+	};
+
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (event.uri.path.search('.java') !== -1) {
@@ -66,20 +77,13 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	// settings are in the package.json
-	if(!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
-		try {
-			await request.loginHandler();
-		} catch (e) {
-			logger.error(e);
-		}
-	};
-		
 	// Completion initialization 
 	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
-	const provider = await CompletionHandler.build(request);
+	
+	/*const provider = await CompletionProvider.build(request);
 	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
-	context.subscriptions.push(completionProviderSingleQuote);
+	context.subscriptions.push(completionProviderSingleQuote);*/
+	
 
 	// workspace handler
 	let modulesLength = moduleHandler.moduleLength(); // usefull to compare module change on onDidChangeWorkspaceFolders
@@ -104,4 +108,38 @@ export async function activate(context: ExtensionContext) {
 		await objectInfoTree.refresh();
 		await fileHandler.getFileOnStart();
 	});
+
+	// Completion
+	if (moduleHandler.getConnectedInstancesUrl()
+		&& request.devInfo
+		&& request.moduleDevInfo
+		&& window.activeTextEditor) 
+	{
+		completionProviderHandler(moduleHandler.getConnectedInstancesUrl(), request.devInfo, request.moduleDevInfo, window.activeTextEditor.document, context);
+	}
+	
+	window.onDidChangeActiveTextEditor(async event => {
+		try {
+			if (event === undefined) {
+				throw new Error('Cannot get the event value out of the "onDidChangeActiveTextEditor" event');
+			}
+			
+		} catch (e) {
+			logger.error(e);
+		}
+	});
+}
+
+function completionProviderHandler (connectedInstances: string[], devInfo: any, moduleDevInfo: any, currentPage: TextDocument, context: ExtensionContext) {
+	if (currentPage.uri.path.includes('.java') && devInfo && moduleDevInfo) {
+		const filePath = crossPlatformPath(currentPage.fileName);
+		const openFileContext: OpenFileContext = {
+			filePath: filePath,
+			fileName: DevCompletionProvider.getFileNameFromPath(filePath),
+			workspaceUrl: DevCompletionProvider.getWorkspaceFromFileUri(currentPage.uri)
+		};
+		const devCompletionProvider = new DevCompletionProvider(devInfo, moduleDevInfo, openFileContext);
+		const completionProvider = languages.registerCompletionItemProvider(template, devCompletionProvider, '"');
+		context.subscriptions.push(completionProvider);
+	}
 }

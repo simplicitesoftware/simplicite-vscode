@@ -32,3 +32,9 @@ export interface FileAndModule {
     instanceUrl: string,
     fileList: File[]
 }
+
+export interface OpenFileContext {
+    filePath: string,
+    fileName: string,
+    workspaceUrl: string
+}

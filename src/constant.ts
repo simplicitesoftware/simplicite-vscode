@@ -111,3 +111,5 @@ export const objectInfo = [
         functions: []
     }    
 ];
+
+export const template =  { scheme: 'file', language: 'java' };
