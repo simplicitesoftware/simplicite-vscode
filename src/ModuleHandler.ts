@@ -66,22 +66,22 @@ export class ModuleHandler {
         logger.error('Cannot get module url from name');
         return '';
     }
-    getModuleFromName (moduleName: string): Module | boolean {
+    getModuleFromName (moduleName: string): Module | undefined {
         for (let module of this.modules) {
             if (module.getName() === moduleName) {
                 return module;
             }
         }
-        return false;
+        return undefined;
     }
 
-    getModuleFromUrl (instanceUrl: string): Module | false {
+    getModuleFromUrl (instanceUrl: string): Module | undefined {
         for (let module of this.modules) {
             if (module.getInstanceUrl() === instanceUrl) {
                 return module;
             }
         }
-        return false;
+        return undefined;
     }
 
     getModuleNameFromUrl (instanceUrl: string): string {
@@ -107,7 +107,7 @@ export class ModuleHandler {
         return '';
     }
 
-    getModuleFromNameOrUrl (element: string): Module | boolean {
+    getModuleFromNameOrUrl (element: string): Module | undefined {
         let value = this.getModuleFromName(element);
         if (value) {
             return value;

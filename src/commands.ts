@@ -34,7 +34,7 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
         try  {
             if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
                 element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-                const moduleObject: Module | boolean = request.moduleHandler.getModuleFromName(element);
+                const moduleObject: Module | undefined = request.moduleHandler.getModuleFromName(element);
                 if (!moduleObject) {
                     const msg = 'Simplicite: Cannot find module named ' + element;
                     throw new Error(msg);
