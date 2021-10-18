@@ -181,8 +181,7 @@ export const copyJsonNameCommand = function () {
     return commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element: FieldItem) => {
         copy(element.jsonName);
     });
-}
-// ------------------------------
+};
 
 export const itemDoubleClickTriggerCommand = function (objectInfoTree: ObjectInfoTree) {
     return commands.registerCommand('simplicite-vscode-tools.itemDoubleClickTrigger', (logicName: string) => {
@@ -196,6 +195,8 @@ export const itemDoubleClickTriggerCommand = function (objectInfoTree: ObjectInf
     });
 };
 
+// ------------------------------
+
 let firstClickTime = new Date().getTime();
 
 function doubleClickTrigger (): boolean {
@@ -208,8 +209,6 @@ function doubleClickTrigger (): boolean {
         return false;
     }
 }
-
-// ------------------------------
 
 async function trackAction (request: SimpliciteAPIManager, element: any, trackedValue: boolean) {
     const inputFile = await getInputFile(request, element);

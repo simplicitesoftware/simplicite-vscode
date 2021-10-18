@@ -153,4 +153,3 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         return decomposedPath[index- 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
     }
 }
-

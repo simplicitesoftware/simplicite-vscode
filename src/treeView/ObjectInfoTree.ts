@@ -15,13 +15,11 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
     private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
     private modules: Array<Module>;
-    private previousSelection: number;
     constructor (request: SimpliciteAPIManager) {
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this.request = request;
         this.modules = request.moduleHandler.getModules();
-        this.previousSelection = new Date().getTime();
     }
 
     async refresh() {
@@ -224,4 +222,3 @@ export class ObjectInfoTree implements TreeDataProvider<TreeItem> {
         }
     }
 }
-
