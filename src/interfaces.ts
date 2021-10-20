@@ -39,3 +39,13 @@ export interface OpenFileContext {
     workspaceUrl: string,
     instanceUrl: string
 }
+
+export interface DevInfoObject {
+    classnamefield: string | undefined,
+    completion: any,
+    icon: string,
+    keyfield: string,
+    object: string,
+    package: string | undefined,
+    sourcefield: string
+}
