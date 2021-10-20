@@ -13,6 +13,7 @@ export class Module {
         this.workspaceFolderPath = workspaceFolderPath;
         this.instanceUrl = instanceUrl;
         this.token = token;
+        this.moduleDevInfo = undefined;
     }
 
     setName (name: string) {

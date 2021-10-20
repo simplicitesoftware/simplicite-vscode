@@ -2,14 +2,22 @@
 
 import { logger } from "./Log";
 import { Module } from "./Module";
+import { ModuleInfoTree } from "./treeView/ModuleInfoTree";
 import { crossPlatformPath } from "./utils";
 
 export class ModuleHandler {
     modules: Array<Module>;
     private connectedInstancesUrl: Array<string>;
+    moduleInfoTree: ModuleInfoTree | undefined;
     constructor () {
         this.connectedInstancesUrl = new Array();
         this.modules = new Array();
+        this.moduleInfoTree = undefined;
+    }
+
+    setModuleInfoTree (moduleInfoTree: ModuleInfoTree) {
+        this.moduleInfoTree = moduleInfoTree;
+        this.refreshTreeView(undefined);
     }
 
     addInstanceUrl (instanceUrl: string) {
@@ -23,8 +31,11 @@ export class ModuleHandler {
         this.connectedInstancesUrl.splice(index, 1);
     }
 
-    setModules (modules: Array<Module>) {
+    setModules (modules: Array<Module>, refresh: boolean) {
         this.modules = modules;
+        if (refresh) {
+            this.refreshTreeView(modules);
+        }
     }
     
     getModules () {
@@ -75,25 +86,6 @@ export class ModuleHandler {
         return undefined;
     }
 
-    getModuleFromUrl (instanceUrl: string): Module | undefined {
-        for (let module of this.modules) {
-            if (module.getInstanceUrl() === instanceUrl) {
-                return module;
-            }
-        }
-        return undefined;
-    }
-
-    getModuleNameFromUrl (instanceUrl: string): string {
-        for (let module of this.modules) {
-            if (module.getInstanceUrl() === instanceUrl) {
-                return module.getName();
-            }
-        }
-        logger.error('Cannot get module name from url');
-        return '';
-    }
-
     getModuleUrlFromWorkspacePath (workspacePath: string): string {
         try {
             for (let module of this.modules) {
@@ -107,20 +99,25 @@ export class ModuleHandler {
         return '';
     }
 
-    getModuleFromNameOrUrl (element: string): Module | undefined {
-        let value = this.getModuleFromName(element);
-        if (value) {
-            return value;
-        } 
-        value = this.getModuleFromUrl(element);
-        if (value) {
-            return value;
-        }
-        return value;
-    }
-
     removeConnectedInstancesUrl (instanceUrl: string) {
         const index = this.connectedInstancesUrl.indexOf(instanceUrl);
         this.connectedInstancesUrl.splice(index, 1);
+    }
+
+    getAllModuleDevInfo (): Array<any> {
+        const returnValue = new Array();
+        for (let module of this.modules) {
+            returnValue.push(module.moduleDevInfo);
+        }
+        return returnValue;
+    }
+
+    refreshTreeView (modules: Module[] | undefined) {
+        if (this.moduleInfoTree) {
+            if (modules) {
+                this.moduleInfoTree.setModules(modules); // refresh the moduleInfo tree view
+            } else {
+                this.moduleInfoTree.setModules(this.modules);            }
+        }
     }
 }
