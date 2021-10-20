@@ -3,9 +3,9 @@
 import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
 import { crossPlatformPath } from './utils';
 import { logger } from './Log';
-import { OpenFileContext } from './interfaces';
+import { OpenFileContext, DevInfoObject } from './interfaces';
 
-export class DevCompletionProvider implements CompletionItemProvider {
+export class CompletionProvider implements CompletionItemProvider {
     private _devInfo: any;
     private _moduleDevInfo: any;
     private _openFileContext: OpenFileContext;
@@ -117,15 +117,7 @@ export class DevCompletionProvider implements CompletionItemProvider {
     }
 }
 
-interface DevInfoObject {
-    classnamefield: string | undefined,
-    completion: any,
-    icon: string,
-    keyfield: string,
-    object: string,
-    package: string | undefined,
-    sourcefield: string
-}
+
 
 class CustomCompletionItem extends CompletionItem {
     attributeName: string;

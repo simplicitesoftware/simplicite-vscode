@@ -3,10 +3,10 @@
 import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands, Uri, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { DevCompletionProvider } from './DevCompletionProvider';
+import { CompletionProvider } from './CompletionProvider';
 import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand  } from './commands';
 import { BarItem } from './BarItem';
-import { ObjectInfoTree } from './treeView/ObjectInfoTree';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
@@ -34,32 +34,6 @@ export async function activate(context: ExtensionContext) {
 	
 	new QuickPick(context, request);
 
-	const objectInfoTree = new ObjectInfoTree(request);
-	window.registerTreeDataProvider(
-		'simpliciteObjectFields',
-		objectInfoTree
-	);
-	commands.registerCommand('simplicite-vscode-tools.refreshTreeView', async () => await objectInfoTree.refresh());
-
-	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	
-	const applyChanges = applyChangesCommand(request);
-	const applySpecificModule = applySpecificModuleCommand(request);
-	const compileWorkspace = compileWorkspaceCommand(request);
-	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
-	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
-	const logout = logoutCommand(request);
-	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, objectInfoTree.refresh, objectInfoTree);
-	const trackFile = trackFileCommand(request);
-	const untrackFile = untrackFilesCommand(request);
-
-	const fieldToClipBoard = copyLogicalNameCommand();
-	const copyPhysicalName = copyPhysicalNameCommand();
-	const copyJsonName = copyJsonNameCommand();
-	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(objectInfoTree);
-	
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
-
 	// settings are set in the package.json
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
 		try {
@@ -68,6 +42,33 @@ export async function activate(context: ExtensionContext) {
 			logger.error(e);
 		}
 	};
+	
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.getModules(), request.devInfo);
+	window.registerTreeDataProvider(
+		'simpliciteModuleInfo',
+		moduleInfoTree
+	);
+	moduleHandler.setModuleInfoTree(moduleInfoTree); // refresh moduleInfoTree everytime a module is set or moduleDevInfo is changed 
+
+	// Commands have to be declared in package.json so VS Code knows that the extension provides a command
+	const applyChanges = applyChangesCommand(request);
+	const applySpecificModule = applySpecificModuleCommand(request);
+	const compileWorkspace = compileWorkspaceCommand(request);
+	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
+	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
+	const logout = logoutCommand(request);
+	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request);
+	const trackFile = trackFileCommand(request);
+	const untrackFile = untrackFilesCommand(request);
+
+	const fieldToClipBoard = copyLogicalNameCommand();
+	const copyPhysicalName = copyPhysicalNameCommand();
+	const copyJsonName = copyJsonNameCommand();
+	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
+	
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
+
+	
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -79,7 +80,7 @@ export async function activate(context: ExtensionContext) {
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
-		moduleHandler.setModules(await fileHandler.getSimpliciteModules());
+		moduleHandler.setModules(await fileHandler.getSimpliciteModules(), true);
 		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 		if (event.added.length > 0) { // If a folder is added to workspace
 			try {
@@ -95,10 +96,9 @@ export async function activate(context: ExtensionContext) {
 		} else if (event.removed.length > 0) { // in this case, if a folder is removed we check if it's a simplicite module	
 			logger.info('removed module from workspace');
 		}
-		moduleHandler.setModules(await fileHandler.getSimpliciteModules());
+		await request.refreshModuleDevInfo();
 		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
 		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
-		await objectInfoTree.refresh();
 		await fileHandler.getFileOnStart();
 	});
 
@@ -108,7 +108,7 @@ export async function activate(context: ExtensionContext) {
 		const connectedInstances: string[] = moduleHandler.getConnectedInstancesUrl(); 
 		if (connectedInstances.length > 0
 		&& request.devInfo
-		&& request.moduleDevInfo
+		&& moduleHandler.getAllModuleDevInfo().length > 0
 		&& window.activeTextEditor) 
 		{
 			const filePath = crossPlatformPath(window.activeTextEditor.document.fileName);
@@ -116,21 +116,26 @@ export async function activate(context: ExtensionContext) {
 				return undefined;
 			}
 			const currentPageUri = window.activeTextEditor.document.uri;
-			const workspaceUrl = DevCompletionProvider.getWorkspaceFromFileUri(currentPageUri);
+			const workspaceUrl = CompletionProvider.getWorkspaceFromFileUri(currentPageUri);
 			const instanceUrl = moduleHandler.getModuleUrlFromWorkspacePath(workspaceUrl);
-			const moduleName = moduleHandler.getModuleNameFromUrl(instanceUrl); // need moduleName to set the moduleDevInfo
+			const decomposed = workspaceUrl.split('/');
+			const presumedModuleName = decomposed[decomposed.length - 1];
+			const module = moduleHandler.getModuleFromName(presumedModuleName);
+			if (!module) {
+				return undefined;
+			}
 			if (!connectedInstances.includes(instanceUrl)) {
 				logger.warn('Cannot provide completion, not connected to the module\'s instance');
 				return undefined;
 			}
 			const openFileContext: OpenFileContext = {
 				filePath: filePath,
-				fileName: DevCompletionProvider.getFileNameFromPath(filePath),
+				fileName: CompletionProvider.getFileNameFromPath(filePath),
 				workspaceUrl: workspaceUrl,
 				instanceUrl: instanceUrl
 			};
-			await request.moduleDevInfoSpecific(instanceUrl, moduleName); // sets module
-			completionProvider = completionProviderHandler(openFileContext, request.devInfo, request.moduleDevInfo, context);
+			await request.moduleDevInfoSpecific(instanceUrl, module.getName()); // sets module
+			completionProvider = completionProviderHandler(openFileContext, request.devInfo, module.moduleDevInfo, context);
 			return completionProvider;
 		}
 		return undefined;
@@ -157,7 +162,7 @@ export async function activate(context: ExtensionContext) {
 }
 
 function completionProviderHandler (openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {
-	const devCompletionProvider = new DevCompletionProvider(devInfo, moduleDevInfo, openFileContext);
+	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, openFileContext);
 	const completionProvider = languages.registerCompletionItemProvider(template, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
 	logger.info('completion ready');
