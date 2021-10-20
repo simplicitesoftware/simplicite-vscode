@@ -1,203 +1,128 @@
-// 'use strict';
+'use strict';
 
-// import { CompletionItem, window, CompletionItemProvider, TextDocument, Position, CompletionItemKind, Uri, workspace, CancellationToken, CompletionContext } from 'vscode';
-// import { crossPlatformPath } from './utils';
-// import { logger } from './Log';
-// import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-// import { objectInfo } from './constant';
+import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
+import { crossPlatformPath } from './utils';
+import { logger } from './Log';
+import { OpenFileContext, DevInfoObject } from './interfaces';
 
-// export class CompletionProvider implements CompletionItemProvider {
-// 	request: SimpliciteAPIManager;
-// 	template: { scheme: string, language: string };
-// 	completionItemList?: Array<CompletionItem>;
-// 	currentPagePath?: string;
-// 	fileName?: string;
-// 	currentWorkspace?: string;
-// 	instanceUrl?: string;
-// 	currentObjectInfo?: { type: string, field: string };
-// 	objectFieldsList?: any;
-//     constructor (request: SimpliciteAPIManager) {
-// 		this.request = request;
-// 		this.completionItemList = undefined;
-// 		if (request.moduleHandler.moduleLength() !== 0) {
-// 			try {
-// 				if (window.activeTextEditor === undefined) {
-// 					throw new Error('No active text editor, cannot handle completion');
-// 				}
-// 				this.currentPagePath = crossPlatformPath(window.activeTextEditor.document.uri.path);
-// 				this.fileName = this.getFileNameFromPath(this.currentPagePath);
-// 				this.currentWorkspace = this.getWorkspaceFromFileUri(window.activeTextEditor.document.uri);
-// 				if (this.currentWorkspace) {
-// 					this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-// 				}
-// 				//this.activeEditorListener();
-// 			} catch (e) {
-// 				logger.error(e);
-// 			}
-// 		} else {
-// 			this.reset();
-// 		}	
-//     }
-	
-// 	static async build (request: SimpliciteAPIManager) {
-// 		const completionHandler = new CompletionProvider(request);
-// 		try {
-// 			if (window.activeTextEditor === undefined) {
-// 				throw new Error ('No active text editor, cannot handle completion');
-// 			}
-// 			await completionHandler.getDataAndComputeCompletionItem();
-// 		} catch (e) {
-// 			logger.error(e);
-// 		}
-// 		return completionHandler;
-// 	}
+export class CompletionProvider implements CompletionItemProvider {
+    private _devInfo: any;
+    private _moduleDevInfo: any;
+    private _openFileContext: OpenFileContext;
+    private _fileInfo: DevInfoObject | undefined;
+    private _completionItems: CustomCompletionItem[];
+    constructor (devInfo: any, moduleDevInfo: any, openFileContext: OpenFileContext, ) {
+        this._devInfo = devInfo;
+        this._moduleDevInfo = moduleDevInfo;
+        this._openFileContext = openFileContext;
+        this._fileInfo = this.getFileObject();
+        this._completionItems = this.computeCompletionItems();
+    }
 
-// 	private reset () {
-// 		this.currentPagePath = undefined;
-// 		this.fileName = undefined;
-// 		this.currentWorkspace = undefined;
-// 		this.instanceUrl = undefined;
-// 		this.currentObjectInfo = undefined;
-// 		this.completionItemList = undefined;
-// 	}
+    computeCompletionItems(): CustomCompletionItem[] {
+        try {
+            if (!this._fileInfo || !this._fileInfo.completion) {
+                return [];
+            }
+            const completionItems: CustomCompletionItem[] = new Array();
+            for (let objectType in this._moduleDevInfo) {
+                if (objectType === this._fileInfo.object) {
+                    for (let object of this._moduleDevInfo[objectType]) {
+                        if (object.name === this._openFileContext.fileName) {
+                            for (let completionAttribute in this._fileInfo.completion) {
+                                if (object.hasOwnProperty(completionAttribute)) {
+                                    for (let item of object[completionAttribute]) {
+                                        completionItems.push(new CustomCompletionItem(item.name, CompletionItemKind.Text, completionAttribute));
+                                    }
+                                }
+                            }
+                        }   
+                    }
+                }
+            }
+            return completionItems;
+        } catch (e) {
+            logger.error(e);
+        }
+        return [];
+    }
+    
+    provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
+        if (context.triggerKind === 1) { 
+			try {
+				const linePrefix = document.lineAt(position).text.substr(0, position.character);
+                if (!this._fileInfo || !this._fileInfo.completion) {
+                    return [];
+                }
+                for (let completionItem in this._fileInfo.completion) {
+                    if (this._fileInfo.completion.hasOwnProperty(completionItem)) {
+                        for (let func of this._fileInfo.completion[completionItem]) {
+                            if (linePrefix.endsWith(func + '("')) {
+                                const specificProperty = this.getSpecificPropertyItems(completionItem);
+                                return specificProperty;
+                            }
+                        } 
+                    }
+                }
+			} catch (e) {
+				logger.error(`provideCompletionItems: ${e}`);
+			}
+    	}
+        return [];
+    }
 
-// 	// trigger character is '"' (go to registerCompletionItemProvider)
-// 	// but method is still called on every typed [a-z] character
-// 	// same for https://github.com/microsoft/vscode-extension-samples/tree/main/completions-sample/src
-// 	// cannot change this behavior so the only workaround
-// 	// is to get the CompletionContext and check
-// 	// for triggerKind === 1, meaning that the completion has 
-// 	// been called with the proper trigger character
-//     provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext) {
-// 		if (context.triggerKind === 1) { 
-// 			try {
-// 				const linePrefix = document.lineAt(position).text.substr(0, position.character);
-// 				for (let item of objectInfo) {
-// 					if (item.objectType === this.currentObjectInfo?.type) {
-// 						for (let func of item.functions) {
-// 							if (linePrefix.endsWith(func + '("')) {
-// 								return this.completionItemList;
-// 							}
-// 						}
-// 					}
-// 				}
-// 			} catch (e) {
-// 				logger.error(`provideCompletionItems: ${e}`);
-// 			}
-// 		}
-//     }
+    private getSpecificPropertyItems (completionItem: string): CustomCompletionItem[] {
+        const specificItems = new Array();
+        for (let item of this._completionItems) {
+            if (item.attributeName === completionItem) {
+                specificItems.push(item);
+            }
+        }
+        return specificItems;
+    }
 
-// 	// activeEditorListener () {
-// 	// 	window.onDidChangeActiveTextEditor(async event => {
-// 	// 		try {
-// 	// 			if (event !== undefined) {
-// 	// 				if (event.document.uri.path.includes('.java')) {
-// 	// 					this.currentPagePath = crossPlatformPath(event.document.fileName);
-// 	// 					this.fileName = this.getFileNameFromPath(this.currentPagePath);
-// 	// 					this.currentWorkspace = this.getWorkspaceFromFileUri(event.document.uri);
-// 	// 					if (this.currentWorkspace) {
-// 	// 						this.instanceUrl = this.request.moduleHandler.getModuleUrlFromWorkspacePath(this.currentWorkspace);
-// 	// 					}
-// 	// 					await this.getDataAndComputeCompletionItem();
-// 	// 				} else {
-// 	// 					this.reset();
-// 	// 				}			
-// 	// 			}
-// 	// 		} catch (e) {
-// 	// 			logger.error(e);
-// 	// 		}
-// 	// 	});
-// 	// }
+    static getModuleName (workspaceUrl: string): string {
+        const decomposedUrl = workspaceUrl.split('/');
+        return decomposedUrl[decomposedUrl.length - 1];
+    }
 
-// 	private async getDataAndComputeCompletionItem (): Promise<void> {
-// 		this.objectFieldsList = await this.getObjectFieldsList();
-// 		this.currentObjectInfo = await this.getFileInfo();
-// 		this.completionItemList = this.completionItemRender();
-// 	}
+    static getFileNameFromPath (filePath: string): string {
+		const decomposedPath = filePath.split('/');
+		return decomposedPath[decomposedPath.length - 1].replace('.java', '');
+	}
 
-// 	completionItemRender (): Array<CompletionItem> {
-// 		const completionItems = new Array();
-// 		try {
-// 			if (this.currentObjectInfo === undefined) {
-// 				throw new Error('Cannot process completion items with no info on the current object');
-// 			}
-// 			for (let objectType in this.objectFieldsList) {
-// 				if (objectType === this.currentObjectInfo.type) {
-// 					for (let object of this.objectFieldsList[objectType]) {
-// 						if (object.name === this.fileName) {
-// 							for (let item of object[this.currentObjectInfo.field]) {
-// 								completionItems.push(new CompletionItem(item.name, CompletionItemKind.Text));
-// 							}
-// 						}
-						
-// 					}
-// 				}
-// 			}
-// 		} catch (e) {
-// 			logger.error(e);
-// 		}
-// 		return completionItems;
-// 	}
+    static getWorkspaceFromFileUri (uri: Uri): string {
+		return crossPlatformPath(workspace.getWorkspaceFolder(uri)!.uri.path);
+	}
 
-// 	getWorkspaceFromFileUri (uri: Uri) {
-// 		try {
-// 			return crossPlatformPath(workspace.getWorkspaceFolder(uri)!.uri.path);
-// 		} catch (e) {
-// 			logger.warn(e);
-// 		}
-// 	}
+    private getFileObject (): DevInfoObject | undefined {
+        let fileObject: DevInfoObject | undefined = undefined;
+        for (let object of this._devInfo.objects) {
+            if (!object.package) {
+                continue;
+            }
+            if (this.doesFilePathContainsObjectPackage(object.package)) {
+                fileObject = object;
+            }
+        }
+        return fileObject;
+    }
 
-// 	getFileNameFromPath (filePath?: string) {
-// 		if (filePath === undefined) {
-// 			throw new Error('Cannot identify the open file');
-// 		}
-// 		try {
-// 			const decomposedPath = filePath.
-// 			split('/');
-// 			return decomposedPath[decomposedPath.length - 1].replace('.java', '');
-// 		} catch (e) {
-// 			logger.warn(e);
-// 		}
-// 	}
+    private doesFilePathContainsObjectPackage (objectPackage: string): boolean {
+        const packagePathFormat = objectPackage.replace(/\./g, '/');
+        if (this._openFileContext.filePath.includes(packagePathFormat)) {
+            return true;
+        }
+        return false;
+    }
+}
 
-// 	private async getFileInfo (): Promise< { type: string, field: string }> {
-// 		let fileType: { type: string, field: string } = { type: '', field: '' };
-// 		for (let type in this.objectFieldsList) {
-// 			if (this.objectFieldsList[type].length !== 0) {
-// 				for (let object of this.objectFieldsList[type]) {
-// 					if (object.name === this.fileName) {
-// 						fileType = { type: type, field: this.getObjectField(type) };
-// 					}
-// 				}
-// 			}
-// 		}
-// 		return fileType;
-// 	}
 
-// 	private getObjectField (type: string) {
-// 		let field: string = '';
-// 		for (let item of objectInfo) {
-// 			if (item.objectType === type) {
-// 				field = item.field;
-// 			}
-// 		}
-// 		return field;
-// 	}
 
-// 	private async getObjectFieldsList () {
-// 		let objectFieldsList: any = new Array();
-// 		if (this.instanceUrl && this.currentWorkspace) {
-// 			try {
-// 				objectFieldsList = await this.request.getmoduleDevInfo(this.instanceUrl, getModuleName(this.currentWorkspace));
-// 			} catch(e) {
-// 				logger.warn('cannot handle completion, objectFieldList is empty');
-// 			}
-// 		}
-// 		return objectFieldsList;
-// 	}
-// }
-
-// function getModuleName (workspaceUrl: string): string {
-// 	const decomposedUrl = workspaceUrl.split('/');
-// 	return decomposedUrl[decomposedUrl.length - 1];
-// }
+class CustomCompletionItem extends CompletionItem {
+    attributeName: string;
+    constructor (label: string, kind: CompletionItemKind, attributeName: string) {
+        super(label, kind);
+        this.attributeName = attributeName;
+    }
+}

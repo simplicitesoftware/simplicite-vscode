@@ -4,11 +4,10 @@ import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { copy } from 'copy-paste';
-import { ObjectInfoTree } from './treeView/ObjectInfoTree';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { crossPlatformPath } from './utils';
 import { Module } from './Module';
 import { File } from './File';
-import { FieldItem } from './classes';
 
 // All these commands are added in extension.ts into the vscode context
 // These also have to be declared as contributions in the package.json
@@ -34,7 +33,7 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
         try  {
             if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
                 element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-                const moduleObject: Module | boolean = request.moduleHandler.getModuleFromName(element);
+                const moduleObject: Module | undefined = request.moduleHandler.getModuleFromName(element);
                 if (!moduleObject) {
                     const msg = 'Simplicite: Cannot find module named ' + element;
                     throw new Error(msg);
@@ -123,7 +122,7 @@ export const logoutCommand = function (request: SimpliciteAPIManager) {
 	});
 };
 
-export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager, objectInfoTreeRefresh: () => Promise<void>, objectInfoTree: ObjectInfoTree) {
+export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager) {
     return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
@@ -133,7 +132,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
             if (!input) {
                 throw new Error('Simplicite: Action canceled');
             }
-			await request.specificLogout(input, objectInfoTreeRefresh, objectInfoTree);
+			await request.specificLogout(input);
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);
@@ -166,28 +165,41 @@ export const untrackFilesCommand = function (request: SimpliciteAPIManager) {
 // ------------------------------
 // Tree view commands
 export const copyLogicalNameCommand = function () {
-    return commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element: FieldItem) => {
-        copy(element.label);
+    return commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element) => {
+        if (!element.label) {
+            logger.error('cannot copy logical name: label is undefined');
+        } else {
+            copy(element.label);
+        }
     });
 };
 
 export const copyPhysicalNameCommand = function () {
-    return commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element: FieldItem) => {
-        copy(element.description);
+    return commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element) => {
+        if (!element.description) {
+            logger.error('cannot copy copy physical name: description is undefined');
+        } else {
+            copy(element.description);
+        }
+        
     });
 };
 
 export const copyJsonNameCommand = function () {
-    return commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element: FieldItem) => {
-        copy(element.jsonName);
+    return commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element) => {
+        if (!element.additionalInfo) {
+            logger.error('cannot copy jsonName: additionalInfo is undefined');
+        } else {
+            copy(element.additionalInfo);
+        }
     });
 };
 
-export const itemDoubleClickTriggerCommand = function (objectInfoTree: ObjectInfoTree) {
+export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInfoTree) {
     return commands.registerCommand('simplicite-vscode-tools.itemDoubleClickTrigger', (logicName: string) => {
         if (doubleClickTrigger()) {
             try {
-                objectInfoTree.insertFieldInDocument(logicName);
+                moduleInfoTree.insertFieldInDocument(logicName);
             } catch (e) {
                 logger.error(e);
             }

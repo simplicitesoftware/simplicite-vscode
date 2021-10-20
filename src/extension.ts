@@ -1,12 +1,12 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands, Uri } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands, Uri, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { DevCompletionProvider } from './DevCompletionProvider';
+import { CompletionProvider } from './CompletionProvider';
 import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand  } from './commands';
 import { BarItem } from './BarItem';
-import { ObjectInfoTree } from './treeView/ObjectInfoTree';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
@@ -34,32 +34,6 @@ export async function activate(context: ExtensionContext) {
 	
 	new QuickPick(context, request);
 
-	const objectInfoTree = new ObjectInfoTree(request);
-	window.registerTreeDataProvider(
-		'simpliciteObjectFields',
-		objectInfoTree
-	);
-	commands.registerCommand('simplicite-vscode-tools.refreshTreeView', async () => await objectInfoTree.refresh());
-
-	// Commands has to be declared in package.json so VS Code knows that the extension provides a command
-	
-	const applyChanges = applyChangesCommand(request);
-	const applySpecificModule = applySpecificModuleCommand(request);
-	const compileWorkspace = compileWorkspaceCommand(request);
-	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
-	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
-	const logout = logoutCommand(request);
-	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, objectInfoTree.refresh, objectInfoTree);
-	const trackFile = trackFileCommand(request);
-	const untrackFile = untrackFilesCommand(request);
-
-	const fieldToClipBoard = copyLogicalNameCommand();
-	const copyPhysicalName = copyPhysicalNameCommand();
-	const copyJsonName = copyJsonNameCommand();
-	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(objectInfoTree);
-	
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
-
 	// settings are set in the package.json
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
 		try {
@@ -68,6 +42,33 @@ export async function activate(context: ExtensionContext) {
 			logger.error(e);
 		}
 	};
+	
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.getModules(), request.devInfo);
+	window.registerTreeDataProvider(
+		'simpliciteModuleInfo',
+		moduleInfoTree
+	);
+	moduleHandler.setModuleInfoTree(moduleInfoTree); // refresh moduleInfoTree everytime a module is set or moduleDevInfo is changed 
+
+	// Commands have to be declared in package.json so VS Code knows that the extension provides a command
+	const applyChanges = applyChangesCommand(request);
+	const applySpecificModule = applySpecificModuleCommand(request);
+	const compileWorkspace = compileWorkspaceCommand(request);
+	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
+	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
+	const logout = logoutCommand(request);
+	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request);
+	const trackFile = trackFileCommand(request);
+	const untrackFile = untrackFilesCommand(request);
+
+	const fieldToClipBoard = copyLogicalNameCommand();
+	const copyPhysicalName = copyPhysicalNameCommand();
+	const copyJsonName = copyJsonNameCommand();
+	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
+	
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
+
+	
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -77,69 +78,93 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	// Completion initialization 
-	// This step needs to be executed after the first login as it's going to fetch the fields from the simplicite API
-	
-	/*const provider = await CompletionProvider.build(request);
-	const completionProviderSingleQuote = languages.registerCompletionItemProvider(provider.template, provider, '"');
-	context.subscriptions.push(completionProviderSingleQuote);*/
-	
-
 	// workspace handler
-	let modulesLength = moduleHandler.moduleLength(); // usefull to compare module change on onDidChangeWorkspaceFolders
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
+		moduleHandler.setModules(await fileHandler.getSimpliciteModules(), true);
 		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
-		const tempModules = await fileHandler.getSimpliciteModules();
-		if (event.added.length > 0 && tempModules.length > modulesLength) { // If a folder is added to workspace and it's a simplicité module
-			logger.info('added module to workspace');
-			modulesLength = tempModules.length;
+		if (event.added.length > 0) { // If a folder is added to workspace
 			try {
-				await request.loginTokenOrCredentials(moduleHandler.getModules()[moduleHandler.moduleLength() - 1]); // We need to connect with the module informations
+				const currentModule = moduleHandler.getModuleFromName(event.added[0].name);
+				if (!currentModule) {
+					throw new Error('No known module name matches with the root folder of the project. Root folder = ' + event.added[0].name);
+				}
+				await request.loginTokenOrCredentials(currentModule); // connect with the module informations
+				logger.info('successfully added module to workspace');
 			} catch(e) {
 				logger.error(e);
 			}
-		} else if (event.removed.length > 0 && tempModules.length < modulesLength) { // in this case, if a folder is removed we check if it's a simplicite module	
-			modulesLength = moduleHandler.moduleLength();
+		} else if (event.removed.length > 0) { // in this case, if a folder is removed we check if it's a simplicite module	
 			logger.info('removed module from workspace');
 		}
-		moduleHandler.setModules(await fileHandler.getSimpliciteModules());
+		await request.refreshModuleDevInfo();
 		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
 		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
-		await objectInfoTree.refresh();
 		await fileHandler.getFileOnStart();
 	});
 
 	// Completion
-	if (moduleHandler.getConnectedInstancesUrl()
+	let completionProvider: Disposable | undefined = undefined;
+	const prodiverMaker = async function (): Promise<Disposable | undefined> {
+		const connectedInstances: string[] = moduleHandler.getConnectedInstancesUrl(); 
+		if (connectedInstances.length > 0
 		&& request.devInfo
-		&& request.moduleDevInfo
+		&& moduleHandler.getAllModuleDevInfo().length > 0
 		&& window.activeTextEditor) 
-	{
-		completionProviderHandler(moduleHandler.getConnectedInstancesUrl(), request.devInfo, request.moduleDevInfo, window.activeTextEditor.document, context);
+		{
+			const filePath = crossPlatformPath(window.activeTextEditor.document.fileName);
+			if (!filePath.includes('.java')) {
+				return undefined;
+			}
+			const currentPageUri = window.activeTextEditor.document.uri;
+			const workspaceUrl = CompletionProvider.getWorkspaceFromFileUri(currentPageUri);
+			const instanceUrl = moduleHandler.getModuleUrlFromWorkspacePath(workspaceUrl);
+			const decomposed = workspaceUrl.split('/');
+			const presumedModuleName = decomposed[decomposed.length - 1];
+			const module = moduleHandler.getModuleFromName(presumedModuleName);
+			if (!module) {
+				return undefined;
+			}
+			if (!connectedInstances.includes(instanceUrl)) {
+				logger.warn('Cannot provide completion, not connected to the module\'s instance');
+				return undefined;
+			}
+			const openFileContext: OpenFileContext = {
+				filePath: filePath,
+				fileName: CompletionProvider.getFileNameFromPath(filePath),
+				workspaceUrl: workspaceUrl,
+				instanceUrl: instanceUrl
+			};
+			await request.moduleDevInfoSpecific(instanceUrl, module.getName()); // sets module
+			completionProvider = completionProviderHandler(openFileContext, request.devInfo, module.moduleDevInfo, context);
+			return completionProvider;
+		}
+		return undefined;
+	};
+
+	try {
+		completionProvider = await prodiverMaker(); // on start completion initialization
+	} catch (e) {
+		logger.error(e);
 	}
 	
-	window.onDidChangeActiveTextEditor(async event => {
+	window.onDidChangeActiveTextEditor(async ()  => { // dispose the current completionProvider and initialize a new one
 		try {
-			if (event === undefined) {
-				throw new Error('Cannot get the event value out of the "onDidChangeActiveTextEditor" event');
+			if (!completionProvider) {
+				completionProvider = await prodiverMaker();
+			} else {
+				completionProvider.dispose();
+				completionProvider = await prodiverMaker();
 			}
-			
 		} catch (e) {
 			logger.error(e);
 		}
 	});
 }
 
-function completionProviderHandler (connectedInstances: string[], devInfo: any, moduleDevInfo: any, currentPage: TextDocument, context: ExtensionContext) {
-	if (currentPage.uri.path.includes('.java') && devInfo && moduleDevInfo) {
-		const filePath = crossPlatformPath(currentPage.fileName);
-		const openFileContext: OpenFileContext = {
-			filePath: filePath,
-			fileName: DevCompletionProvider.getFileNameFromPath(filePath),
-			workspaceUrl: DevCompletionProvider.getWorkspaceFromFileUri(currentPage.uri)
-		};
-		const devCompletionProvider = new DevCompletionProvider(devInfo, moduleDevInfo, openFileContext);
-		const completionProvider = languages.registerCompletionItemProvider(template, devCompletionProvider, '"');
-		context.subscriptions.push(completionProvider);
-	}
+function completionProviderHandler (openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {
+	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, openFileContext);
+	const completionProvider = languages.registerCompletionItemProvider(template, devCompletionProvider, '"');
+	context.subscriptions.push(completionProvider);
+	logger.info('completion ready');
+	return completionProvider;
 }

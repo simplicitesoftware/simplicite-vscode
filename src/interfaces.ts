@@ -36,5 +36,16 @@ export interface FileAndModule {
 export interface OpenFileContext {
     filePath: string,
     fileName: string,
-    workspaceUrl: string
+    workspaceUrl: string,
+    instanceUrl: string
+}
+
+export interface DevInfoObject {
+    classnamefield: string | undefined,
+    completion: any,
+    icon: string,
+    keyfield: string,
+    object: string,
+    package: string | undefined,
+    sourcefield: string
 }

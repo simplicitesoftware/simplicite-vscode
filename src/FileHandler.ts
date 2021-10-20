@@ -25,7 +25,7 @@ export class FileHandler {
     static async build (fileTree: FileTree, moduleHandler: ModuleHandler): Promise<FileHandler> {
         const fileHandler = new FileHandler(fileTree, moduleHandler);
         try {
-            fileHandler.moduleHandler.setModules(await fileHandler.getSimpliciteModules()); // need modules to create File
+            fileHandler.moduleHandler.setModules(await fileHandler.getSimpliciteModules(), false); // need modules to create File
             fileHandler.fileList = await fileHandler.getFileOnStart();
             await fileHandler.fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
         } catch (e) {
