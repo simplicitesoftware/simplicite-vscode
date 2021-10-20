@@ -16,7 +16,7 @@ export class QuickPick {
     commandListQuickPick (commandList: Array<Command>) {
         const preparedList = new Array();
         for (let command of commandList) {
-            if (command.title !== 'copy logical name' && command.title !== 'copy physical name' && command.title !== 'Simplicite: Refresh object fields Tree View') {
+            if (command.title !== 'copy logical name' && command.title !== 'copy physical name' && command.title !== 'copy json name' && command.title !== 'double click trigger command') {
                 preparedList.push({ label: command.title, commandId: command.command });
             }
         }

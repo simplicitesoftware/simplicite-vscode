@@ -59,6 +59,14 @@
 				{
 					"command": "simplicite-vscode-tools.refreshTreeView",
 					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyJsonName",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
+					"when": "false"
 				}
 			],
 			"view/item/context": [
