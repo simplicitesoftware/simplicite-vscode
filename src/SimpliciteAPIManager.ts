@@ -369,11 +369,13 @@ export class SimpliciteAPIManager {
             // give the field, ex: obo_script_id, scr_file
             const fieldScriptId = this.getProperScriptField(fileType);       
             let doc = obj.getFieldDocument(fieldScriptId);
-
+            if (doc !== undefined) {
+                throw new Error(`No document returned, cannot update content`);
+            }
             // get the file content for setContent
             const fileContent = await this.fileHandler.findFiles('**/' + fileName + '.java');
             if (fileContent.length >= 2) {
-                throw new Error('Simplicite: Module not connected, check the connected instances');
+                throw new Error('Module not connected, check the connected instances');
             }
             doc.setContentFromText(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
