@@ -30,8 +30,8 @@
 		"views": {
 			"explorer": [
 				{
-					"id": "simpliciteObjectFields",
-					"name": "Simplicite object info"
+					"id": "simpliciteModuleInfo",
+					"name": "Simplicite module info"
 				},
 				{
 					"id": "simpliciteFile",
@@ -40,13 +40,6 @@
 			]
 		},
 		"menus": {
-			"view/title": [
-				{
-					"command": "simplicite-vscode-tools.refreshTreeView",
-					"when": "view == simpliciteObjectFields",
-					"group": "navigation"
-				}
-			],
 			"commandPalette": [
 				{
 					"command": "simplicite-vscode-tools.copyLogicalName",
@@ -55,24 +48,20 @@
 				{
 					"command": "simplicite-vscode-tools.copyPhysicalName",
 					"when": "false"
-				},
-				{
-					"command": "simplicite-vscode-tools.refreshTreeView",
-					"when": "false"
 				}
 			],
 			"view/item/context": [
 				{
 					"command": "simplicite-vscode-tools.copyLogicalName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName || viewItem == label&description || viewItem == label"
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName || viewItem == label&description || viewItem == label"
 				},
 				{
 					"command": "simplicite-vscode-tools.copyPhysicalName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName || viewItem == label&description"
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName || viewItem == label&description"
 				},
 				{
 					"command": "simplicite-vscode-tools.copyJsonName",
-					"when": "view == simpliciteObjectFields && viewItem == label&description&jsonName"
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName"
 				},
 				{
 					"command": "simplicite-vscode-tools.untrackFile",
@@ -125,14 +114,6 @@
 				"title": "Simplicite: Log out from specific instance"
 			},
 			{
-				"command": "simplicite-vscode-tools.refreshTreeView",
-				"title": "Simplicite: Refresh object fields Tree View",
-				"icon": {
-					"light": "resources/light/refresh.svg",
-					"dark": "resources/dark/refresh.svg"
-				}
-			},
-			{
 				"command": "simplicite-vscode-tools.copyLogicalName",
 				"title": "copy logical name"
 			},
@@ -144,7 +125,6 @@
 			{
 				"command": "simplicite-vscode-tools.copyJsonName",
 				"title": "copy json name"
-	
 			},
 			{
 				"command": "simplicite-vscode-tools.trackFile",
