@@ -1,10 +1,9 @@
 'use strict';
 
 import { TreeItemCollapsibleState, TreeItemLabel, EventEmitter, TreeItem, Event, TreeDataProvider, window } from 'vscode';
-import { logger } from '../Log';
 import { Module } from "../Module";
 import * as path from 'path';
-import { FieldInfo, DevInfoObject } from '../interfaces';
+import { DevInfoObject } from '../interfaces';
 
 // Object Info tree view
 export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
