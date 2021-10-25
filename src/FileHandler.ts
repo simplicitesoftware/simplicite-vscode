@@ -1,12 +1,11 @@
 'use strict';
 
 import { logger } from './Log';
-import { GlobPattern, RelativePattern, workspace, WorkspaceFolder } from 'vscode';
-import * as fs from 'fs';
+import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
 import { crossPlatformPath, validFileExtension, removeFileExtension } from './utils';
-import { TOKEN_SAVE_PATH, FILES_SAVE_PATH, supportedFiles } from './constant';
+import { supportedFiles } from './constant';
 import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
@@ -46,7 +45,7 @@ export class FileHandler {
             }
         }
         toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-        this.saveJSONOnDisk(toBeWrittenJSON, TOKEN_SAVE_PATH);
+        //this.saveJSONOnDisk(toBeWrittenJSON, TOKEN_SAVE_PATH);
     }
 
     private getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
@@ -71,7 +70,7 @@ export class FileHandler {
 
     saveJSONOnDisk (toBeWrittenJSON: Array<Module> | Array<File>, path: string) {
         try {
-            fs.writeFileSync(path, JSON.stringify(toBeWrittenJSON));
+            //fs.writeFileSync(path, JSON.stringify(toBeWrittenJSON));
         } catch (e: any) {
             logger.error(e);
         }
@@ -79,7 +78,7 @@ export class FileHandler {
 
     deleteSimpliciteInfo () {
         try {
-            fs.unlinkSync(TOKEN_SAVE_PATH);
+            //fs.unlinkSync(TOKEN_SAVE_PATH);
         } catch (e: any) {
             logger.error(e);
         }
@@ -104,7 +103,7 @@ export class FileHandler {
                 }
                 
             }
-            this.saveJSONOnDisk(newInfo, TOKEN_SAVE_PATH);
+            //this.saveJSONOnDisk(newInfo, TOKEN_SAVE_PATH);
         } catch (e: any) {
             throw e;
         }
@@ -113,10 +112,10 @@ export class FileHandler {
     getSimpliciteInfoContent (): Array<Module> | null {
         try {
             const modules: Array<Module> = new Array();
-            const jsonContent = JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
-            for (let moduleJson of jsonContent) {
-                modules.push(new Module(moduleJson.name, moduleJson.workspaceFolderName, moduleJson.workspaceFolderPath, moduleJson.instanceUrl, moduleJson.token));
-            }
+            //const jsonContent = JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
+            //for (let moduleJson of jsonContent) {
+           //     modules.push(new Module(moduleJson.name, moduleJson.workspaceFolderName, moduleJson.workspaceFolderPath, moduleJson.instanceUrl, moduleJson.token));
+            //}
             if (modules.length === 0) {
                 return null;
             }
@@ -127,31 +126,10 @@ export class FileHandler {
         
     }
 
-    readFileSync (path: string, encoding?: BufferEncoding | undefined) {
-        try {
-            return fs.readFileSync(path, encoding ? encoding : 'utf8');
-        } catch (e: any) {
-            throw e;
-        }
+    async getFile (path: string): Promise<Thenable<Uint8Array>> {
+        const res = await workspace.fs.readFile(Uri.file(path));
+        return res;
     }
-
-    async findFiles (globPatern: GlobPattern) {	
-        let foundFile = new Array();
-        let files;
-        try {
-            files = await workspace.findFiles(globPatern);
-        } catch (e: any) {
-            throw(e);
-        }
-        for (let file of files) {
-            try {
-                foundFile.push(this.readFileSync(crossPlatformPath(file.fsPath), 'utf8' ));
-            } catch(e: any) {
-                logger.error(e);
-            }
-        };
-        return foundFile;
-    };
 
     async getSimpliciteModules () { // returns array of module objects
         let modules = new Array();
@@ -162,14 +140,14 @@ export class FileHandler {
             for (let workspaceFolder of workspace.workspaceFolders) {
                 const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
                 const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-                const modulePom = await this.findFiles(relativePattern);
+                const modulePom = await workspace.findFiles(relativePattern);
                 if (modulePom.length === 0) {
                     throw new Error('No module found');
                 } 
                 const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
-                if (modulePom[0]) {
+                /*if (modulePom[0]) {
                     modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
-                }
+                }*/
             }
         } catch (e: any) {
             logger.warn(e);
@@ -180,7 +158,7 @@ export class FileHandler {
     private async getModuleInstanceUrl (workspaceFolder: WorkspaceFolder): Promise<string | any> { // searches into pom.xml and returns the simplicite's instance url
         const globPatern = '**pom.xml';
         const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-        const pom = await this.findFiles(relativePattern);
+        const pom = await workspace.findFiles(relativePattern);
         try {
             const res = await parseStringPromise(pom);
             return res.project.properties[0]['simplicite.url'][0];
@@ -210,7 +188,7 @@ export class FileHandler {
                 jsonContent.push({filePath: file.getFilePath(), tracked: file.tracked});
             }
         }
-        this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
+        //this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
     }
 
     getFileList () {
@@ -249,14 +227,14 @@ export class FileHandler {
 
     private setTrackedStatusFromDisk (fileList: File[]): File[] { 
         try {
-            const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+            //const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
             for (let file of fileList) {
-                for (let content of jsonContent) {
-                    if (file.getFilePath() === content.filePath) {
-                        file.tracked = content.tracked;
-                        break;
-                    }
-                }
+                //for (let content of jsonContent) {
+                    //if (file.getFilePath() === content.filePath) {
+                    //    file.tracked = content.tracked;
+                   //     break;
+                    //}
+                //}
             }
         } catch (e: any) {
             throw new Error(e.message);

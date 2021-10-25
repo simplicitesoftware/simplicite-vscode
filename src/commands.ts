@@ -3,7 +3,7 @@
 import { commands, window } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
-import { copy } from 'copy-paste';
+//import { copy } from 'copy-paste';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { crossPlatformPath } from './utils';
 import { Module } from './Module';
@@ -169,7 +169,7 @@ export const copyLogicalNameCommand = function () {
         if (!element.label) {
             logger.error('cannot copy logical name: label is undefined');
         } else {
-            copy(element.label);
+            //copy(element.label);
         }
     });
 };
@@ -179,7 +179,7 @@ export const copyPhysicalNameCommand = function () {
         if (!element.description) {
             logger.error('cannot copy copy physical name: description is undefined');
         } else {
-            copy(element.description);
+            //copy(element.description);
         }
         
     });
@@ -190,7 +190,7 @@ export const copyJsonNameCommand = function () {
         if (!element.additionalInfo) {
             logger.error('cannot copy jsonName: additionalInfo is undefined');
         } else {
-            copy(element.additionalInfo);
+            //copy(element.additionalInfo);
         }
     });
 };

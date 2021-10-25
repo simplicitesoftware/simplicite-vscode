@@ -376,9 +376,9 @@ export class SimpliciteAPIManager {
             // get the file content for setContent
             let fileContent;
             if (fileType === 'Resource') {
-                fileContent = await this.fileHandler.findFiles(`**/${getResourceFileName(filePath)}/${fileName + fileExtension}`);
+                fileContent = await workspace.findFiles(`**/${getResourceFileName(filePath)}/${fileName + fileExtension}`);
             } else {
-                fileContent = await this.fileHandler.findFiles('**/' + fileName + fileExtension);
+                fileContent = await workspace.findFiles('**/' + fileName + fileExtension);
             }
             doc.setContentFromText(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
