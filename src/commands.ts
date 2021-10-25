@@ -230,10 +230,10 @@ async function trackAction (request: SimpliciteAPIManager, element: any, tracked
 
 async function getInputFile (request: SimpliciteAPIManager, element: any): Promise<File> {
     if (element.fullPath) {
-        return request.fileHandler.getFileFromInput(element.fullPath);
+        return request.fileHandler.getFileFromFullPath(element.fullPath);
     } else {
-        const input = await inputFilePath('Simplicite: Type in the file path or name', 'path or name (ex: Demo.java or just Demo)');
-        return request.fileHandler.getFileFromInput(input);
+        const input = await inputFilePath('Simplicite: Type in the file\'s absolute path', 'path');
+        return request.fileHandler.getFileFromFullPath(input);
     }
 }
 
