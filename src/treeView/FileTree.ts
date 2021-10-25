@@ -1,9 +1,10 @@
 'use strict';
 
-import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel } from "vscode";
+import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, ThemeIcon, Uri } from "vscode";
 import { FileAndModule } from '../interfaces';
 import * as path from 'path';
 import { UntrackedItem, ModuleItem, FileItem } from "../classes";
+import { supportedFiles } from '../constant';
 
 // File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
@@ -14,6 +15,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
     }
+    
 
     refresh() {
         this._onDidChangeTreeData.fire();
@@ -58,26 +60,23 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         for (let fm of this.fileModule!) {
             const treeItem = new ModuleItem(fm.moduleName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
             treeItem.iconPath = {
-                light: path.join(__filename, '..', '..', 'resources', 'light', 'module.svg'),
-                dark: path.join(__filename, '..', '..', 'resources', 'dark', 'module.svg')
+                light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'module.svg'),
+                dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'module.svg')
             };
             moduleItems.push(treeItem);
         }
         return moduleItems;
     }
 
-    private getFilesItem (label: string | TreeItemLabel): TreeItem[] {
-        const fileItems: TreeItem[] = new Array();
+    private getFilesItem (label: string | TreeItemLabel): FileItem[] | TreeItem[] {
+        const fileItems: FileItem[] = new Array();
         for (let fm of this.fileModule!) {
             let untrackedFlag = false;
             if (fm.fileList.length > 0 && fm.moduleName === label) {
                 for (let file of fm.fileList) {
                     if (file.tracked) {
-                        const treeItem = new FileItem(this.legibleFileName(file.getFilePath()), TreeItemCollapsibleState.None, file.getFilePath(), true, label);
-                        treeItem.iconPath = {
-                            light: path.join(__filename, '..', '..', 'resources', 'light', 'sync.svg'),
-                            dark: path.join(__filename, '..', '..', 'resources', 'dark', 'sync.svg')
-                        };
+                        const legibleFileName = this.legibleFileName(file.getFilePath());
+                        const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.getFilePath(), true, label);
                         fileItems.push(treeItem);
                     } else {
                         untrackedFlag = true;
@@ -86,15 +85,16 @@ export class FileTree implements TreeDataProvider<TreeItem> {
             }
             // if there is at least one untracked file
             // add a specific item to these type of files 
-            if (untrackedFlag) { 
+            if (untrackedFlag) {
+                const orderedItems = this.orderAlphab(fileItems);
                 const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, '', false, label);
-                fileItems.push(treeItem);
+                orderedItems.push(treeItem);
                 untrackedFlag = false;
+                return orderedItems;
             }
         }
-        
         if (fileItems.length === 0) {
-            fileItems.push(new TreeItem('No files to display', TreeItemCollapsibleState.None));
+            return [new TreeItem('No files to display', TreeItemCollapsibleState.None)];
         }
         return this.orderAlphab(fileItems);
     }
@@ -106,11 +106,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                 if (fm.fileList.length > 0 && fm.moduleName === moduleName) {
                     for (let file of fm.fileList) {
                         if (!file.tracked) {
-                            const treeItem = new FileItem(this.legibleFileName(file.getFilePath()), TreeItemCollapsibleState.None, file.getFilePath(), false, '');
-                            treeItem.iconPath = treeItem.iconPath = {
-                                light: path.join(__filename, '..', '..', 'resources', 'light', 'nosync.svg'),
-                                dark: path.join(__filename, '..', '..', 'resources', 'dark', 'nosync.svg')
-                            };
+                            const legibleFileName = this.legibleFileName(file.getFilePath());
+                            const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.getFilePath(), false, moduleName);
                             untrackedFiles.push(treeItem);
                         }
                     }
@@ -121,29 +118,36 @@ export class FileTree implements TreeDataProvider<TreeItem> {
     }
 
     // sorts the fileItems in alphabetical order
-    orderAlphab (fileItems: TreeItem[]): TreeItem[] {
-        const fileItemPath = new Array();
-        let untrackedItem: TreeItem | undefined = undefined;
-        for (let file of fileItems) {
-            if (file.label === 'Untracked files') {
-                untrackedItem = file;
-                continue;
-            }
-            fileItemPath.push(file.label);
+    orderAlphab (fileItems: FileItem[]): FileItem[] {
+        const extensionItemArray: Array<{ extension: string, itemsPath: string[] }> = new Array();
+        for (let extension of supportedFiles) {
+            extensionItemArray.push({ extension: extension, itemsPath: new Array() });
         }
-        fileItemPath.sort();
-        const orderedFileItems = new Array();
-        for (let ordered of fileItemPath) {
-            for (let file of fileItems) {
-                if (ordered === file.label) {
-                    orderedFileItems.push(file);
+        for (let item of fileItems) {
+            for (let extensionObject of extensionItemArray) {
+                if (this.getPathExtension(item.fullPath) === extensionObject.extension) {
+                    extensionObject.itemsPath.push(item.label.toLowerCase());
                 }
             }
         }
-        if (untrackedItem) {
-            orderedFileItems.push(untrackedItem);
+        const orderedFileItems = new Array();
+        for (let extensionObject of extensionItemArray) {
+            extensionObject.itemsPath.sort();
+            for (let itemPath of extensionObject.itemsPath) {
+                for (let item of fileItems) {
+                    const lowerCaseValue = item.fullPath;
+                    if (lowerCaseValue.toLowerCase().includes(itemPath)) {
+                        orderedFileItems.push(item);
+                    }
+                }
+            }
         }
         return orderedFileItems;
+    }
+
+    private getPathExtension (template: string): string {
+        const decomposed = template.split('.');
+        return '.' + decomposed[decomposed.length - 1];
     }
 
     // returns a part of the file path for tree view readability
