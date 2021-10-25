@@ -155,8 +155,6 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
                         technicalAttribute = attributes[attributeName];
                     }
                     continue;
-                } else {
-                    console.log(item);
                 }
                 attributeItems.push(new CustomTreeItem(itemName, collapsibleState, description, itemType, itemInfo, attributeName, additionalInfo));
             }
@@ -226,8 +224,8 @@ class CustomTreeItem extends TreeItem {
 
 function vsCodeIconFormat (iconName: string) {
     return {
-        light: path.join(__filename, '..', '..', 'resources', 'light', iconName + '.svg'),
-        dark: path.join(__filename, '..', '..', 'resources', 'dark', iconName + '.svg')
+        light: path.join(__filename, '..', '..', '..', 'resources', 'light', iconName + '.svg'),
+        dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', iconName + '.svg')
     };
 }
 
