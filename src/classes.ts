@@ -1,4 +1,4 @@
-import { TreeItem, TreeItemCollapsibleState, TreeItemLabel } from 'vscode';
+import { TreeItem, TreeItemCollapsibleState, TreeItemLabel, ThemeIcon, Uri } from 'vscode';
 
 export class ModuleItem extends TreeItem {
     constructor (
@@ -22,6 +22,8 @@ export class FileItem extends TreeItem {
         super(label, collapsibleState);
         this.fullPath = fullPath;
         this.moduleName = moduleName;
+        this.iconPath = ThemeIcon.File;
+        this.resourceUri = Uri.file(fullPath);
     }
 }
 
