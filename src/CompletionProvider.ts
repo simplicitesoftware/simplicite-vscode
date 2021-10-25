@@ -4,6 +4,7 @@ import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, Pr
 import { crossPlatformPath } from './utils';
 import { logger } from './Log';
 import { OpenFileContext, DevInfoObject } from './interfaces';
+import { removeFileExtension } from './utils';
 
 export class CompletionProvider implements CompletionItemProvider {
     private _devInfo: any;
@@ -88,7 +89,7 @@ export class CompletionProvider implements CompletionItemProvider {
 
     static getFileNameFromPath (filePath: string): string {
 		const decomposedPath = filePath.split('/');
-		return decomposedPath[decomposedPath.length - 1].replace('.java', '');
+		return removeFileExtension(decomposedPath[decomposedPath.length - 1]);
 	}
 
     static getWorkspaceFromFileUri (uri: Uri): string {

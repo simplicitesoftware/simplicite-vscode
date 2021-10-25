@@ -9,7 +9,7 @@ import { AppHandler } from './AppHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { logger } from './Log';
 import { File } from './File';
-import { replaceAll } from './utils';
+import { removeFileExtension } from './utils';
 import { BarItem } from './BarItem';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 
@@ -362,20 +362,23 @@ export class SimpliciteAPIManager {
             let fileType: string;
             let fileName: string;
             let properNameField: string;
-            ({ fileType, fileName, properNameField } = this.operationsBeforeObjectManipulation(filePath));
+            let fileExtension: string;
+            ({ fileType, fileName, properNameField, fileExtension } = this.operationsBeforeObjectManipulation(filePath));
             // get the item for the update
-            let obj = app.getBusinessObject(fileType, 'ide_' + fileType);
-            let item = await this.searchForUpdate(fileName, obj, properNameField); 
+            let obj = await app.getBusinessObject(fileType, 'ide_' + fileType);
+            let item = await this.searchForUpdate(fileName, obj, properNameField, fileType, filePath); 
             // give the field, ex: obo_script_id, scr_file
             const fieldScriptId = this.getProperScriptField(fileType);       
             let doc = obj.getFieldDocument(fieldScriptId);
-            if (doc !== undefined) {
+            if (doc === undefined) {
                 throw new Error(`No document returned, cannot update content`);
             }
             // get the file content for setContent
-            const fileContent = await this.fileHandler.findFiles('**/' + fileName + '.java');
-            if (fileContent.length >= 2) {
-                throw new Error('Module not connected, check the connected instances');
+            let fileContent;
+            if (fileType === 'Resource') {
+                fileContent = await this.fileHandler.findFiles(`**/${getResourceFileName(filePath)}/${fileName + fileExtension}`);
+            } else {
+                fileContent = await this.fileHandler.findFiles('**/' + fileName + fileExtension);
             }
             doc.setContentFromText(fileContent[0]);
             obj.setFieldValue(fieldScriptId, doc);
@@ -394,21 +397,29 @@ export class SimpliciteAPIManager {
     operationsBeforeObjectManipulation (filePath: string): ReturnValueOperationsBeforeObjectManipulation {
         const fileType = this.getBusinessObjectType(filePath);
         let filePathDecomposed = crossPlatformPath(filePath).split('/');
-        let fileName = replaceAll(filePathDecomposed[filePathDecomposed.length - 1], '.java', '');
+        const lastOfPath = filePathDecomposed[filePathDecomposed.length - 1];
+        const fileExtensionTab = lastOfPath.split('.');
+        const fileExtension = '.' + fileExtensionTab[fileExtensionTab.length -1];
+        let fileName = removeFileExtension(lastOfPath);
         const properNameField = this.getProperNameField(fileType);
-        return { fileType, fileName, properNameField };
+        return { fileType, fileName, properNameField, fileExtension };
     }
 
-    async searchForUpdate (fileName: string, obj: any, properNameField: string) {
+    async searchForUpdate (fileName: string, obj: any, properNameField: string, fileType: string, filePath: string) {
         if (!this.cache.isInCache(fileName)) {
-            let list = await obj.search({[properNameField]: fileName });
-            if (list.length >= 2) {
-                logger.error('More than one object has been returned with the name ' + fileName) ;
-            }
+            let list = await obj.search({[ properNameField]: fileName });
             if (list.length === 0) {
                 throw new Error('No object has been returned');
             }
-            this.cache.addPair(fileName, list[0].row_id);
+            let objectFound = list[0];  
+            if (fileType === 'Resource') {
+                for (let object of list) {
+                    if (object.res_object.userkeylabel === getResourceFileName(filePath)) {
+                        objectFound = object;
+                    }
+                }
+            }
+            this.cache.addPair(fileName, objectFound.row_id);
         }
         let rowId = this.cache.getListFromCache(fileName);
         let item = await obj.getForUpdate(rowId, { inlineDocuments: true });
@@ -432,15 +443,24 @@ export class SimpliciteAPIManager {
     }
 
     // Change path into Java package modele to find object type with dev info
-    getBusinessObjectType (fileName: string) { 
+    getBusinessObjectType (filePath: string): string { 
         if (!this.devInfo) { 
             throw new Error('devInfo is undefined, make sure that you have the right to access this module');
         }
         for (let object of this.devInfo.objects) {
-            const comparePackage = object.package.replaceAll('.', '/');
-            if (fileName.includes(comparePackage)) {
-                return object.object;
+            if (object.package) {
+                const comparePackage = object.package.replaceAll('.', '/');
+                if (filePath.includes(comparePackage)) {
+                    return object.object;
+                }
             } 
+        }
+        if (filePath.includes('/resources/')) { // programatically handling packages that are not in devInfo
+            return 'Resource';
+        } else if (filePath.includes('/test/src/com/simplicite/')) {
+            return 'Script';
+        } else if (filePath.includes('/scripts/')) {
+            return 'Disposition';
         }
         throw new Error('No type has been found');
     }
@@ -525,6 +545,11 @@ export class SimpliciteAPIManager {
         this.barItem = barItem;
     }
 
+}
+
+function getResourceFileName (filePath: string): string {
+    const decomposed = filePath.split('/');
+    return decomposed[decomposed.length - 2];
 }
 
 function openSettings () {

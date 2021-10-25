@@ -1,12 +1,12 @@
 'use strict';
 
 import { logger } from './Log';
-import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder, window } from 'vscode';
+import { GlobPattern, RelativePattern, workspace, WorkspaceFolder } from 'vscode';
 import * as fs from 'fs';
 import { File } from './File';
 import { Module } from './Module';
-import { crossPlatformPath } from './utils';
-import { TOKEN_SAVE_PATH, FILES_SAVE_PATH } from './constant';
+import { crossPlatformPath, validFileExtension, removeFileExtension } from './utils';
+import { TOKEN_SAVE_PATH, FILES_SAVE_PATH, supportedFiles } from './constant';
 import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
@@ -225,13 +225,18 @@ export class FileHandler {
         if (workspace.workspaceFolders === undefined) {
             throw new Error('no workspace detected');
         }
-        const globPatern = '**/*.java';
+        
         let fileList = new Array();
         for (let workspaceFolder of workspace.workspaceFolders) {
-            const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-            const files = await workspace.findFiles(relativePattern);
-            for (let file of files) {
-                fileList.push(new File(file.path, this.moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
+            for (let valid of supportedFiles) {
+                const globPatern = '**/*' + valid;
+                const relativePattern = new RelativePattern(workspaceFolder, globPatern);
+                const files = await workspace.findFiles(relativePattern);
+                for (let file of files) {
+                    if (validFileExtension(file.path)) {
+                        fileList.push(new File(file.path, this.moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
+                    }
+                }
             }
         }
         try {
@@ -270,26 +275,13 @@ export class FileHandler {
         Promise.resolve();
     }
 
-    getFileFromInput (input: string): File { // returns the file matching the name
-        const decomposedInput = input.toLowerCase().split('/');
-        const lastInput = decomposedInput[decomposedInput.length - 1];
+    getFileFromFullPath (fullPath: string): File {
         for (let file of this.fileList) {
-            if (file.getFilePath() === input) {
+            const lowercasePath = file.getFilePath();
+            if (lowercasePath.toLowerCase() === fullPath.toLowerCase()) {
                 return file;
             }
-            const decomposedFile = file.getFilePath().toLowerCase().split('/');
-            const lastFile = decomposedFile[decomposedFile.length - 1];
-            if (lastInput.endsWith('.java')) {    
-                if (lastFile === lastInput) {
-                    return file;
-                }
-            } else {
-                const lastInputWithoutJava = lastFile.replace('.java', '');
-                if (lastInput === lastInputWithoutJava) {
-                    return file;
-                }
-            }
         }
-        throw new Error('getFileFromInput did not found any matching file');
+        return new File('', '', '', '', false);
     }
 }

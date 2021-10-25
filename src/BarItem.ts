@@ -3,6 +3,7 @@
 import { window, MarkdownString, StatusBarItem } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { Module } from './Module';
+import { validFileExtension } from './utils';
 
 export class BarItem {
     barItem: StatusBarItem;
@@ -66,7 +67,7 @@ export class BarItem {
 
     fileName (filePath: string) {
         const fileList = filePath.split('/');
-        if (fileList[fileList.length - 1].includes('.java')) {
+        if (validFileExtension(fileList[fileList.length - 1])) {
             return fileList[fileList.length - 1];
         }
     }

@@ -12,6 +12,7 @@ export interface ReturnValueOperationsBeforeObjectManipulation {
     fileType: string;
     fileName: string;
     properNameField: string;
+    fileExtension: string;
 }
 
 export interface FieldInfo {

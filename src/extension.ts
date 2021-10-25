@@ -11,13 +11,12 @@ import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
-import { crossPlatformPath } from './utils';
+import { crossPlatformPath, validFileExtension } from './utils';
 import { OpenFileContext } from './interfaces';
 import { template } from './constant';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
-	
 	const fileTree = new FileTree();
 	window.registerTreeDataProvider(
 		'simpliciteFile',
@@ -72,7 +71,7 @@ export async function activate(context: ExtensionContext) {
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
-		if (event.uri.path.search('.java') !== -1) {
+		if (validFileExtension(event.uri.path)) {
 			await fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true, fileHandler.bindFileAndModule(moduleHandler.getModules()));
 			barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 		}

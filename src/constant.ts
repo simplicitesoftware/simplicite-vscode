@@ -113,3 +113,5 @@ export const objectInfo = [
 ];
 
 export const template =  { scheme: 'file', language: 'java' };
+
+export const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
