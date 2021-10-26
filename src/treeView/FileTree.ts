@@ -60,8 +60,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         for (let fm of this.fileModule!) {
             const treeItem = new ModuleItem(fm.moduleName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
             treeItem.iconPath = {
-                light: path.join(__filename, '..', '..', '..', 'resources', 'light', 'module.svg'),
-                dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', 'module.svg')
+                light: path.join('../../../resources/light/module.svg'),
+                dark: path.join('../../../resources/dark/module.svg')
             };
             moduleItems.push(treeItem);
         }

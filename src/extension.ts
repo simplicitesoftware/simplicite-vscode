@@ -1,7 +1,7 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, commands, Uri, Disposable } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionProvider } from './CompletionProvider';
 import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand  } from './commands';
@@ -22,17 +22,14 @@ export async function activate(context: ExtensionContext) {
 		'simpliciteFile',
 		fileTree
 	);
-
 	const moduleHandler = new ModuleHandler();
 	const fileHandler = await FileHandler.build(fileTree, moduleHandler);
 	const request = await SimpliciteAPIManager.build(fileHandler, moduleHandler);
-
 	const barItem = new BarItem('Simplicite', request);
 	request.setBarItem(barItem); // needs to be set on SimpliciteAPIManager to refresh
 	barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
 	
 	new QuickPick(context, request);
-
 	// settings are set in the package.json
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) {
 		try {
