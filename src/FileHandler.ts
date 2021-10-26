@@ -1,10 +1,10 @@
 'use strict';
 
 import { logger } from './Log';
-import { GlobPattern, RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
+import { RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
-import { crossPlatformPath, validFileExtension, removeFileExtension } from './utils';
+import { crossPlatformPath, validFileExtension } from './utils';
 import { supportedFiles } from './constant';
 import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
