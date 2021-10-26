@@ -1,9 +1,6 @@
 'use strict';
 
 export function crossPlatformPath (path: string): string {
-    /*if (process.platform !== 'win32') {
-        return path;
-    }*/
     if (path[0] === '/' || path[0] === '\\') {
         path = path.slice(1);
     }
@@ -15,7 +12,7 @@ export function replaceAll(str: string, find: string, replace: string): string {
 }
 
 const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml'];
-const excludedFiles = ['BUILD', 'README', 'pom', '.min.', '/Theme/', '/docs/', '/files/'];
+const excludedFiles = ['BUILD', 'README', 'pom', '.min.', '/Theme/', '/docs/', '/files/', '/target/'];
 
 export function validFileExtension (template: string): boolean {
     for (let extension of supportedFiles) {
