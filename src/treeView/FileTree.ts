@@ -1,19 +1,21 @@
 'use strict';
 
-import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, ThemeIcon, Uri } from "vscode";
+import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, RelativePattern, Uri, env, workspace } from "vscode";
 import { FileAndModule } from '../interfaces';
-import * as path from 'path';
 import { UntrackedItem, ModuleItem, FileItem } from "../classes";
 import { supportedFiles } from '../constant';
+import * as path from 'path';
 
 // File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
     private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // these 2 attributes are mandatory to refresh the component
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
     fileModule?: FileAndModule[]; // is set in setFileModule, which is called on every file changes (FileHandler: build() & setTrackedStatus())
-    constructor () {
+    runPath: string;
+    constructor (runPath: string) {
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+        this.runPath = runPath;
     }
     
 
@@ -55,13 +57,13 @@ export class FileTree implements TreeDataProvider<TreeItem> {
         return Promise.resolve([new TreeItem('Nothing to display', TreeItemCollapsibleState.None)]);
     }
 
-    private getModulesItem (): TreeItem[] {
+    private async getModulesItem (): Promise<TreeItem[]> {
         const moduleItems: TreeItem[] = new Array();
         for (let fm of this.fileModule!) {
             const treeItem = new ModuleItem(fm.moduleName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
             treeItem.iconPath = {
-                light: path.join('../../../resources/light/module.svg'),
-                dark: path.join('../../../resources/dark/module.svg')
+                light: path.join(this.runPath, 'resources/light/module.svg'),
+                dark: path.join(this.runPath, 'resources/dark/module.svg')
             };
             moduleItems.push(treeItem);
         }

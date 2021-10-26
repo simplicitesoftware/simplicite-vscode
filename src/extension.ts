@@ -17,7 +17,7 @@ import { template } from './constant';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
-	const fileTree = new FileTree();
+	const fileTree = new FileTree(context.extensionUri.path);
 	window.registerTreeDataProvider(
 		'simpliciteFile',
 		fileTree
@@ -39,7 +39,7 @@ export async function activate(context: ExtensionContext) {
 		}
 	};
 	
-	const moduleInfoTree = new ModuleInfoTree(moduleHandler.getModules(), request.devInfo);
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.getModules(), request.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider(
 		'simpliciteModuleInfo',
 		moduleInfoTree

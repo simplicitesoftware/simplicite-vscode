@@ -11,11 +11,13 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
     readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
     private _modules: Array<Module> | undefined;
     private _devInfo: any;
-    constructor (modules: Module[] | undefined, devInfo: any) {
+    runPath: string;
+    constructor (modules: Module[] | undefined, devInfo: any, runPath: string) {
         this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         this._modules = modules;
         this._devInfo = devInfo;
+        this.runPath = runPath;
     }
 
     private async refresh() {
@@ -80,7 +82,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
         }
         const modulesItems = new Array();
         for (let module of this._modules) {
-            modulesItems.push(new CustomTreeItem(module.getName(), TreeItemCollapsibleState.Collapsed, module.getInstanceUrl(), ItemType.module, module, 'module', undefined));
+            modulesItems.push(new CustomTreeItem(module.getName(), TreeItemCollapsibleState.Collapsed, module.getInstanceUrl(), ItemType.module, module, 'module', undefined, this.runPath));
         }
         return modulesItems;
     }
@@ -95,7 +97,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
             if (type === 'name' || type === 'version' || moduleDevInfo[type].length === 0) {
                 continue;
             }
-            objectTypesItems.push(new CustomTreeItem(type, TreeItemCollapsibleState.Collapsed, '', ItemType.objectType, moduleDevInfo[type], '', undefined));
+            objectTypesItems.push(new CustomTreeItem(type, TreeItemCollapsibleState.Collapsed, '', ItemType.objectType, moduleDevInfo[type], '', undefined, this.runPath));
         }
         return objectTypesItems;
     }
@@ -110,7 +112,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
             if (devInfoObject.completion !== undefined) {
                 collapsibleState = TreeItemCollapsibleState.Collapsed;
             }
-            objectItems.push(new CustomTreeItem(object.name, collapsibleState, object.table ? object.table : '', ItemType.object, object, devInfoObject.icon, undefined));
+            objectItems.push(new CustomTreeItem(object.name, collapsibleState, object.table ? object.table : '', ItemType.object, object, devInfoObject.icon, undefined, this.runPath));
         }
         return objectItems;
     }
@@ -155,12 +157,12 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
                     }
                     continue;
                 }
-                attributeItems.push(new CustomTreeItem(itemName, collapsibleState, description, itemType, itemInfo, attributeName, additionalInfo));
+                attributeItems.push(new CustomTreeItem(itemName, collapsibleState, description, itemType, itemInfo, attributeName, additionalInfo, this.runPath));
             }
             
         }
         if (technicalFlag){
-            attributeItems.push(new CustomTreeItem('technical fields', TreeItemCollapsibleState.Collapsed, '', ItemType.technicalRoot, technicalAttribute, technicalAttributeName, '')); 
+            attributeItems.push(new CustomTreeItem('technical fields', TreeItemCollapsibleState.Collapsed, '', ItemType.technicalRoot, technicalAttribute, technicalAttributeName, '', this.runPath)); 
         }
         return attributeItems;
     }
@@ -172,7 +174,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
         const technicalFieldItems = new Array();
         for (let field of itemInfo) {
             if (field.technical) {
-                technicalFieldItems.push(new CustomTreeItem(field.name, TreeItemCollapsibleState.None, field.column, ItemType.technical, undefined, 'fields', field.jsonname));
+                technicalFieldItems.push(new CustomTreeItem(field.name, TreeItemCollapsibleState.None, field.column, ItemType.technical, undefined, 'fields', field.jsonname, this.runPath));
             }
         }
         
@@ -196,6 +198,8 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
             }
         }
     }
+
+    
 }
 
 class CustomTreeItem extends TreeItem {
@@ -208,23 +212,25 @@ class CustomTreeItem extends TreeItem {
         objectType: ItemType,
         itemInfo: any,
         iconName: string | undefined,
-        additionalInfo: string | undefined) {
+        additionalInfo: string | undefined,
+        runPath: string) {
         super(label, treeItemCollapsibleState);
         this.description = description;
         this.objectType = objectType;
         this.itemInfo = itemInfo;
         if (iconName) {
-            this.iconPath = vsCodeIconFormat(iconName);
+            this.iconPath = vsCodeIconFormat(iconName, runPath);
         }
         this.additionalInfo = additionalInfo;
         this.command = { command: 'simplicite-vscode-tools.itemDoubleClickTrigger', title: '' , arguments: [label] };
     }
 }
 
-function vsCodeIconFormat (iconName: string) {
+function vsCodeIconFormat (iconName: string, runPath: string) {
+    const truc = process.cwd();
     return {
-        light: path.join(__filename, '..', '..', '..', 'resources', 'light', iconName + '.svg'),
-        dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', iconName + '.svg')
+        light: path.join(runPath, 'resources', 'light', iconName + '.svg'),
+        dark: path.join(runPath, 'resources', 'dark', iconName + '.svg')
     };
 }
 
