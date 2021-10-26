@@ -145,9 +145,9 @@ export class FileHandler {
                     throw new Error('No module found');
                 } 
                 const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
-                /*if (modulePom[0]) {
-                    modules.push(new Module(JSON.parse(modulePom[0]).name, workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
-                }*/
+                if (modulePom[0]) {
+                    modules.push(new Module(workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
+                }
             }
         } catch (e: any) {
             logger.warn(e);
@@ -158,7 +158,11 @@ export class FileHandler {
     private async getModuleInstanceUrl (workspaceFolder: WorkspaceFolder): Promise<string | any> { // searches into pom.xml and returns the simplicite's instance url
         const globPatern = '**pom.xml';
         const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-        const pom = await workspace.findFiles(relativePattern);
+        const file = await workspace.findFiles(relativePattern);
+        if (file.length === 0) {
+            throw new Error('No pom.xml has been found');
+        }
+        const pom = await (await workspace.openTextDocument(file[0])).getText();
         try {
             const res = await parseStringPromise(pom);
             return res.project.properties[0]['simplicite.url'][0];

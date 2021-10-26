@@ -2,14 +2,12 @@
 
 export class Module {
     private name: string;
-    private workspaceFolderName: string;
     private workspaceFolderPath: string;
     private instanceUrl: string;
     private token: string | null;
     moduleDevInfo: any;
-    constructor (name: string, workspaceFolderName: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
+    constructor (name: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
         this.name = name;
-        this.workspaceFolderName = workspaceFolderName;
         this.workspaceFolderPath = workspaceFolderPath;
         this.instanceUrl = instanceUrl;
         this.token = token;
@@ -21,13 +19,6 @@ export class Module {
     }
     getName () {
         return this.name;
-    }
-
-    setWorkspaceFolderName (workspaceFolderName: string) {
-        this.workspaceFolderName = workspaceFolderName;
-    }
-    getWorkspaceFolderName () {
-        return this.workspaceFolderName;
     }
 
     setWorkspaceFolderPath (workspaceFolderPath: string) {
