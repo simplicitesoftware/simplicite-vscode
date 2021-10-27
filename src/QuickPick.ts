@@ -1,16 +1,15 @@
 'use strict';
 
 import { ExtensionContext, commands, Command, extensions, window } from 'vscode';
-import { EXTENSION_ID } from './constant';
+import { EXTENSION_ID, SHOW_SIMPLICITE_COMMAND_ID } from './constant';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 
 export class QuickPick {
-    request: SimpliciteAPIManager;
+    private _request: SimpliciteAPIManager;
     constructor (context: ExtensionContext, request: SimpliciteAPIManager) {
-        this.request = request;
-        const commandId = 'simplicite-vscode-tools.showSimpliciteCommands';
-        context.subscriptions.push(commands.registerCommand(commandId, async () => await this.quickPickEntry()));
+        this._request = request;
+        context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
     }
 
     commandListQuickPick (commandList: Array<Command>) {
@@ -34,7 +33,7 @@ export class QuickPick {
             const target = await window.showQuickPick(commandQuickPick);
             if (target) {
                 try {
-                    await commands.executeCommand(target.commandId, this.request);
+                    await commands.executeCommand(target.commandId, this._request);
                 } catch (e) {
                     logger.error(e + 'Error occured while executing command');
                 }
