@@ -3,7 +3,7 @@
 import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, RelativePattern, Uri, env, workspace } from "vscode";
 import { FileAndModule } from '../interfaces';
 import { UntrackedItem, ModuleItem, FileItem } from "../classes";
-import { supportedFiles } from '../constant';
+import { SUPPORTED_FILES } from '../constant';
 import * as path from 'path';
 
 // File handler tree view
@@ -77,8 +77,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
             if (fm.fileList.length > 0 && fm.moduleName === label) {
                 for (let file of fm.fileList) {
                     if (file.tracked) {
-                        const legibleFileName = this.legibleFileName(file.getFilePath());
-                        const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.getFilePath(), true, label);
+                        const legibleFileName = this.legibleFileName(file.filePath);
+                        const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.filePath, true, label);
                         fileItems.push(treeItem);
                     } else {
                         untrackedFlag = true;
@@ -108,8 +108,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
                 if (fm.fileList.length > 0 && fm.moduleName === moduleName) {
                     for (let file of fm.fileList) {
                         if (!file.tracked) {
-                            const legibleFileName = this.legibleFileName(file.getFilePath());
-                            const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.getFilePath(), false, moduleName);
+                            const legibleFileName = this.legibleFileName(file.filePath);
+                            const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.filePath, false, moduleName);
                             untrackedFiles.push(treeItem);
                         }
                     }
@@ -122,7 +122,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
     // sorts the fileItems in alphabetical order
     orderAlphab (fileItems: FileItem[]): FileItem[] {
         const extensionItemArray: Array<{ extension: string, itemsPath: string[] }> = new Array();
-        for (let extension of supportedFiles) {
+        for (let extension of SUPPORTED_FILES) {
             extensionItemArray.push({ extension: extension, itemsPath: new Array() });
         }
         for (let item of fileItems) {

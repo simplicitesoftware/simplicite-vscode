@@ -7,7 +7,7 @@ import { crossPlatformPath } from "./utils";
 
 export class ModuleHandler {
     modules: Array<Module>;
-    private connectedInstancesUrl: Array<string>;
+    connectedInstancesUrl: Array<string>;
     moduleInfoTree: ModuleInfoTree | undefined;
     constructor () {
         this.connectedInstancesUrl = new Array();
@@ -37,10 +37,6 @@ export class ModuleHandler {
             this.refreshTreeView(modules);
         }
     }
-    
-    getModules () {
-        return this.modules;
-    }
 
     moduleLength () {
         return this.modules.length;
@@ -48,8 +44,8 @@ export class ModuleHandler {
 
     spreadToken (instanceUrl: string, token: string | null) {
         for (let module of this.modules) {
-            if (module.getInstanceUrl() === instanceUrl) {
-                module.setToken(token);
+            if (module.instanceUrl === instanceUrl) {
+                module.token = token;
             }
         }
     }
@@ -57,29 +53,26 @@ export class ModuleHandler {
     getDisconnectedModules () { // useful ?
         const disconnectedModules = new Array();
         for (let module of this.modules) {
-            if (!module.getToken()) {
+            if (!module.token) {
                 disconnectedModules.push(module);
             }
         }
         return disconnectedModules;
     }
 
-    getConnectedInstancesUrl (): Array<string> {
-        return this.connectedInstancesUrl;
-    }
-
     getModuleUrlFromName (moduleName: string): string {
         for (let module of this.modules) {
-            if (module.getName() === moduleName) {
-                return module.getInstanceUrl();
+            if (module.name === moduleName) {
+                return module.instanceUrl;
             }
         }
         logger.error('Cannot get module url from name');
         return '';
     }
+
     getModuleFromName (moduleName: string): Module | undefined {
         for (let module of this.modules) {
-            if (module.getName() === moduleName) {
+            if (module.name === moduleName) {
                 return module;
             }
         }
@@ -89,8 +82,8 @@ export class ModuleHandler {
     getModuleUrlFromWorkspacePath (workspacePath: string): string {
         try {
             for (let module of this.modules) {
-                if (module.getWorkspaceFolderPath() === crossPlatformPath(workspacePath)) {
-                    return module.getInstanceUrl();
+                if (module.workspaceFolderPath === crossPlatformPath(workspacePath)) {
+                    return module.instanceUrl;
                 }
             }
         } catch (e) {

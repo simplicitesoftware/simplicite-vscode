@@ -1,13 +1,13 @@
 'use strict';
 
 export class Cache {
-    private itemCache: Map<string, number>;
+    private _itemCache: Map<string, number>;
     constructor() {
-        this.itemCache = new Map();
+        this._itemCache = new Map();
     }
 
     isInCache (fileName: string) {
-        this.itemCache.forEach((value, key) => {
+        this._itemCache.forEach((value, key) => {
             if (key === fileName) {
                 return true;
             }
@@ -17,7 +17,7 @@ export class Cache {
 
     getListFromCache (fileName: string) {
         let returnValue;
-        this.itemCache.forEach((value, key) => {
+        this._itemCache.forEach((value, key) => {
             if (key === fileName) {
                 returnValue = value; 
             }
@@ -29,6 +29,6 @@ export class Cache {
     }
     
     addPair (key: string, value: number) {
-        this.itemCache.set(key, value);
+        this._itemCache.set(key, value);
     }
 }

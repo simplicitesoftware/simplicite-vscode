@@ -7,12 +7,10 @@ import { validFileExtension } from './utils';
 
 export class BarItem {
     barItem: StatusBarItem;
-    request: SimpliciteAPIManager | undefined;
-    constructor (text: string, request: SimpliciteAPIManager) {
+    constructor (text: string) {
         this.barItem = window.createStatusBarItem(2);
         this.barItem.text = text;
         this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands'; // opens quick pick
-        this.request = request;
     }
 
     // refreshs the BarItem
@@ -36,8 +34,8 @@ export class BarItem {
             for (let url of connectedInstancesUrl) {
                 moduleMarkdown += url + ':\n';
                 for (let module of modules) {
-                    if (url === module.getInstanceUrl()) {
-                        moduleMarkdown += '- ' + module.getName() + '\n\n';
+                    if (url === module.instanceUrl) {
+                        moduleMarkdown += '- ' + module.name + '\n\n';
                     }
                 } 
             }
@@ -53,8 +51,8 @@ export class BarItem {
         if (modules.length > 0) {
             moduleMarkdown += 'Disconnected modules:\n\n';
             for (let module of modules) {
-                if (!connectedInstancesUrl.includes(module.getInstanceUrl())) {
-                    moduleMarkdown += '- ' + module.getName() + '\n\n';
+                if (!connectedInstancesUrl.includes(module.instanceUrl)) {
+                    moduleMarkdown += '- ' + module.name + '\n\n';
                     disconnectedModule = true;
                 } 
             }

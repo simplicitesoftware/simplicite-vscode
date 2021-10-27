@@ -13,7 +13,7 @@ import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { crossPlatformPath, validFileExtension } from './utils';
 import { OpenFileContext } from './interfaces';
-import { template } from './constant';
+import { TEMPLATE } from './constant';
 
 export async function activate(context: ExtensionContext) {
 	logger.info('Starting extension on ' + env.appName);
@@ -23,11 +23,11 @@ export async function activate(context: ExtensionContext) {
 		fileTree
 	);
 	const moduleHandler = new ModuleHandler();
-	const fileHandler = await FileHandler.build(fileTree, moduleHandler);
+	const fileHandler = await FileHandler.build(fileTree, moduleHandler, context);
 	const request = await SimpliciteAPIManager.build(fileHandler, moduleHandler);
-	const barItem = new BarItem('Simplicite', request);
+	const barItem = new BarItem('Simplicite');
 	request.setBarItem(barItem); // needs to be set on SimpliciteAPIManager to refresh
-	barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+	barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
 	
 	new QuickPick(context, request);
 	// settings are set in the package.json
@@ -39,7 +39,7 @@ export async function activate(context: ExtensionContext) {
 		}
 	};
 	
-	const moduleInfoTree = new ModuleInfoTree(moduleHandler.getModules(), request.devInfo, context.extensionUri.path);
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, request.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider(
 		'simpliciteModuleInfo',
 		moduleInfoTree
@@ -69,15 +69,15 @@ export async function activate(context: ExtensionContext) {
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
 		if (validFileExtension(event.uri.path)) {
-			await fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true, fileHandler.bindFileAndModule(moduleHandler.getModules()));
-			barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+			await fileHandler.setTrackedStatus(crossPlatformPath(event.uri.path), true, fileHandler.bindFileAndModule(moduleHandler.modules));
+			barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
 		}
 	});
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
 		moduleHandler.setModules(await fileHandler.getSimpliciteModules(), true);
-		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+		barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
 		if (event.added.length > 0) { // If a folder is added to workspace
 			try {
 				const currentModule = moduleHandler.getModuleFromName(event.added[0].name);
@@ -93,15 +93,15 @@ export async function activate(context: ExtensionContext) {
 			logger.info('removed module from workspace');
 		}
 		await request.refreshModuleDevInfo();
-		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
-		barItem.show(moduleHandler.getModules(), moduleHandler.getConnectedInstancesUrl());
+		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules));
+		barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
 		await fileHandler.getFileOnStart();
 	});
 
 	// Completion
 	let completionProvider: Disposable | undefined = undefined;
 	const prodiverMaker = async function (): Promise<Disposable | undefined> {
-		const connectedInstances: string[] = moduleHandler.getConnectedInstancesUrl(); 
+		const connectedInstances: string[] = moduleHandler.connectedInstancesUrl; 
 		if (connectedInstances.length > 0
 		&& request.devInfo
 		&& moduleHandler.getAllModuleDevInfo().length > 0
@@ -130,7 +130,7 @@ export async function activate(context: ExtensionContext) {
 				workspaceUrl: workspaceUrl,
 				instanceUrl: instanceUrl
 			};
-			await request.moduleDevInfoSpecific(instanceUrl, module.getName()); // sets module
+			await request.moduleDevInfoSpecific(instanceUrl, module.name); // sets module
 			completionProvider = completionProviderHandler(openFileContext, request.devInfo, module.moduleDevInfo, context);
 			return completionProvider;
 		}
@@ -159,7 +159,7 @@ export async function activate(context: ExtensionContext) {
 
 function completionProviderHandler (openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {
 	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, openFileContext);
-	const completionProvider = languages.registerCompletionItemProvider(template, devCompletionProvider, '"');
+	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
 	logger.info('completion ready');
 	return completionProvider;

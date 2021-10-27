@@ -38,7 +38,7 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
                     throw new Error(msg);
                 }
                 if (moduleObject instanceof Module) {
-                    await request.applyChangesHandler(moduleObject.getName(), moduleObject.getInstanceUrl());
+                    await request.applyChangesHandler(moduleObject.name, moduleObject.instanceUrl);
                 }
             } else {
                 await request.applyChangesHandler(element.label, element.description);
@@ -85,8 +85,8 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 			let flag = false;
             let module;
             try {
-                for (let moduleLoop of request.moduleHandler.getModules()) {
-                    if (moduleLoop.getInstanceUrl() === moduleName) {
+                for (let moduleLoop of request.moduleHandler.modules) {
+                    if (moduleLoop.instanceUrl === moduleName) {
                         module = moduleLoop;
                         flag = true;
                     }
@@ -95,8 +95,8 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
                     throw new Error('error no module LogInInstanceCommand');
                 }
             } catch (e) {
-                for (let moduleLoop of request.moduleHandler.getModules()) {
-                    if (moduleLoop.getName() === moduleName) {
+                for (let moduleLoop of request.moduleHandler.modules) {
+                    if (moduleLoop.name === moduleName) {
                         module = moduleLoop;
                         flag = true;
                     }
@@ -116,8 +116,8 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 };
 
 export const logoutCommand = function (request: SimpliciteAPIManager) {
-    return commands.registerCommand('simplicite-vscode-tools.logOut', function () {	
-		request.logout();
+    return commands.registerCommand('simplicite-vscode-tools.logOut', async function () {	
+		await request.logout();
 	});
 };
 
@@ -222,8 +222,8 @@ function doubleClickTrigger (): boolean {
 
 async function trackAction (request: SimpliciteAPIManager, element: any, trackedValue: boolean) {
     const inputFile = await getInputFile(request, element);
-    const fileModule = request.fileHandler.bindFileAndModule(request.moduleHandler.getModules());
-    await request.fileHandler.setTrackedStatus(inputFile.getFilePath(), trackedValue, fileModule);                 
+    const fileModule = request.fileHandler.bindFileAndModule(request.moduleHandler.modules);
+    await request.fileHandler.setTrackedStatus(inputFile.filePath, trackedValue, fileModule);                 
 }
 
 async function getInputFile (request: SimpliciteAPIManager, element: any): Promise<File> {
