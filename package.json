@@ -159,7 +159,7 @@
 			"properties": {
 				"simplicite-vscode-tools.compilation.enabled": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "Disable local compilation before applying changes."
 				},
 				"simplicite-vscode-tools.api.autoConnect": {
@@ -179,11 +179,9 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run package-web",
+		"vscode:prepublish": "npm run package",
 		"compile": "webpack",
 		"watch": "webpack --watch",
-		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
-		"pretest": "npm run compile-web",
 		"package": "webpack --mode production --devtool hidden-source-map",
 		"lint": "eslint src --ext ts"
 	},
