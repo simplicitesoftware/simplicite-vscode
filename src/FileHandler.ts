@@ -1,11 +1,11 @@
 'use strict';
 
 import { logger } from './Log';
-import { RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
+import { ExtensionContext, RelativePattern, Uri, workspace, WorkspaceFolder } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
 import { crossPlatformPath, validFileExtension } from './utils';
-import { supportedFiles } from './constant';
+import { SUPPORTED_FILES } from './constant';
 import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
@@ -13,20 +13,24 @@ import { ModuleHandler } from './ModuleHandler';
 
 export class FileHandler {
     fileTree: FileTree;
-    private fileList: Array<File>;
-    moduleHandler: ModuleHandler;
-    constructor (fileTree: FileTree, moduleHandler: ModuleHandler) {
+    fileList: Array<File>;
+    private _moduleHandler: ModuleHandler;
+    private _context: ExtensionContext;
+    constructor (fileTree: FileTree, moduleHandler: ModuleHandler, context: ExtensionContext) {
         this.fileTree = fileTree;
         this.fileList = new Array();
-        this.moduleHandler = moduleHandler;
+        this._moduleHandler = moduleHandler;
+        this._context = context;
     }
 
-    static async build (fileTree: FileTree, moduleHandler: ModuleHandler): Promise<FileHandler> {
-        const fileHandler = new FileHandler(fileTree, moduleHandler);
+    static async build (fileTree: FileTree, moduleHandler: ModuleHandler, context: ExtensionContext): Promise<FileHandler> {
+        const fileHandler = new FileHandler(fileTree, moduleHandler, context);
         try {
-            fileHandler.moduleHandler.setModules(await fileHandler.getSimpliciteModules(), false); // need modules to create File
+            const modules = await fileHandler.getSimpliciteModules();
+            const modulesToken = fileHandler.getTokenFromSimpliciteInfo(modules);
+            moduleHandler.setModules(modulesToken, false); // need modules to create File
             fileHandler.fileList = await fileHandler.getFileOnStart();
-            await fileHandler.fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.getModules()));
+            await fileHandler.fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules));
         } catch (e) {
             logger.error(e);
         }
@@ -37,55 +41,43 @@ export class FileHandler {
         let toBeWrittenJSON = new Array();
         const simpliciteModules = await this.getSimpliciteModules();
         for (let module of simpliciteModules) {
-            if (module.getInstanceUrl() === appURL && !module.getToken()) { // only set the token for the object coming from the same instance => same token 
-                module.setToken(token); 
+            if (module.instanceUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
+                module.token = token; 
                 toBeWrittenJSON = toBeWrittenJSON.concat([module]);
             } else {
                 toBeWrittenJSON = toBeWrittenJSON.concat([module]);   
             }
         }
         toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-        //this.saveJSONOnDisk(toBeWrittenJSON, TOKEN_SAVE_PATH);
+        this._context.globalState.update('simplicite-modules-info', toBeWrittenJSON);
     }
 
     private getTokenFromSimpliciteInfo (toBeWrittenJSON: Array<Module>) {
         try {
-            const parsedJson = this.getSimpliciteInfoContent();
-            if (parsedJson === null) {
+            const parsedJson: Array<Module> = this._context.globalState.get('simplicite-modules-info') || [];
+            if (parsedJson.length === 0 || parsedJson === undefined) {
                 throw new Error('Cannot get token. No simplicite info content found');
             }
-            for (let diskInfo of parsedJson) {
-                for (let preparedModule of toBeWrittenJSON) {
-                    if (preparedModule.getName() === diskInfo.getName() && diskInfo.getToken() && !preparedModule.getToken()) {
-                        preparedModule.setToken(diskInfo.getToken());
+            parsedJson.forEach((module: Module) => {
+                toBeWrittenJSON.forEach((preparedModule: Module) => {
+                    if (preparedModule.name === module.name && module.token && preparedModule.token === '') {
+                        preparedModule.token = module.token;
                     }
-                }
-            }
-            return toBeWrittenJSON;
+                });
+            });
+            return toBeWrittenJSON;        
         } catch(e: any) {
             logger.info(e);
         }
         return toBeWrittenJSON;
     }
 
-    saveJSONOnDisk (toBeWrittenJSON: Array<Module> | Array<File>, path: string) {
-        try {
-            //fs.writeFileSync(path, JSON.stringify(toBeWrittenJSON));
-        } catch (e: any) {
-            logger.error(e);
-        }
-    }
-
     deleteSimpliciteInfo () {
-        try {
-            //fs.unlinkSync(TOKEN_SAVE_PATH);
-        } catch (e: any) {
-            logger.error(e);
-        }
+        this._context.globalState.update('simplicite-modules-info', undefined);
     }
 
     deleteModuleJSON (instanceUrl: string | undefined, moduleName: string | undefined) {
-        let moduleArray = this.getSimpliciteInfoContent();
+        let moduleArray: Module[] = this._context.globalState.get('simplicite-modules-info') || [];
         try {
             let newInfo = [];
             if (moduleArray === null) {
@@ -93,42 +85,19 @@ export class FileHandler {
             }
             for (let module of moduleArray) {
                 if (instanceUrl) {
-                    if (module.getInstanceUrl() !== instanceUrl) {
+                    if (module.instanceUrl !== instanceUrl) {
                         newInfo.push(module);
                     }
                 } else if (moduleName) {
-                    if (module.getName() !== moduleName) {
+                    if (module.name !== moduleName) {
                         newInfo.push(module);
                     }
-                }
-                
+                }    
             }
-            //this.saveJSONOnDisk(newInfo, TOKEN_SAVE_PATH);
+            this._context.globalState.update('simplicite-modules-info', newInfo);
         } catch (e: any) {
             throw e;
         }
-    }
-
-    getSimpliciteInfoContent (): Array<Module> | null {
-        try {
-            const modules: Array<Module> = new Array();
-            //const jsonContent = JSON.parse(fs.readFileSync(TOKEN_SAVE_PATH, 'utf8'));
-            //for (let moduleJson of jsonContent) {
-           //     modules.push(new Module(moduleJson.name, moduleJson.workspaceFolderName, moduleJson.workspaceFolderPath, moduleJson.instanceUrl, moduleJson.token));
-            //}
-            if (modules.length === 0) {
-                return null;
-            }
-            return modules;
-        } catch (e: unknown) {
-            return null;
-        }
-        
-    }
-
-    async getFile (path: string): Promise<Thenable<Uint8Array>> {
-        const res = await workspace.fs.readFile(Uri.file(path));
-        return res;
     }
 
     async getSimpliciteModules () { // returns array of module objects
@@ -174,9 +143,9 @@ export class FileHandler {
     bindFileAndModule (modules: Array<Module>): FileAndModule[] {
         const fileModule = new Array();
         for (let module of modules) {
-            const moduleObject = { moduleName: module.getName(), instanceUrl: module.getInstanceUrl(), fileList: new Array() };
+            const moduleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: new Array() };
             for (let file of this.fileList) {
-                if (file.moduleName === module.getName()) {
+                if (file.moduleName === module.name) {
                     moduleObject.fileList.push(file);
                 }
             }
@@ -185,18 +154,14 @@ export class FileHandler {
         return fileModule;
     }
 
-    private updateFileStatusOnDisk () {
+    private updateFileStatus () {
         const jsonContent = new Array();
         for (let file of this.fileList) {
             if (file.tracked) {
-                jsonContent.push({filePath: file.getFilePath(), tracked: file.tracked});
+                jsonContent.push({filePath: file.filePath, tracked: file.tracked});
             }
         }
-        //this.saveJSONOnDisk(jsonContent, FILES_SAVE_PATH);
-    }
-
-    getFileList () {
-        return this.fileList;
+        this._context.globalState.update('simplicite-files-info', jsonContent);
     }
 
     fileListLength () {
@@ -207,38 +172,37 @@ export class FileHandler {
         if (workspace.workspaceFolders === undefined) {
             throw new Error('no workspace detected');
         }
-        
         let fileList = new Array();
         for (let workspaceFolder of workspace.workspaceFolders) {
-            for (let valid of supportedFiles) {
+            for (let valid of SUPPORTED_FILES) {
                 const globPatern = '**/*' + valid;
                 const relativePattern = new RelativePattern(workspaceFolder, globPatern);
                 const files = await workspace.findFiles(relativePattern);
                 for (let file of files) {
-                    if (validFileExtension(file.path)) {
-                        fileList.push(new File(file.path, this.moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
+                    if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml')) {
+                        fileList.push(new File(file.path, this._moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
                     }
                 }
             }
         }
         try {
-            return this.setTrackedStatusFromDisk(fileList);
+            return this.setTrackedStatusPersistence(fileList);
         } catch (e) {
             logger.warn('getFileOnStart: ' + e);
             return fileList;
         }
     }
 
-    private setTrackedStatusFromDisk (fileList: File[]): File[] { 
+    private setTrackedStatusPersistence (fileList: File[]): File[] { 
         try {
-            //const jsonContent = JSON.parse(fs.readFileSync(FILES_SAVE_PATH, 'utf8'));
+            const jsonContent: File[] = this._context.globalState.get('simplicite-files-info') || [];
             for (let file of fileList) {
-                //for (let content of jsonContent) {
-                    //if (file.getFilePath() === content.filePath) {
-                    //    file.tracked = content.tracked;
-                   //     break;
-                    //}
-                //}
+                for (let content of jsonContent) {
+                    if (file.filePath === content.filePath) {
+                       file.tracked = content.tracked;
+                       break;
+                    }
+                }
             }
         } catch (e: any) {
             throw new Error(e.message);
@@ -248,18 +212,18 @@ export class FileHandler {
 
     async setTrackedStatus (filePath: string, status: boolean, fileModule: FileAndModule[]): Promise<void> {
         for (let file of this.fileList) {
-            if (file.getFilePath().toLowerCase() === filePath.toLowerCase()) {
+            if (file.filePath.toLowerCase() === filePath.toLowerCase()) {
                 file.tracked = status;
             }
         }
-        this.updateFileStatusOnDisk();
+        this.updateFileStatus();
         await this.fileTree.setFileModule(fileModule);
         Promise.resolve();
     }
 
     getFileFromFullPath (fullPath: string): File {
         for (let file of this.fileList) {
-            const lowercasePath = file.getFilePath();
+            const lowercasePath = file.filePath;
             if (lowercasePath.toLowerCase() === fullPath.toLowerCase()) {
                 return file;
             }

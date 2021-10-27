@@ -9,7 +9,7 @@ import { AppHandler } from './AppHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { logger } from './Log';
 import { File } from './File';
-import { removeFileExtension } from './utils';
+import { removeFileExtension, replaceAll } from './utils';
 import { BarItem } from './BarItem';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 
@@ -31,7 +31,6 @@ export class SimpliciteAPIManager {
 
     static async build (fileHandler: FileHandler,  moduleHandler: ModuleHandler) {
         const simpliciteAPIManager = new SimpliciteAPIManager(fileHandler, moduleHandler);
-        await simpliciteAPIManager.moduleHandler.setModules(await simpliciteAPIManager.fileHandler.getSimpliciteModules(), false);
         if (simpliciteAPIManager.moduleHandler.moduleLength() !== 0 && simpliciteAPIManager.fileHandler.fileListLength() !== 0) {
             logger.info('Modules and files set on initialization');
         }
@@ -46,13 +45,13 @@ export class SimpliciteAPIManager {
 
     async loginHandler (): Promise<void> {
         if (this.moduleHandler.moduleLength() > 0) {
-            for (let module of this.moduleHandler.getModules()) {
-                if (!this.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
+            for (let module of this.moduleHandler.modules) {
+                if (!this.moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
                     try {
                         await this.loginTokenOrCredentials(module);
                     } catch (e: any) {
                         window.showErrorMessage(e.message ? e.message : e);
-                        logger.error(`Module ${module.getName()}: ${e.message ? e.message : e}`);
+                        logger.error(`Module ${module.name}: ${e.message ? e.message : e}`);
                     }
                 }
             }
@@ -63,42 +62,38 @@ export class SimpliciteAPIManager {
     }
 
     async loginTokenOrCredentials (module: Module): Promise<void> {
-        const app = await this.appHandler.getApp(module.getInstanceUrl()); // handleApp returns the app correct instance (one for every simplicite instance)
-        try {
-            await this.authenticationWithToken(module.getName(), app);
-            await this.login(module, app);
-            logger.info('Token connection succeeded');
-        } catch (e) {
-            try {
-                await this.authenticationWithCredentials(module.getName(), app);
-                await this.login(module, app);
-                logger.info('Credentials connection succeeded');
-            } catch (e) {
-                throw e;
-            }
+        const app = await this.appHandler.getApp(module.instanceUrl); // handleApp returns the app correct instance (one for every simplicite instance)
+        if (module.token === '') {
+            await this.authenticationWithCredentials(module.name, app, async () => {
+                await this.loginMethod(module, app);
+            });
+        } else {
+            app.authtoken = module.token;
+            await this.loginMethod(module, app);
         }
+        
     }
 
-    async login (module: Module, app: any): Promise<void> {
+    private async loginMethod (module: Module, app: any): Promise<void> {
         try {
             const res = await app.login();
             if (!this.devInfo) {
                 this.setDevInfo(app);
             }
             await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
-            this.moduleHandler.spreadToken(module.getInstanceUrl(), res.authtoken);
-            this.appHandler.setApp(module.getInstanceUrl(), app);
-            this.moduleHandler.addInstanceUrl(module.getInstanceUrl());
-            //await this.getmoduleDevInfo(module.getInstanceUrl(), module.getName());
+            this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
+            this.appHandler.setApp(module.instanceUrl, app);
+            this.moduleHandler.addInstanceUrl(module.instanceUrl);
+            //await this.getmoduleDevInfo(module.instanceUrl, module.name);
             // moduleDevInfo
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
-            this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+            this.barItem!.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
         } catch (e: any) {
             if (e.message === 'Simplicite authentication error: Invalid token') { // reset authentication info related to the module and instance
-                this.fileHandler.deleteModuleJSON(undefined, module.getName());
-                this.appHandler.getAppList().delete(module.getInstanceUrl());
-                this.moduleHandler.spreadToken(module.getInstanceUrl(), null);
+                this.fileHandler.deleteModuleJSON(undefined, module.name);
+                this.appHandler.appList.delete(module.instanceUrl);
+                this.moduleHandler.spreadToken(module.instanceUrl, null);
                 logger.warn('Authentication token is invalid, trying to reconnect');
                 await this.loginHandler();
             } else {
@@ -111,23 +106,7 @@ export class SimpliciteAPIManager {
         }
     }
 
-    authenticationWithToken (moduleName: string, app: any) { // check if a token is available in process.env.APPDATA + /Code/User/globalStorage/simplicite-info.json  
-        try {
-            const moduleArray = this.fileHandler.getSimpliciteInfoContent();
-            if (moduleArray === null) {
-                throw new Error('No module has been found, cannot get token value');
-            }
-            for (let module of moduleArray) {
-                if (module.getName() === moduleName && module.getToken()) {
-                    app.setAuthToken(module.getToken());
-                }
-            }
-        } catch(e) {
-            throw e;
-        }     
-    }
-
-    async authenticationWithCredentials (moduleName: string, app: any) {
+    private async authenticationWithCredentials (moduleName: string, app: any, callback: () => Promise<void>) {
         try {
             const username = await window.showInputBox({ 
                 placeHolder: 'username',
@@ -146,27 +125,28 @@ export class SimpliciteAPIManager {
             }
             app.setPassword(password);
             app.setUsername(username);
+            await callback();
         } catch (e) {
             throw e;
         }
     }
 
-    logout () {
+    async logout () {
         this.fileHandler.deleteSimpliciteInfo();
-        this.appHandler.getAppList().forEach((app: any) => {
+        this.appHandler.appList.forEach(async (app: any) => {
             app.logout().then((res: any) => {
-                this.appHandler.setAppList(new Map());
-                this.moduleHandler.spreadToken(app.parameters.url, null);
+                this.appHandler.appList.delete(app.parameters.url);
+                this.moduleHandler.spreadToken(app.parameters.url, '');
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
                 this.moduleHandler.removeInstanceUrl(app.parameters.url);
-                this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                this.barItem!.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
             }).catch((e: any) => {
     			logger.error(e);
                 window.showErrorMessage(e.message ? e.message : e);        
             });
         });
-        if (this.appHandler.getAppList().size === 0) {
+        if (this.appHandler.appList.size === 0) {
             window.showErrorMessage('Simplicite: You are not connected to any module');
         }
     }
@@ -175,8 +155,8 @@ export class SimpliciteAPIManager {
         try {
             let instanceUrl: string;
             instanceUrl = this.moduleHandler.getModuleUrlFromName(input);
-            if (this.moduleHandler.getConnectedInstancesUrl().length !== 0) {
-                for (let connectedInstance of this.moduleHandler.getConnectedInstancesUrl()) {
+            if (this.moduleHandler.connectedInstancesUrl.length !== 0) {
+                for (let connectedInstance of this.moduleHandler.connectedInstancesUrl) {
                     if (connectedInstance === input) {
                         instanceUrl = connectedInstance;
                     }
@@ -185,12 +165,12 @@ export class SimpliciteAPIManager {
             const app = await this.appHandler.getApp(instanceUrl);
             app.logout().then(async (res: any) => {
                 this.fileHandler.deleteModuleJSON(instanceUrl, undefined);
-                this.appHandler.getAppList().delete(instanceUrl);
+                this.appHandler.appList.delete(instanceUrl);
                 this.moduleHandler.spreadToken(instanceUrl, null);
                 this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
-                this.barItem!.show(this.moduleHandler.getModules(), this.moduleHandler.getConnectedInstancesUrl());
+                this.barItem!.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
             }).catch((e: any) => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
                     window.showInformationMessage(`Simplicite: You are not connected to ${input}`);
@@ -208,14 +188,18 @@ export class SimpliciteAPIManager {
     async applyChangesHandler (moduleName: string | undefined, instanceUrl: string | undefined) {
         try {
             if (moduleName && instanceUrl) {
-                if (!checkFileModuleSpecific(moduleName, this.fileHandler.getFileList())) {
+                if (!checkFileModuleSpecific(moduleName, this.fileHandler.fileList)) {
                     throw new Error('Simplicite: No file has changed, cannot apply changes');
                 }
-                await this.beforeApply(this.fileHandler.getFileList(), moduleName);
-                await this.applyModuleFiles(moduleName, instanceUrl);
+                await this.beforeApply(this.fileHandler.fileList, moduleName, async () => {
+                    await this.applyModuleFiles(moduleName, instanceUrl);
+                });
+                
+            
             } else {
-                await this.beforeApply(this.fileHandler.getFileList(), undefined);
-                await this.applyInstanceFiles();
+                await this.beforeApply(this.fileHandler.fileList, undefined, async () => {
+                    await this.applyInstanceFiles();
+                });
             }
             return;
         } catch(e) {
@@ -223,10 +207,10 @@ export class SimpliciteAPIManager {
         }  
     }
 
-    async applyModuleFiles (moduleName: string, instanceUrl: string) {
+    private async applyModuleFiles (moduleName: string, instanceUrl: string) {
         const app = await this.appHandler.getApp(instanceUrl);
         let success = 0;
-        for (let file of this.fileHandler.getFileList()) {
+        for (let file of this.fileHandler.fileList) {
             if (file.moduleName === moduleName && file.tracked) {
                 success = await this.sendFileMessageWrapper(file, app);
             }
@@ -241,10 +225,10 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async applyInstanceFiles () {
-        const fileModule = this.bindFileWithModule(this.fileHandler.getFileList());
+    private async applyInstanceFiles () {
+        const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
         let success = 0;
-        for (let instanceUrl of this.moduleHandler.getConnectedInstancesUrl()) {
+        for (let instanceUrl of this.moduleHandler.connectedInstancesUrl) {
             const app = await this.appHandler.getApp(instanceUrl);
             if (fileModule.get(instanceUrl)) {
                 for (let file of fileModule.get(instanceUrl)!) {
@@ -256,7 +240,7 @@ export class SimpliciteAPIManager {
             if (success > 0) {
                 try {
                     await this.triggerBackendCompilation(app);
-                    logger.info('Backend compilation succeded');
+                    logger.info('Backend compilation succeeded');
                 } catch(e: any) {
                     window.showErrorMessage(e.message);
                     logger.error(e.message);
@@ -265,21 +249,21 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async sendFileMessageWrapper (file: File, app: any): Promise<number> { // easy way to handle messages when an error occurs when applying a file
+    private async sendFileMessageWrapper (file: File, app: any): Promise<number> { // easy way to handle messages when an error occurs when applying a file
         let success = 0;
         try {
             const res = await this.sendFile(file, app);
             if (res) {
                 success++;
             }
-            await this.fileHandler.setTrackedStatus(file.getFilePath(), false, this.fileHandler.bindFileAndModule(this.moduleHandler.getModules()));
+            await this.fileHandler.setTrackedStatus(file.filePath, false, this.fileHandler.bindFileAndModule(this.moduleHandler.modules));
         } catch (e) {
-            logger.error('Cannot apply ' + file.getFilePath());
+            logger.error('Cannot apply ' + file.filePath);
         }
         return Promise.resolve(success);
     }
 
-    async sendFile (file: File, app: any): Promise<boolean> {
+    private async sendFile (file: File, app: any): Promise<boolean> {
         try {
             await this.attachFileAndSend(file.filePath, app);
             logger.info('Successfully applied' + file.filePath);
@@ -291,7 +275,7 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async triggerBackendCompilation (app: any) {
+    private async triggerBackendCompilation (app: any) {
         try {
             let obj = app.getBusinessObject('Script', 'ide_Script');
             const res = await obj.action('CodeCompile', 0);
@@ -303,8 +287,8 @@ export class SimpliciteAPIManager {
         }
     }
 
-    async beforeApply (fileList: Array<File>, moduleName: string | undefined) {
-        if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
+    private async beforeApply (fileList: Array<File>, moduleName: string | undefined, callback: () => Promise<void>): Promise<void> {
+        if (this.moduleHandler.connectedInstancesUrl.length === 0) {
             throw new Error('Simplicite: No module connected, cannot apply changes');
         } else if (moduleName) { // module apply
             let isTracked = false;
@@ -327,6 +311,7 @@ export class SimpliciteAPIManager {
                 throw new Error('Simplicite: No file has changed, cannot apply changes');
             }
         }
+        // check if extension is available
         if (!workspace.getConfiguration('simplicite-vscode-tools').get('compilation.enabled')) {
             const res = await this.compileJava(
             { 
@@ -334,18 +319,19 @@ export class SimpliciteAPIManager {
                 button: 'Settings'
             });
             if (res !== 'Compilation succeeded') {
-                throw new Error('');
+                throw new Error('Local compilation failed');
             }
-        }  
+        }
+        await callback();
     }
 
-    bindFileWithModule (fileList: Array<File>): Map<string, Array<File>> {
+    private bindFileWithModule (fileList: Array<File>): Map<string, Array<File>> {
         let flag = false;
         let fileModule: Map<string,Array<File>>;
         fileModule = new Map();
         for (let file of fileList) {
-            if (this.moduleHandler.getConnectedInstancesUrl().includes(file.getInstanceUrl())) {
-                fileModule.get(file.getInstanceUrl()) ? fileModule.get(file.getInstanceUrl())?.push(file) : fileModule.set(file.getInstanceUrl(), [file]);                 
+            if (this.moduleHandler.connectedInstancesUrl.includes(file.instanceUrl)) {
+                fileModule.get(file.instanceUrl) ? fileModule.get(file.instanceUrl)?.push(file) : fileModule.set(file.instanceUrl, [file]);                 
                 flag = true;
             }
         }
@@ -356,7 +342,7 @@ export class SimpliciteAPIManager {
     }
 
     // Called by synchronize
-    async attachFileAndSend (filePath: string, app: any) {
+    private async attachFileAndSend (filePath: string, app: any) {
         try { 
             // get fileType and Filename
             let fileType: string;
@@ -374,27 +360,25 @@ export class SimpliciteAPIManager {
                 throw new Error(`No document returned, cannot update content`);
             }
             // get the file content for setContent
-            let fileContent;
-            if (fileType === 'Resource') {
-                fileContent = await workspace.findFiles(`**/${getResourceFileName(filePath)}/${fileName + fileExtension}`);
-            } else {
-                fileContent = await workspace.findFiles('**/' + fileName + fileExtension);
-            }
-            doc.setContentFromText(fileContent[0]);
-            obj.setFieldValue(fieldScriptId, doc);
-            obj.update(item, { inlineDocuments: true})
-            .then(() => {
-                Promise.resolve();
-            }).catch((e: Error) => {
-                logger.error(e);
-                throw e;
-            });
+    
+            const fileContent = await workspace.findFiles('**/' + fileName + fileExtension);
+            workspace.openTextDocument(fileContent[0]).then((document) => {
+                let text = document.getText();
+                doc.setContentFromText(text);
+                obj.setFieldValue(fieldScriptId, doc);
+                obj.update(item, { inlineDocuments: true}).then(() => {
+                    Promise.resolve();
+                }).catch((e: Error) => {
+                    logger.error(e);
+                    throw e;
+                });
+              });
         } catch (e) {
             throw e;
         }     
     }
 
-    operationsBeforeObjectManipulation (filePath: string): ReturnValueOperationsBeforeObjectManipulation {
+    private operationsBeforeObjectManipulation (filePath: string): ReturnValueOperationsBeforeObjectManipulation {
         const fileType = this.getBusinessObjectType(filePath);
         let filePathDecomposed = crossPlatformPath(filePath).split('/');
         const lastOfPath = filePathDecomposed[filePathDecomposed.length - 1];
@@ -426,7 +410,7 @@ export class SimpliciteAPIManager {
         return item;
     }
     
-    getProperScriptField (fileType: string) {
+    private getProperScriptField (fileType: string) {
         for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
                 return object.sourcefield;
@@ -434,7 +418,7 @@ export class SimpliciteAPIManager {
         }
     }
 
-    getProperNameField (fileType: string) {
+    private getProperNameField (fileType: string) {
         for (let object of this.devInfo.objects) {
             if (fileType === object.object) {
                 return object.keyfield;
@@ -443,13 +427,13 @@ export class SimpliciteAPIManager {
     }
 
     // Change path into Java package modele to find object type with dev info
-    getBusinessObjectType (filePath: string): string { 
+    private getBusinessObjectType (filePath: string): string { 
         if (!this.devInfo) { 
             throw new Error('devInfo is undefined, make sure that you have the right to access this module');
         }
         for (let object of this.devInfo.objects) {
             if (object.package) {
-                const comparePackage = object.package.replaceAll('.', '/');
+                const comparePackage = replaceAll(object.package, '.', '/');
                 if (filePath.includes(comparePackage)) {
                     return object.object;
                 }
@@ -465,7 +449,7 @@ export class SimpliciteAPIManager {
         throw new Error('No type has been found');
     }
     
-    async setDevInfo (app: any, moduleName?: string) { // uses the first instance available to fetch the data
+    private async setDevInfo (app: any, moduleName?: string) { // uses the first instance available to fetch the data
         try {
             if (moduleName) {
                 const currentModule = this.moduleHandler.getModuleFromName(moduleName);
@@ -492,9 +476,9 @@ export class SimpliciteAPIManager {
     async refreshModuleDevInfo () {
         try {
             this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules(), true);
-            for (let module of this.moduleHandler.getModules()) {
-                if (this.moduleHandler.getConnectedInstancesUrl().includes(module.getInstanceUrl())) {
-                    await this.moduleDevInfoSpecific(module.getInstanceUrl(), module.getName());
+            for (let module of this.moduleHandler.modules) {
+                if (this.moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
+                    await this.moduleDevInfoSpecific(module.instanceUrl, module.name);
                 }
             }
         } catch (e) {
@@ -502,28 +486,19 @@ export class SimpliciteAPIManager {
         }
     }
 
-    connectedInstance () {
-        if (this.moduleHandler.getConnectedInstancesUrl().length === 0) {
-            window.showInformationMessage('Simplicite: No connected instance');     
-        }
-        for (let url of this.moduleHandler.getConnectedInstancesUrl()) {
-            window.showInformationMessage('Simplicite: You are connected to: ' + url);     
-        }
-    }
-
-    async compileJava (customMessage?: CustomMessage) {
+    async compileJava (customMessage?: CustomMessage): Promise<string> {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
         try {
             const status = await commands.executeCommand('java.workspace.compile', false);
             switch (status) {
                 case 0:
                     window.showErrorMessage('Simplicite: Compilation failed');
-                    return 'Compilation failed';
+                    return Promise.resolve('Compilation failed');
                 case 1:
-                    return 'Compilation succeeded';
+                    return Promise.resolve('Compilation succeeded');
                 case 3:
                     window.showErrorMessage('Simplicite: Compilation cancelled');
-                    return 'Compilation cancelled';
+                    return Promise.resolve('Compilation cancelled');
             }
         } catch(e: any) {
             if (customMessage) { // occurs when compileJava is called from applyChangedHandler
@@ -539,6 +514,7 @@ export class SimpliciteAPIManager {
                 throw new Error((e.message ? e.message : e) + ' Check if there is error(s) in the java files of your module(s)');
             }
         }
+        return Promise.resolve('');
     }
 
     setBarItem (barItem: BarItem) {
@@ -554,7 +530,7 @@ function getResourceFileName (filePath: string): string {
 
 function openSettings () {
     try {
-        commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteextensiontest.simplicite-vscode-tools');
+        commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteSoftware.simplicite-vscode-tools');
     } catch (e) {
         logger.error(e);
     }   
