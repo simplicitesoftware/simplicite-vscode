@@ -155,6 +155,8 @@ export async function activate(context: ExtensionContext) {
 			logger.error(e);
 		}
 	});
+
+	return {applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile};
 }
 
 function completionProviderHandler (openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {
