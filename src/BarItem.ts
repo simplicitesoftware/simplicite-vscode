@@ -1,7 +1,6 @@
 'use strict';
 
-import { window, MarkdownString, StatusBarItem } from 'vscode';
-import { SimpliciteAPIManager } from './SimpliciteAPIManager';
+import { window, MarkdownString, StatusBarItem, env } from 'vscode';
 import { Module } from './Module';
 import { validFileExtension } from './utils';
 
@@ -15,14 +14,31 @@ export class BarItem {
 
     // refreshs the BarItem
     show (modules: Array<Module>, connectedInstancesUrl: Array<string>): void {
-        this.barItem.tooltip = new MarkdownString(this.markdownGenerator(modules, connectedInstancesUrl));
-        this.barItem.show();
+        if (modules.length === 0 && connectedInstancesUrl.length === 0) {
+            this.barItem.tooltip = 'No Simplicite module detected';
+            return;
+        }
+        if (env.appHost !== 'desktop') {
+            if (connectedInstancesUrl.length === 0) {
+                'No module connected';
+            }
+            this.barItem.tooltip = 'Connected modules: ';
+            let cpt = 0;
+            for (let instance of connectedInstancesUrl) {
+                this.barItem.tooltip += instance;
+                if (cpt !== connectedInstancesUrl.length - 1) {
+                    this.barItem.tooltip += ', ';
+                    cpt++;
+                }
+            }   
+        } else {
+            this.barItem.tooltip = new MarkdownString(this.markdownGenerator(modules, connectedInstancesUrl));
+        }
+        this.barItem.show();    
     }
     
     private markdownGenerator (modules: Array<Module>, connectedInstancesUrl: Array<string>) {
-        if (modules.length === 0 && connectedInstancesUrl.length === 0) {
-            return 'No Simplicite module detected';
-        }
+        
         return this.connectedInstancesAndModules(modules, connectedInstancesUrl) + this.disconnectedInstancesAndModules(modules, connectedInstancesUrl);
     }
 
