@@ -8,7 +8,16 @@ export function crossPlatformPath (path: string): string {
 };
 
 export function replaceAll(str: string, find: string, replace: string): string {
-    return str.replace(new RegExp(find, 'g'), replace);
+    let flag = true;
+    do {
+        const index = str.search(find);
+        if (index === -1) {
+            flag = false;
+            break;
+        }
+        str = str.replace(find, replace);
+    } while (flag);
+    return str;
 }
 
 const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml'];

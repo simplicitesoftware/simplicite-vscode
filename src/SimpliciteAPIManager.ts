@@ -445,8 +445,9 @@ export class SimpliciteAPIManager {
             return 'Script';
         } else if (filePath.includes('/scripts/')) {
             return 'Disposition';
+        } else {
+            throw new Error('No type has been found');
         }
-        throw new Error('No type has been found');
     }
     
     private async setDevInfo (app: any, moduleName?: string) { // uses the first instance available to fetch the data
@@ -488,6 +489,7 @@ export class SimpliciteAPIManager {
 
     async compileJava (customMessage?: CustomMessage): Promise<string> {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
+        // check for extension insallation
         try {
             const status = await commands.executeCommand('java.workspace.compile', false);
             switch (status) {
