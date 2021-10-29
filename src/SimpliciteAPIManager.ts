@@ -1,7 +1,7 @@
 'use strict';
 
 import { Module } from './Module';
-import { window, commands, workspace } from 'vscode';
+import { window, commands, workspace, extensions, env } from 'vscode';
 import { Cache } from './Cache';
 import { FileHandler } from './FileHandler';
 import { crossPlatformPath } from './utils';
@@ -108,15 +108,21 @@ export class SimpliciteAPIManager {
 
     private async authenticationWithCredentials (moduleName: string, app: any, callback: () => Promise<void>) {
         try {
-            const username = await window.showInputBox({ 
-                placeHolder: 'username',
+            let usernamePlaceHolder = 'username';
+            let passwordPlaceHolder = 'password';
+            if (env.appHost !== 'desktop') {
+                usernamePlaceHolder = `username (instance url: ${app.parameters.url})`;
+                passwordPlaceHolder = `password (instance url: ${app.parameters.url})`;
+            }
+            const username = await window.showInputBox({     
+                placeHolder: usernamePlaceHolder,
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')'
             });
             if (!username) {
                 throw new Error('Authentication cancelled');
             }
             const password = await window.showInputBox({
-                placeHolder: 'password',
+                placeHolder: passwordPlaceHolder,
                 title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url +')',
                 password: true
             });
@@ -161,7 +167,10 @@ export class SimpliciteAPIManager {
                         instanceUrl = connectedInstance;
                     }
                 }
-            } 
+            }
+            if (instanceUrl === '') {
+                throw new Error(`Simplicite: Cannot find module or url ${input}`);
+            }
             const app = await this.appHandler.getApp(instanceUrl);
             app.logout().then(async (res: any) => {
                 this.fileHandler.deleteModuleJSON(instanceUrl, undefined);
@@ -179,9 +188,9 @@ export class SimpliciteAPIManager {
                     window.showErrorMessage(`${e}`);
                 }
             });
-        } catch (e) {
+        } catch (e: any) {
 			logger.error(e);
-            window.showErrorMessage(`${e}`);
+            window.showInformationMessage(e.message ? e.message : e);
         }
     }
 
@@ -433,7 +442,7 @@ export class SimpliciteAPIManager {
         }
         for (let object of this.devInfo.objects) {
             if (object.package) {
-                const comparePackage = replaceAll(object.package, '.', '/');
+                const comparePackage = replaceAll(object.package, /\./, '/');
                 if (filePath.includes(comparePackage)) {
                     return object.object;
                 }
@@ -489,7 +498,12 @@ export class SimpliciteAPIManager {
 
     async compileJava (customMessage?: CustomMessage): Promise<string> {
         // status can have the following values FAILED = 0, SUCCEED = 1, WITHERROR = 2, CANCELLED = 3
-        // check for extension insallation
+        const redhatJava = extensions.getExtension('redhat.java');
+        if (redhatJava === undefined) {
+            const message = 'Cannot compile workspace, the redhat.java extension is not available, probably not installed or disabled';
+            window.showWarningMessage('Simplicite: ' + message);
+            throw new Error(message);
+        }
         try {
             const status = await commands.executeCommand('java.workspace.compile', false);
             switch (status) {
