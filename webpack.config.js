@@ -41,7 +41,7 @@ const webConfig = /** @type WebpackConfig */ {
 		https: require.resolve("https-browserify"),
 		timers: require.resolve("timers-browserify"),
 		http: require.resolve("stream-http"),
-		zlib: require.resolve("browserify-zlib")
+		zlib: require.resolve("browserify-zlib"),
 		},
 	},
 	module: {
@@ -64,7 +64,6 @@ const webConfig = /** @type WebpackConfig */ {
 	],
 	externals: {
 		vscode: "commonjs vscode", // ignored because it doesn't exist
-		fetch: 'cross-fetch'
 	},
 	performance: {
 		hints: false,
