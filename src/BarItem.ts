@@ -20,17 +20,18 @@ export class BarItem {
         }
         if (env.appHost !== 'desktop') {
             if (connectedInstancesUrl.length === 0) {
-                'No module connected';
-            }
-            this.barItem.tooltip = 'Connected modules: ';
-            let cpt = 0;
-            for (let instance of connectedInstancesUrl) {
-                this.barItem.tooltip += instance;
-                if (cpt !== connectedInstancesUrl.length - 1) {
-                    this.barItem.tooltip += ', ';
-                    cpt++;
-                }
-            }   
+                this.barItem.tooltip = 'No module connected';
+            } else {
+                this.barItem.tooltip = 'Connected modules: ';
+                let cpt = 0;
+                for (let instance of connectedInstancesUrl) {
+                    this.barItem.tooltip += instance;
+                    if (cpt !== connectedInstancesUrl.length - 1) {
+                        this.barItem.tooltip += ', ';
+                        cpt++;
+                    }
+                }  
+            }  
         } else {
             this.barItem.tooltip = new MarkdownString(this.markdownGenerator(modules, connectedInstancesUrl));
         }
