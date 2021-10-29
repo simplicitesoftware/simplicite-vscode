@@ -33,6 +33,7 @@ const webConfig = /** @type WebpackConfig */ {
 		// see https://webpack.js.org/configuration/resolve/#resolvefallback
 		// for the list of Node.js core module polyfills.
 		assert: require.resolve("assert"),
+		buffer: require.resolve("buffer/"),
 		fs: require.resolve('path-browserify'),
 		os: require.resolve("os-browserify/browser"),
 		stream: require.resolve("stream-browserify"),
@@ -63,11 +64,13 @@ const webConfig = /** @type WebpackConfig */ {
 	],
 	externals: {
 		vscode: "commonjs vscode", // ignored because it doesn't exist
+		fetch: 'cross-fetch'
 	},
 	performance: {
 		hints: false,
 	},
 	devtool: "nosources-source-map", // create a source map that points to the original source file
+	
 };
 
 module.exports = [webConfig];
