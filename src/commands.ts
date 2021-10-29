@@ -34,7 +34,7 @@ export const applySpecificModuleCommand = function (request: SimpliciteAPIManage
                 element = await inputFilePath('Simplicite: Type in the module name', 'module name');
                 const moduleObject: Module | undefined = request.moduleHandler.getModuleFromName(element);
                 if (!moduleObject) {
-                    const msg = 'Simplicite: Cannot find module named ' + element;
+                    const msg = 'Simplicite: Cannot find module or url ' + element;
                     throw new Error(msg);
                 }
                 if (moduleObject instanceof Module) {
@@ -76,11 +76,11 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
     return commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {	
 		try {
             const moduleName = await window.showInputBox({ 
-                placeHolder: 'module name',  
+                placeHolder: 'module name / url',  
                 title: 'Simplicite: Type the name of the module'
             });
             if (!moduleName) {
-                throw new Error('Simplicite: Action canceled');
+                throw new Error();
             }
 			let flag = false;
             let module;
@@ -106,7 +106,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
                 await request.loginTokenOrCredentials(module);
             } 
 			if (!flag) {
-                throw new Error(`Simplicite: There is no module ${moduleName} in your current workspace`);
+                throw new Error(`Simplicite: Cannot find module or url ${moduleName}`);
             } 
         } catch (e: any) {
 			logger.error(e);
@@ -125,11 +125,11 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
     return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {	
 		try {
             const input = await window.showInputBox({ 
-                placeHolder: 'module name',
+                placeHolder: 'module name / url',
                 title: 'Simplicite: Type the name of the module'
             });
             if (!input) {
-                throw new Error('Simplicite: Action canceled');
+                throw new Error();
             }
 			await request.specificLogout(input);
         } catch (e: any) {
