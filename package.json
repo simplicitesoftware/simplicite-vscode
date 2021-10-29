@@ -214,7 +214,7 @@
 		"os-browserify": "^0.3.0",
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
-		"simplicite": "^2.0.1",
+		"simplicite": "^2.1.0",
 		"stream-browserify": "^3.0.0",
 		"stream-http": "^3.2.0",
 		"timers-browserify": "^2.0.12",
