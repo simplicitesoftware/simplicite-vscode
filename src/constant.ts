@@ -1,10 +1,10 @@
 'use strict';
 
-const THEIA_NAMES = [ 'Eclipse Theia', 'Theia Multi-Language Example' ];
+const THEIA_NAMES = ['Eclipse Theia', 'Theia Multi-Language Example'];
 
 export const EXTENSION_ID = 'simpliciteSoftware.simplicite-vscode-tools';
 
-export const TEMPLATE =  { scheme: 'file', language: 'java' };
+export const TEMPLATE = { scheme: 'file', language: 'java' };
 
 export const SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
 

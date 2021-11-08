@@ -43,6 +43,7 @@ const webConfig = /** @type WebpackConfig */ {
 		http: require.resolve("stream-http"),
 		zlib: require.resolve("browserify-zlib"),
 		},
+		
 	},
 	module: {
 		rules: [

@@ -1,24 +1,33 @@
 {
-    "root": true,
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "ecmaVersion": 6,
-        "sourceType": "module"
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es6": true,
+        "node": true,
+        "jest": true
     },
-    "plugins": [
-        "@typescript-eslint"
-    ],
+    "parserOptions": {
+        "ecmaVersion": 12,
+        "sourceType": "module"
+	},
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
     "rules": {
-        "@typescript-eslint/naming-convention": "warn",
-        "@typescript-eslint/semi": "warn",
-        "curly": "warn",
-        "eqeqeq": "warn",
-        "no-throw-literal": "warn",
-        "semi": "off"
+        "indent": [ "error", "tab" ],
+        "linebreak-style": [ "error", "unix" ],
+        "quotes": [ "error", "single" ],
+        "semi": [ "error", "always" ],
+        "@typescript-eslint/no-explicit-any": "off"
     },
     "ignorePatterns": [
-        "out",
-        "dist",
-        "**/*.d.ts"
+        "babel.config.cjs",
+        "jest.config.cjs",
+        "webpack.config.cjs",
+        "test/index.js",
+        "test/webpack.config.cjs"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
     ]
 }

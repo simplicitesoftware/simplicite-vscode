@@ -4,49 +4,49 @@ import { Uri } from 'vscode';
 import { File } from './File';
 
 export interface CustomMessage {
-    message: string;
-    button: string;
+	message: string;
+	button: string;
 }
 
 export interface ReturnValueOperationsBeforeObjectManipulation {
-    fileType: string;
-    fileName: string;
-    properNameField: string;
-    fileExtension: string;
+	fileType: string;
+	fileName: string;
+	properNameField: string;
+	fileExtension: string;
 }
 
 export interface FieldInfo {
-    moduleName: string;
-    objectFields: Array<any>;
-    instanceUrl: string;
+	moduleName: string;
+	objectFields: Array<any>;
+	instanceUrl: string;
 }
 
 export interface ObjectInfo {
-    objectType: string,
-    field: string,
-    icons: {dark: string | Uri, light: string | Uri},
-    fieldIcons: {dark: string | Uri, light: string | Uri}
-};
+	objectType: string,
+	field: string,
+	icons: { dark: string | Uri, light: string | Uri },
+	fieldIcons: { dark: string | Uri, light: string | Uri }
+}
 
 export interface FileAndModule {
-    moduleName: string,
-    instanceUrl: string,
-    fileList: File[]
+	moduleName: string,
+	instanceUrl: string,
+	fileList: File[]
 }
 
 export interface OpenFileContext {
-    filePath: string,
-    fileName: string,
-    workspaceUrl: string,
-    instanceUrl: string
+	filePath: string,
+	fileName: string,
+	workspaceUrl: string,
+	instanceUrl: string
 }
 
 export interface DevInfoObject {
-    classnamefield: string | undefined,
-    completion: any,
-    icon: string,
-    keyfield: string,
-    object: string,
-    package: string | undefined,
-    sourcefield: string
+	classnamefield: string | undefined,
+	completion: any,
+	icon: string,
+	keyfield: string,
+	object: string,
+	package: string | undefined,
+	sourcefield: string
 }

@@ -6,40 +6,40 @@ import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 
 export class QuickPick {
-    private _request: SimpliciteAPIManager;
-    constructor (context: ExtensionContext, request: SimpliciteAPIManager) {
-        this._request = request;
-        context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
-    }
+	private _request: SimpliciteAPIManager;
+	constructor(context: ExtensionContext, request: SimpliciteAPIManager) {
+		this._request = request;
+		context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
+	}
 
-    commandListQuickPick (commandList: Array<Command>) {
-        const preparedList = new Array();
-        for (let command of commandList) {
-            if (command.title !== 'copy logical name' && command.title !== 'copy physical name' && command.title !== 'copy json name' && command.title !== 'double click trigger command') {
-                preparedList.push({ label: command.title, commandId: command.command });
-            }
-        }
-        return preparedList;
-    }
+	commandListQuickPick(commandList: Array<Command>): { label: string, commandId: string }[] {
+		const preparedList = [];
+		for (const command of commandList) {
+			if (command.title !== 'copy logical name' && command.title !== 'copy physical name' && command.title !== 'copy json name' && command.title !== 'double click trigger command') {
+				preparedList.push({ label: command.title, commandId: command.command });
+			}
+		}
+		return preparedList;
+	}
 
-    async quickPickEntry () { // entry point called by command
-        try {
-            const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
-            if (simpliciteExtension === undefined) {
-                throw new Error('No extension id available');
-            }
-            const commandList = simpliciteExtension.packageJSON.contributes.commands;
-            const commandQuickPick = this.commandListQuickPick(commandList);
-            const target = await window.showQuickPick(commandQuickPick);
-            if (target) {
-                try {
-                    await commands.executeCommand(target.commandId, this._request);
-                } catch (e) {
-                    logger.error(e + 'Error occured while executing command');
-                }
-            }
-        } catch(e) {
-            logger.error(e);
-        }    
-    }
+	async quickPickEntry(): Promise<void> { // entry point called by command
+		try {
+			const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
+			if (simpliciteExtension === undefined) {
+				throw new Error('No extension id available');
+			}
+			const commandList = simpliciteExtension.packageJSON.contributes.commands;
+			const commandQuickPick = this.commandListQuickPick(commandList);
+			const target = await window.showQuickPick(commandQuickPick);
+			if (target) {
+				try {
+					await commands.executeCommand(target.commandId, this._request);
+				} catch (e) {
+					logger.error(e + 'Error occured while executing command');
+				}
+			}
+		} catch (e) {
+			logger.error(e);
+		}
+	}
 }
