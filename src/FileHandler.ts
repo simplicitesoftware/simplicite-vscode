@@ -76,7 +76,7 @@ export class FileHandler {
         this._context.globalState.update('simplicite-modules-info', undefined);
     }
 
-    deleteModuleJSON (instanceUrl: string | undefined, moduleName: string | undefined) {
+    deleteModule (instanceUrl: string | undefined, moduleName: string | undefined) {
         let moduleArray: Module[] = this._context.globalState.get('simplicite-modules-info') || [];
         try {
             let newInfo = [];

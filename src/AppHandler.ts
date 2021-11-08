@@ -1,3 +1,5 @@
+import simplicite from 'simplicite';
+
 export class AppHandler { 
     appList: Map<string, any>;
     constructor () {
@@ -6,7 +8,7 @@ export class AppHandler {
 
     getApp (moduleURL: string) { 
         if (this.appList.get(moduleURL) === undefined) {
-            this.setApp(moduleURL, require('simplicite').session({ url: moduleURL }));
+            this.setApp(moduleURL, simplicite.session({ url: moduleURL }));
         }
         return this.appList.get(moduleURL);
     }
