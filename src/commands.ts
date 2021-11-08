@@ -92,7 +92,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
                     }
                 }
                 if (module === undefined) {
-                    throw new Error('error no module LogInInstanceCommand');
+                    throw new Error('error no module found in LogInInstanceCommand');
                 }
             } catch (e) {
                 for (let moduleLoop of request.moduleHandler.modules) {
@@ -102,7 +102,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
                     }
                 }
             }
-			if (module) {
+			if (module && module.token === '') {
                 await request.loginTokenOrCredentials(module);
             } 
 			if (!flag) {
@@ -131,7 +131,33 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
             if (!input) {
                 throw new Error();
             }
-			await request.specificLogout(input);
+			let flag = false;
+            let module;
+            try {
+                for (let moduleLoop of request.moduleHandler.modules) {
+                    if (moduleLoop.instanceUrl === input) {
+                        module = moduleLoop;
+                        flag = true;
+                    }
+                }
+                if (module === undefined) {
+                    throw new Error('error no module found in logoutFromSpecificInstanceCommand');
+                }
+            } catch (e) {
+                for (let moduleLoop of request.moduleHandler.modules) {
+                    if (moduleLoop.name === input) {
+                        module = moduleLoop;
+                        flag = true;
+                    }
+                }
+            }
+			if (module) {
+                await request.specificLogout(module);
+            } 
+			if (!flag) {
+                throw new Error(`Simplicite: Cannot find module or url ${input}`);
+            } 
+			
         } catch (e: any) {
 			logger.error(e);
             window.showInformationMessage(e.message ? e.message : e);

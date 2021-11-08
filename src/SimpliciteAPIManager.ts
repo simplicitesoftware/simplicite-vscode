@@ -76,7 +76,21 @@ export class SimpliciteAPIManager {
 
     private async loginMethod (module: Module, app: any): Promise<void> {
         try {
-            const res = await app.login();
+            const res = await app.login({ error: async (e: any) => {
+                if (e.status === 401) { // reset authentication info related to the module and instance
+                    this.fileHandler.deleteModule(undefined, module.name);
+                    this.appHandler.appList.delete(module.instanceUrl);
+                    this.moduleHandler.spreadToken(module.instanceUrl, '');
+                    logger.warn(e.message);
+                    window.showErrorMessage('Simplicite: ' + e.message);
+                } else {
+                    app.setAuthToken(null);
+                    app.setPassword(null);
+                    app.setUsername(null);
+                    logger.error(e);
+                    window.showErrorMessage('Simplicite: ' + e.message);
+                }
+            }});
             if (!this.devInfo) {
                 this.setDevInfo(app);
             }
@@ -84,25 +98,11 @@ export class SimpliciteAPIManager {
             this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
             this.appHandler.setApp(module.instanceUrl, app);
             this.moduleHandler.addInstanceUrl(module.instanceUrl);
-            //await this.getmoduleDevInfo(module.instanceUrl, module.name);
-            // moduleDevInfo
             window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
             logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
             this.barItem!.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
         } catch (e: any) {
-            if (e.message === 'Simplicite authentication error: Invalid token') { // reset authentication info related to the module and instance
-                this.fileHandler.deleteModuleJSON(undefined, module.name);
-                this.appHandler.appList.delete(module.instanceUrl);
-                this.moduleHandler.spreadToken(module.instanceUrl, null);
-                logger.warn('Authentication token is invalid, trying to reconnect');
-                await this.loginHandler();
-            } else {
-                app.setAuthToken(null);
-                app.setPassword(null);
-                app.setUsername(null);
-                logger.error(e);
-                throw new Error(e.message);
-            }
+            logger.error(e);
         }
     }
 
@@ -157,32 +157,20 @@ export class SimpliciteAPIManager {
         }
     }
     
-    async specificLogout(input: string) {
+    async specificLogout(module: Module) {
         try {
-            let instanceUrl: string;
-            instanceUrl = this.moduleHandler.getModuleUrlFromName(input);
-            if (this.moduleHandler.connectedInstancesUrl.length !== 0) {
-                for (let connectedInstance of this.moduleHandler.connectedInstancesUrl) {
-                    if (connectedInstance === input) {
-                        instanceUrl = connectedInstance;
-                    }
-                }
-            }
-            if (instanceUrl === '') {
-                throw new Error(`Simplicite: Cannot find module or url ${input}`);
-            }
-            const app = await this.appHandler.getApp(instanceUrl);
+            const app = await this.appHandler.getApp(module.instanceUrl);
             app.logout().then(async (res: any) => {
-                this.fileHandler.deleteModuleJSON(instanceUrl, undefined);
-                this.appHandler.appList.delete(instanceUrl);
-                this.moduleHandler.spreadToken(instanceUrl, null);
-                this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
+                this.fileHandler.deleteModule(module.instanceUrl, undefined);
+                this.appHandler.appList.delete(module.instanceUrl);
+                this.moduleHandler.spreadToken(module.instanceUrl, '');
+                this.moduleHandler.removeConnectedInstancesUrl(module.instanceUrl);
                 window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
                 logger.info(res.result + ' from: ' + app.parameters.url);
                 this.barItem!.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
             }).catch((e: any) => {
                 if (e.status === 401 || e.code === 'ECONNREFUSED') {
-                    window.showInformationMessage(`Simplicite: You are not connected to ${input}`);
+                    window.showInformationMessage(`Simplicite: You are not connected to ${module.instanceUrl}`);
                 } else {
 			        logger.error(e);
                     window.showErrorMessage(`${e}`);
