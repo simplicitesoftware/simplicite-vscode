@@ -15,9 +15,21 @@
 				"--extensionDevelopmentKind=web"
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
+				"${workspaceFolder}/dist/**/web-extension.js"
 			],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "npm: web-watch"
+		},
+		{
+			"name": "Run Node Extension in VS Code",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/dist/**/node-extension.js"
+			],
+            "preLaunchTask": "npm: node-watch"
 		}
 	]
 }

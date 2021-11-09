@@ -24,7 +24,7 @@
         "jest.config.cjs",
         "webpack.config.cjs",
         "test/index.js",
-        "test/webpack.config.cjs"
+        "webpackConfig/"
     ],
     "extends": [
         "eslint:recommended",

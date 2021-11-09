@@ -25,8 +25,8 @@
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"browser": "./dist/extension.js",
-	"main": "./dist/extension.js",
+	"browser": "./dist/web-extension.js",
+	"main": "./dist/node-extension.js",
 	"contributes": {
 		"views": {
 			"explorer": [
@@ -180,9 +180,12 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",
-		"compile": "webpack",
-		"watch": "webpack --watch",
-		"package": "webpack --mode production --devtool hidden-source-map",
+		"web-compile": "webpack --config ./webpackConfig/webpack.config.web.js",
+		"web-watch": "webpack --watch --config ./webpackConfig/webpack.config.web.js",
+		"web-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.web.js",
+		"node-compile": "webpack --config ./webpackConfig/webpack.config.node.js",
+		"node-watch": "webpack --watch --config ./webpackConfig/webpack.config.node.js",
+		"package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.node.js",
 		"lint": "eslint src --ext ts",
 		"ncu": "ncu"
 	},
@@ -217,7 +220,7 @@
 		"os-browserify": "^0.3.0",
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
-		"simplicite": "^2.2.9",
+		"simplicite": "^2.2.10",
 		"stream-browserify": "^3.0.0",
 		"stream-http": "^3.2.0",
 		"timers-browserify": "^2.0.12",
