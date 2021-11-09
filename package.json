@@ -3,9 +3,9 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.7",
+	"version": "1.0.10",
 	"engines": {
-		"vscode": "^1.60.0"
+		"vscode": "^1.52.0"
 	},
 	"license": "Apache-2.0",
 	"icon": "icon.png",
@@ -185,7 +185,7 @@
 		"web-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.web.js",
 		"node-compile": "webpack --config ./webpackConfig/webpack.config.node.js",
 		"node-watch": "webpack --watch --config ./webpackConfig/webpack.config.node.js",
-		"package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.node.js",
+		"node-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.node.js",
 		"lint": "eslint src --ext ts",
 		"ncu": "ncu"
 	},
@@ -196,7 +196,7 @@
 		"@types/mocha": "^8.2.2",
 		"@types/node": "14.x",
 		"@types/node-fetch": "^3.0.3",
-		"@types/vscode": "^1.60.0",
+		"@types/vscode": "^1.52.0",
 		"@types/xml2js": "^0.4.9",
 		"@typescript-eslint/eslint-plugin": "^4.26.0",
 		"@typescript-eslint/parser": "^4.26.0",
