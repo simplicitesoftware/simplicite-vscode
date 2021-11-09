@@ -12,6 +12,7 @@ import { File } from './File';
 import { removeFileExtension, replaceAll } from './utils';
 import { BarItem } from './BarItem';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 
 export class SimpliciteAPIManager {
 	cache: Cache;
@@ -20,6 +21,7 @@ export class SimpliciteAPIManager {
 	fileHandler: FileHandler;
 	moduleHandler: ModuleHandler;
 	barItem: BarItem;
+	moduleTreeView?: ModuleInfoTree;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler, barItem: BarItem) {
 		this.cache = new Cache();
 		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
@@ -71,30 +73,13 @@ export class SimpliciteAPIManager {
 			app.authtoken = module.token;
 			await this.loginMethod(module, app);
 		}
-
 	}
 
 	private async loginMethod(module: Module, app: any): Promise<void> {
 		try {
-			const res = await app.login({
-				error: async (e: any) => {
-					if (e.status === 401) { // reset authentication info related to the module and instance
-						this.fileHandler.deleteModule(undefined, module.name);
-						this.appHandler.appList.delete(module.instanceUrl);
-						this.moduleHandler.spreadToken(module.instanceUrl, '');
-						logger.warn(e.message);
-						window.showErrorMessage('Simplicite: ' + e.message);
-					} else {
-						app.setAuthToken(null);
-						app.setPassword(null);
-						app.setUsername(null);
-						logger.error(e);
-						window.showErrorMessage('Simplicite: ' + e.message);
-					}
-				}
-			});
+			const res = await app.login();
 			if (!this.devInfo) {
-				this.setDevInfo(app);
+				await this.setDevInfo(app);
 			}
 			await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
 			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
@@ -104,6 +89,17 @@ export class SimpliciteAPIManager {
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 		} catch (e: any) {
+			if (e.status === 401) { 
+				this.fileHandler.deleteModule(undefined, module.name);
+				this.appHandler.appList.delete(module.instanceUrl);
+				this.moduleHandler.spreadToken(module.instanceUrl, '');
+			} else {
+				app.setAuthToken(null);
+				app.setPassword(null);
+				app.setUsername(null);	
+				await this.specificLogout(module);
+			}
+			window.showErrorMessage('Simplicite: ' + e.message);
 			logger.error(e);
 		}
 	}
@@ -317,7 +313,7 @@ export class SimpliciteAPIManager {
 		await callback();
 	}
 
-	private bindFileWithModule(fileList: Array<File>): Map<string, Array<File>> {
+	bindFileWithModule(fileList: Array<File>): Map<string, Array<File>> {
 		let flag = false;
 		const fileModule: Map<string, Array<File>> = new Map();
 		for (const file of fileList) {
@@ -448,7 +444,12 @@ export class SimpliciteAPIManager {
 					this.moduleHandler.refreshTreeView(undefined);
 				}
 			} else {
-				this.devInfo = await app.getDevInfo();
+				try {
+					this.devInfo = await app.getDevInfo();
+					this.moduleTreeView?.setDevInfo(this.devInfo);
+				} catch (e) {
+					console.log(e);
+				}
 			}
 		} catch (e: any) {
 			logger.error('get dev info: ' + e.message);

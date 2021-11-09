@@ -11,6 +11,12 @@ import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
 import { ModuleHandler } from './ModuleHandler';
 
+interface ModuleObject {
+	moduleName: string,
+	instanceUrl: string,
+	fileList: File[],
+}
+
 export class FileHandler {
 	fileTree: FileTree;
 	fileList: Array<File>;
@@ -136,10 +142,12 @@ export class FileHandler {
 		}
 	}
 
+	
+
 	bindFileAndModule(modules: Array<Module>): FileAndModule[] {
 		const fileModule = [];
 		for (const module of modules) {
-			const moduleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
+			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
 			for (const file of this.fileList) {
 				if (file.moduleName === module.name) {
 					moduleObject.fileList.push(file);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 'use strict';
 
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, window } from 'vscode';
@@ -26,6 +27,11 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 
 	setModules(modules: Array<Module>): void {
 		this._modules = modules;
+		this.refresh();
+	}
+
+	setDevInfo(devInfo: any): void {
+		this._devInfo = devInfo;
 		this.refresh();
 	}
 
@@ -67,7 +73,11 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 			if (typeof element.label !== 'string') {
 				return Promise.resolve([]);
 			}
-			return Promise.resolve(this.getObjectItems(element.itemInfo, this.getObjectDevInfo(element.label)));
+			const devInfo = this.getObjectDevInfo(element.label);
+			if (!devInfo) {
+				return Promise.resolve([]);
+			}
+			return Promise.resolve(this.getObjectItems(element.itemInfo, devInfo));
 		} else if (element.objectType === ItemType.object) {
 			return Promise.resolve(this.getAttributeItems(element.itemInfo));
 		} else if (element.objectType === ItemType.technicalRoot) {

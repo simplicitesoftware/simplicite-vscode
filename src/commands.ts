@@ -103,7 +103,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 					}
 				}
 			}
-			if (module && module.token === '') {
+			if (module && !request.moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
 				await request.loginTokenOrCredentials(module);
 			}
 			if (!flag) {

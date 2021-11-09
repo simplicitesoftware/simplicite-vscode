@@ -45,6 +45,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		moduleInfoTree
 	);
 	moduleHandler.setModuleInfoTree(moduleInfoTree); // refresh moduleInfoTree everytime a module is set or moduleDevInfo is changed 
+	request.moduleTreeView = moduleInfoTree;
 
 	// Commands have to be declared in package.json so VS Code knows that the extension provides a command
 	const applyChanges = applyChangesCommand(request);

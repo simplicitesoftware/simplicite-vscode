@@ -1,4 +1,5 @@
-import simplicite from './simplicite';
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import simplicite from 'simplicite';
 export class AppHandler {
 	appList: Map<string, any>;
 	constructor() {
