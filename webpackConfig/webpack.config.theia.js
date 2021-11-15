@@ -5,12 +5,12 @@ const nodeConfig = /** @type WebpackConfig */ {
 	target: 'node',
 	entry: './src/extension.ts', // source of the web extension main file
 	output: {
-		filename: 'node-extension.js',
+		filename: 'theia-extension.js',
 		path: path.join(__dirname, '../dist/'),
-		libraryTarget: 'commonjs',
+		libraryTarget: 'commonjs2',
 	},
 	resolve: {
-		mainFields: ['module', 'main'], // look for `browser` entry point in imported node modules
+		mainFields: ['node', 'module', 'main'],
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 	},
 	module: {

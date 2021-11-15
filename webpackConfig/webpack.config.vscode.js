@@ -6,7 +6,7 @@ const webConfig = /** @type WebpackConfig */ {
 	target: 'webworker', // web extensions run in a webworker context
 	entry: './src/extension.ts', // source of the web extension main file
 	output: {
-		filename: 'web-extension.js',
+		filename: 'vscode-extension.js',
 		path: path.join(__dirname, '../dist/'),
 		libraryTarget: 'commonjs',
 	},
@@ -31,7 +31,6 @@ const webConfig = /** @type WebpackConfig */ {
 			http: require.resolve('stream-http'),
 			zlib: require.resolve('browserify-zlib'),
 		},
-
 	},
 	module: {
 		rules: [
