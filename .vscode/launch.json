@@ -5,6 +5,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
+		
 		{
 			"name": "Run Vscode Extension in VS Code",
 			"type": "pwa-extensionHost",

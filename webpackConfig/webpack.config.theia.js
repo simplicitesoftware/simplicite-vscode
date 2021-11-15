@@ -1,6 +1,4 @@
-import path from 'path';
-
-const __dirname = path.resolve();
+const path = require('path');
 
 const nodeConfig = /** @type WebpackConfig */ {
 	mode: 'none', // this leaves the source code as close as possible to the original (when packaging we set this to 'production')
@@ -8,11 +6,11 @@ const nodeConfig = /** @type WebpackConfig */ {
 	entry: './src/extension.ts', // source of the web extension main file
 	output: {
 		filename: 'theia-extension.js',
-		path: path.join(__dirname, './dist/'),
+		path: path.join(__dirname, '../dist/'),
 		libraryTarget: 'commonjs',
 	},
 	resolve: {
-		mainFields: ['node', 'module', 'main', 'simplicite'],
+		mainFields: ['module', 'main'], // look for `browser` entry point in imported node modules
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 	},
 	module: {
@@ -37,4 +35,4 @@ const nodeConfig = /** @type WebpackConfig */ {
 	devtool: 'nosources-source-map', // create a source map that points to the original source file
 
 };
-export default nodeConfig;
+module.exports = nodeConfig;
