@@ -23,8 +23,8 @@
         "babel.config.cjs",
         "jest.config.cjs",
         "webpack.config.cjs",
-        "test/index.js",
-        "webpackConfig/"
+        "webpackConfig/",
+        "/scr/test/**"
     ],
     "extends": [
         "eslint:recommended",

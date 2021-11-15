@@ -4,4 +4,8 @@ out
 src
 tsconfig.json
 .eslintrc.json
-/webpackConfig/
+webpackConfig
+*/**.d.ts
+*/**.map
+**/test
+**/treeView
