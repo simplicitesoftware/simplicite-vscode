@@ -3,9 +3,10 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"engines": {
-		"vscode": "^1.52.0"
+		"vscode": "^1.52.0",
+		"node": ">=12"
 	},
 	"license": "Apache-2.0",
 	"icon": "icon.png",
@@ -196,10 +197,10 @@
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.x",
-		"@types/vscode": "^1.62.0",
+		"@types/vscode": "^1.52.0",
 		"@types/xml2js": "^0.4.9",
-		"@typescript-eslint/eslint-plugin": "^5.3.1",
-		"@typescript-eslint/parser": "^5.3.1",
+		"@typescript-eslint/eslint-plugin": "^5.4.0",
+		"@typescript-eslint/parser": "^5.4.0",
 		"assert": "^2.0.0",
 		"eslint": "^8.2.0",
 		"glob": "^7.2.0",
@@ -210,7 +211,7 @@
 		"typescript": "^4.4.4",
 		"vsce": "^2.3.0",
 		"vscode-test": "^1.6.1",
-		"webpack": "^5.64.0",
+		"webpack": "^5.64.1",
 		"webpack-cli": "^4.9.1"
 	},
 	"dependencies": {
@@ -220,7 +221,7 @@
 		"os-browserify": "^0.3.0",
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
-		"simplicite": "^2.2.12",
+		"simplicite": "^2.2.14",
 		"stream": "^0.0.2",
 		"stream-browserify": "^3.0.0",
 		"stream-http": "^3.2.0",

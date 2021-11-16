@@ -8,7 +8,7 @@ const webConfig = /** @type WebpackConfig */ {
 	output: {
 		filename: 'vscode-extension.js',
 		path: path.join(__dirname, '../dist/'),
-		libraryTarget: 'commonjs',
+		libraryTarget: "commonjs2"	
 	},
 	resolve: {
 		mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules

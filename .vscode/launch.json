@@ -22,6 +22,7 @@
 		},
 		{
 			"name": "Run Theia Extension in VS Code",
+        	"runtimeVersion": "4.8.7",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [

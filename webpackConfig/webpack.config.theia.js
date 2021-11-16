@@ -7,7 +7,7 @@ const nodeConfig = /** @type WebpackConfig */ {
 	output: {
 		filename: 'theia-extension.js',
 		path: path.join(__dirname, '../dist/'),
-		libraryTarget: 'commonjs',
+		libraryTarget: "commonjs2"
 	},
 	resolve: {
 		mainFields: ['module', 'main'], // look for `browser` entry point in imported node modules
