@@ -189,6 +189,16 @@ export const untrackFilesCommand = function (request: SimpliciteAPIManager): Dis
 };
 
 // ------------------------------
+
+export const refreshModuleTreeCommand = function (request: SimpliciteAPIManager): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
+		await request.refreshModuleDevInfo();
+		const modules = request.moduleHandler.modules;
+		request.moduleHandler.setModules(modules, true);
+	});
+};
+
+// ------------------------------
 // Tree view commands
 export const copyLogicalNameCommand = function (): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element) => {

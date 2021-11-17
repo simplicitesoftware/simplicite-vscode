@@ -88,6 +88,13 @@
 					"when": "view == simpliciteFile && viewItem == module",
 					"group": "inline"
 				}
+			],
+			"view/title": [
+				{
+					"command": "simplicite-vscode-tools.refreshModuleTree",
+					"when": "view == simpliciteModuleInfo",
+					"group": "navigation"
+				}
 			]
 		},
 		"commands": [
@@ -134,6 +141,14 @@
 			{
 				"command": "simplicite-vscode-tools.copyJsonName",
 				"title": "copy json name"
+			},
+			{
+				"command": "simplicite-vscode-tools.refreshModuleTree",
+				"title": "Simplicite: Refresh module tree view",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
 			},
 			{
 				"command": "simplicite-vscode-tools.trackFile",
