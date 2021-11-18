@@ -28,7 +28,7 @@ From now on, you can edit your files and run the command: `Simplicite: Apply cha
 Your files will get marked as modified on save.
 You can manage them in the *SIMPLICITE FILE HANDLER* tree view.
 
-Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will display a contextual menu giving you the ability to copy the item logical name, physical name and json name (when they exist).
+Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will display a contextual menu giving you the ability to copy the item logical name, physical name and json name.
 
 ---
 
@@ -46,8 +46,7 @@ Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will displa
 
 ---
 
-## Extension Settings
+## Extension settings
 
 - `simplicite-vscode-tools.compilation.enabled`: Enable/disable local compilation before applying changes.
 - `simplicite-vscode-tools.api.autoConnect`: Enable/disable automatic connexion features.
-
