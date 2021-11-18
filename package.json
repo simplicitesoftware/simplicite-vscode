@@ -197,12 +197,12 @@
 	"scripts": {
 		"vscode:prepublish": "npm run package",
 		"package": "npm run vscode-package && npm run theia-package",
-		"vscode-compile": "webpack --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode-watch": "webpack --watch --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.vscode.js",
-		"theia-compile": "webpack --config ./webpackConfig/webpack.config.theia.js",
-		"theia-watch": "webpack --watch --config ./webpackConfig/webpack.config.theia.js",
-		"theia-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.theia.js",
+		"vscode:compile": "webpack --config ./webpackConfig/webpack.config.vscode.js",
+		"vscode:watch": "webpack --watch --config ./webpackConfig/webpack.config.vscode.js",
+		"vscode:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.vscode.js",
+		"theia:compile": "webpack --config ./webpackConfig/webpack.config.theia.js",
+		"theia:watch": "webpack --watch --config ./webpackConfig/webpack.config.theia.js",
+		"theia:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.theia.js",
 		"lint": "eslint src --ext ts",
 		"ncu": "ncu"
 	},
