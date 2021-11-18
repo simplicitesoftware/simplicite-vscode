@@ -8,8 +8,8 @@ import { crossPlatformPath } from './utils';
 import { Module } from './Module';
 import { File } from './File';
 
-// All these commands are added in extension.ts into the vscode context
-// These also have to be declared as contributions in the package.json
+// Commands are added in extension.ts into the vscode context
+// Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands

@@ -9,10 +9,10 @@ export class BarItem {
 	constructor() {
 		this.barItem = window.createStatusBarItem(2);
 		this.barItem.text = 'Simplicite';
-		this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands'; // opens quick pick
+		this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands'; // open quick pick on click
 	}
 
-	// refreshs the BarItem
+	// refresh the BarItem
 	show(modules: Array<Module>, connectedInstancesUrl: Array<string>): void {
 		if (modules.length === 0 && connectedInstancesUrl.length === 0) {
 			this.barItem.tooltip = 'No Simplicite module detected';
@@ -61,7 +61,7 @@ export class BarItem {
 		return moduleMarkdown;
 	}
 
-	// creates the markdown of the connected instances and their modules
+	// same for disconnected instances / modules
 	private disconnectedInstancesAndModules(modules: Array<Module>, connectedInstancesUrl: Array<string>): string {
 		let moduleMarkdown = '';
 		let disconnectedModule = false;

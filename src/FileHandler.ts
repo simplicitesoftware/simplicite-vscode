@@ -117,10 +117,6 @@ export class FileHandler {
 		this._globalState.update('simplicite-files-info', jsonContent);
 	}
 
-	fileListLength(): number {
-		return this.fileList.length;
-	}
-
 	async FileDetector(modules: Module[]): Promise<File[]> {
 		if (workspace.workspaceFolders === undefined) {
 			throw new Error('no workspace detected');
@@ -137,7 +133,7 @@ export class FileHandler {
 						if (!module) {
 							continue;
 						}
-						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, workspaceFolder.name, false));
+						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));
 					}
 				}
 			}

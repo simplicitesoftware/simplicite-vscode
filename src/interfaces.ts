@@ -50,3 +50,8 @@ export interface DevInfoObject {
 	package: string | undefined,
 	sourcefield: string
 }
+
+export interface PomXMLData {
+	instanceUrl: string,
+	name: string
+}

@@ -21,7 +21,7 @@ export class SimpliciteAPIManager {
 	fileHandler: FileHandler;
 	moduleHandler: ModuleHandler;
 	barItem?: BarItem;
-	moduleTreeView?: ModuleInfoTree;
+	moduleInfoTree?: ModuleInfoTree;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
 		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
@@ -423,7 +423,7 @@ export class SimpliciteAPIManager {
 	private async setDevInfo(app: any): Promise<void> {
 		try {
 			this.devInfo = await app.getDevInfo();
-			if (this.moduleTreeView) this.moduleTreeView?.setDevInfo(this.devInfo);
+			if (this.moduleInfoTree) this.moduleInfoTree.setDevInfo(this.devInfo);
 		} catch(e: any) {
 			logger.error('unable to fetch devInfo');
 		}
@@ -446,8 +446,8 @@ export class SimpliciteAPIManager {
 					module.moduleDevInfo = await this.moduleDevInfo(app, module);
 				}
 			}
-			if (this.moduleTreeView) {
-				this.moduleTreeView.setModules(this.moduleHandler.modules);
+			if (this.moduleInfoTree) {
+				this.moduleInfoTree.setModules(this.moduleHandler.modules);
 			}
 		} catch (e) {
 			logger.error(e);

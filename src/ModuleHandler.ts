@@ -2,23 +2,25 @@
 
 import { logger } from './Log';
 import { Module } from './Module';
-import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { crossPlatformPath } from './utils';
-import { workspace, RelativePattern, WorkspaceFolder } from 'vscode';
+import { workspace, RelativePattern, WorkspaceFolder, Memento } from 'vscode';
 import { parseStringPromise } from 'xml2js';
+import { PomXMLData } from './interfaces';
 
 export class ModuleHandler {
 	modules: Array<Module>;
 	connectedInstancesUrl: Array<string>;
-	moduleInfoTree?: ModuleInfoTree;
-	constructor() {
+	_globalState: Memento;
+	constructor(globalState: Memento) {
 		this.connectedInstancesUrl = [];
 		this.modules = [];
+		this._globalState = globalState;
 	}
 
-	static async build (): Promise<ModuleHandler> {
-		const moduleHandler = new ModuleHandler();
+	static async build (globalState: Memento): Promise<ModuleHandler> {
+		const moduleHandler = new ModuleHandler(globalState);
 		await moduleHandler.setSimpliciteModulesFromDisk();
+		moduleHandler.initToken();
 		return moduleHandler;
 	}
 
@@ -37,22 +39,24 @@ export class ModuleHandler {
 		return this.modules.length;
 	}
 
-	spreadToken(instanceUrl: string, token: string | null): void {
+	initToken() {
+		const parsedModuleState: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
+		for (const stateModule of parsedModuleState) {
+			for (const module of this.modules) {
+				if (stateModule.instanceUrl === module.instanceUrl) {
+					module.token = stateModule.token;
+				}
+			}
+		}
+	}
+
+	spreadToken(instanceUrl: string, token: string): void {
 		for (const module of this.modules) {
 			if (module.instanceUrl === instanceUrl) {
 				module.token = token;
 			}
 		}
-	}
-
-	getDisconnectedModules(): Module[] { // useful ?
-		const disconnectedModules = [];
-		for (const module of this.modules) {
-			if (!module.token) {
-				disconnectedModules.push(module);
-			}
-		}
-		return disconnectedModules;
+		
 	}
 
 	getModuleFromName(moduleName: string): Module | undefined {
@@ -82,14 +86,6 @@ export class ModuleHandler {
 		this.connectedInstancesUrl.splice(index, 1);
 	}
 
-	getAllModuleDevInfo(): Array<any> {
-		const returnValue = [];
-		for (const module of this.modules) {
-			returnValue.push(module.moduleDevInfo);
-		}
-		return returnValue;
-	}
-
 	async setSimpliciteModulesFromDisk(): Promise<void> { // returns array of module objects
 		const modules = [];
 		try {
@@ -114,8 +110,6 @@ export class ModuleHandler {
 		this.modules = modules;
 	}
 
-	
-
 	private async getModuleInstanceUrlAndNameFromDisk(workspaceFolder: WorkspaceFolder): Promise<PomXMLData> { // searches into pom.xml and returns the simplicite's instance url
 		const globPatern = '**pom.xml';
 		const relativePattern = new RelativePattern(workspaceFolder, globPatern);
@@ -133,7 +127,4 @@ export class ModuleHandler {
 		return this.modules;
 	}
 }
-interface PomXMLData {
-	instanceUrl: string,
-	name: string
-}
+

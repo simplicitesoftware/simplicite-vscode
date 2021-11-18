@@ -10,7 +10,7 @@ export const logger = createLogger({
 	format: customFormat,
 	transports: [
 		new transports.Console({ level: 'silly' }),
-		//new transports.File({ filename: LOGS_PATH, level: 'info'})
+		//new transports.File({ filename: LOGS_PATH, level: 'info'}) // line commented for web context
 	]
 });
 

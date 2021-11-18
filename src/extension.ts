@@ -18,8 +18,9 @@ import { Module } from './Module';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
-	const moduleHandler = await ModuleHandler.build();
+	const moduleHandler = await ModuleHandler.build(context.globalState);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
+	
 	const request = new SimpliciteAPIManager(fileHandler, moduleHandler);
 
 	new QuickPick(context.subscriptions, request);
@@ -34,7 +35,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, request.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
-	moduleHandler.moduleInfoTree = moduleInfoTree;
+	request.moduleInfoTree = moduleInfoTree;
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
 		try {
@@ -99,7 +100,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	// Completion
 	let completionProvider: Disposable | undefined = undefined;
-	const prodiverMaker = async function (): Promise<Disposable | undefined> {
+	const prodiverMaker = async function (): Promise<Disposable | undefined> { // see following try catch and onDidChangeActiveTextEditor
 		const connectedInstances: string[] = moduleHandler.connectedInstancesUrl;
 		if (connectedInstances.length > 0
 			&& request.devInfo
@@ -126,7 +127,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				workspaceUrl: workspaceUrl,
 				instanceUrl: instanceUrl
 			};
-			await request.refreshModuleDevInfo();
 			completionProvider = completionProviderHandler(openFileContext, request.devInfo, module.moduleDevInfo, context);
 			return completionProvider;
 		}

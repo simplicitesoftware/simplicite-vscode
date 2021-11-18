@@ -21,7 +21,7 @@ export class CompletionProvider implements CompletionItemProvider {
 		this._completionItems = this.computeCompletionItems();
 	}
 
-	computeCompletionItems(): CustomCompletionItem[] {
+	private computeCompletionItems(): CustomCompletionItem[] {
 		try {
 			if (!this._fileInfo || !this._fileInfo.completion) {
 				return [];

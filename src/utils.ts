@@ -14,7 +14,7 @@ export function replaceAll(str: string, find: string | RegExp, replace: string):
 	return str.replace(regex, replace);
 }
 
-const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml'];
+const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
 const excludedFiles = ['BUILD', 'README', 'pom', '.min.', '/Theme/', '/docs/', '/files/', '/target/'];
 
 export function validFileExtension(template: string): boolean {
