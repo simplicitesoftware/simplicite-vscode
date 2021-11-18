@@ -94,6 +94,11 @@
 					"command": "simplicite-vscode-tools.refreshModuleTree",
 					"when": "view == simpliciteModuleInfo",
 					"group": "navigation"
+				},
+				{
+					"command": "simplicite-vscode-tools.refreshFileHandler",
+					"when": "view == simpliciteFile",
+					"group": "navigation"
 				}
 			]
 		},
@@ -144,7 +149,15 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.refreshModuleTree",
-				"title": "Simplicite: Refresh module tree view",
+				"title": "Simplicite: Refresh the module info tree view",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.refreshFileHandler",
+				"title": "Simplicite: Refresh the modified file handler",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"

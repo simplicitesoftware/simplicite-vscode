@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionProvider } from './CompletionProvider';
-import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand } from './commands';
+import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -55,14 +55,15 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request);
 	const trackFile = trackFileCommand(request);
 	const untrackFile = untrackFilesCommand(request);
-	const refreshModuleTree = refreshModuleTreeCommand(request); 
+	const refreshModuleTree = refreshModuleTreeCommand(request);
+	const refreshFileHandler = refreshFileHandlerCommand(request);
 
 	const fieldToClipBoard = copyLogicalNameCommand();
 	const copyPhysicalName = copyPhysicalNameCommand();
 	const copyJsonName = copyJsonNameCommand();
 	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
 
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {

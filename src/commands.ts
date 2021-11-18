@@ -196,6 +196,15 @@ export const refreshModuleTreeCommand = function (request: SimpliciteAPIManager)
 	});
 };
 
+export const refreshFileHandlerCommand = function (request: SimpliciteAPIManager): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
+		if (request.fileHandler.fileTree) {
+			const modules = request.moduleHandler.modules;
+			request.fileHandler.fileList = await request.fileHandler.FileDetector(modules);
+		}
+	});
+};
+
 // ------------------------------
 // Tree view commands
 export const copyLogicalNameCommand = function (): Disposable {
