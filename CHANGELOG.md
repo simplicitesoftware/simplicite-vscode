@@ -4,6 +4,14 @@ All notable changes to the "simplicite-vscode" extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.15]
+### Fixed
+- fixed a bug that occured when the project folder name was different than the module name
+
+## [1.0.14]
+### Added
+- Refresh tree view button and command
+
 ## [1.0.13]
 ### Changed
 - Changes with simplicite npm lib

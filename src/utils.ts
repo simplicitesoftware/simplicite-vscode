@@ -1,5 +1,7 @@
 'use strict';
 
+import { Module } from './Module';
+
 export function crossPlatformPath(path: string): string {
 	if (path[0] === '/' || path[0] === '\\') {
 		path = path.slice(1);
@@ -43,4 +45,13 @@ export function removeFileExtension(template: string): string {
 		}
 	}
 	return fileName;
+}
+
+export function getModuleFromWorkspacePath(wkPath: string, modules: Module[]): Module | false {
+	for (const module of modules) {
+		if (module.workspaceFolderPath === crossPlatformPath(wkPath)) {
+			return module;
+		}
+	}
+	return false;
 }

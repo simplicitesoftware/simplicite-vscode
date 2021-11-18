@@ -3,7 +3,7 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"engines": {
 		"vscode": "^1.52.0",
 		"node": ">=12"
@@ -88,6 +88,13 @@
 					"when": "view == simpliciteFile && viewItem == module",
 					"group": "inline"
 				}
+			],
+			"view/title": [
+				{
+					"command": "simplicite-vscode-tools.refreshModuleTree",
+					"when": "view == simpliciteModuleInfo",
+					"group": "navigation"
+				}
 			]
 		},
 		"commands": [
@@ -136,6 +143,14 @@
 				"title": "copy json name"
 			},
 			{
+				"command": "simplicite-vscode-tools.refreshModuleTree",
+				"title": "Simplicite: Refresh module tree view",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
 				"command": "simplicite-vscode-tools.trackFile",
 				"title": "Simplicite: Track file",
 				"icon": {
@@ -182,12 +197,12 @@
 	"scripts": {
 		"vscode:prepublish": "npm run package",
 		"package": "npm run vscode-package && npm run theia-package",
-		"vscode-compile": "webpack --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode-watch": "webpack --watch --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.vscode.js",
-		"theia-compile": "webpack --config ./webpackConfig/webpack.config.theia.js",
-		"theia-watch": "webpack --watch --config ./webpackConfig/webpack.config.theia.js",
-		"theia-package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.theia.js",
+		"vscode:compile": "webpack --config ./webpackConfig/webpack.config.vscode.js",
+		"vscode:watch": "webpack --watch --config ./webpackConfig/webpack.config.vscode.js",
+		"vscode:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.vscode.js",
+		"theia:compile": "webpack --config ./webpackConfig/webpack.config.theia.js",
+		"theia:watch": "webpack --watch --config ./webpackConfig/webpack.config.theia.js",
+		"theia:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.theia.js",
 		"lint": "eslint src --ext ts",
 		"ncu": "ncu"
 	},

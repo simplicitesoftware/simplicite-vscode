@@ -5,7 +5,7 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "vscode-watch",
+			"script": "vscode:watch",
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": [
@@ -15,7 +15,7 @@
 		},
 		{
 			"type": "npm",
-			"script": "theia-watch",
+			"script": "theia:watch",
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": [

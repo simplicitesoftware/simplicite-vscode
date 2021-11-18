@@ -18,11 +18,11 @@
 			"outFiles": [
 				"${workspaceFolder}/dist/**/vscode-extension.js"
 			],
-            "preLaunchTask": "npm: vscode-watch"
+            "preLaunchTask": "npm: vscode:watch"
 		},
 		{
 			"name": "Run Theia Extension in VS Code",
-        	"runtimeVersion": "4.8.7",
+        	"runtimeVersion": "^12.0.0",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
@@ -31,7 +31,7 @@
 			"outFiles": [
 				"${workspaceFolder}/dist/**/theia-extension.js"
 			],
-            "preLaunchTask": "npm: theia-watch"
+            "preLaunchTask": "npm: theia:watch"
 		}
 	]
 }

@@ -1,15 +1,15 @@
 'use strict';
 
-import { ExtensionContext, commands, Command, extensions, window } from 'vscode';
+import { commands, Command, extensions, window, Disposable } from 'vscode';
 import { EXTENSION_ID, SHOW_SIMPLICITE_COMMAND_ID } from './constant';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 
 export class QuickPick {
 	private _request: SimpliciteAPIManager;
-	constructor(context: ExtensionContext, request: SimpliciteAPIManager) {
+	constructor(subscriptions: Disposable[], request: SimpliciteAPIManager) {
 		this._request = request;
-		context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
+		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
 	}
 
 	commandListQuickPick(commandList: Array<Command>): { label: string, commandId: string }[] {

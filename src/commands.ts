@@ -153,7 +153,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 				}
 			}
 			if (module) {
-				await request.specificLogout(module);
+				await request.specificLogout(module.instanceUrl);
 			}
 			if (!flag) {
 				throw new Error(`Simplicite: Cannot find module or url ${input}`);
@@ -185,6 +185,14 @@ export const untrackFilesCommand = function (request: SimpliciteAPIManager): Dis
 		} catch (e) {
 			logger.error(e);
 		}
+	});
+};
+
+// ------------------------------
+
+export const refreshModuleTreeCommand = function (request: SimpliciteAPIManager): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
+		await request.refreshModuleDevInfo();
 	});
 };
 
