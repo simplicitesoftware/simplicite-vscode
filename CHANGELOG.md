@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.15]
+##
+- Refresh modified file handler button and command
+
 ### Fixed
-- fixed a bug that occured when the project folder name was different than the module name
+- Fixed a bug that occured when the project folder name was different than the module name
 
 ## [1.0.14]
 ### Added
