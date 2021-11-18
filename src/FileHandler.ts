@@ -1,15 +1,14 @@
 'use strict';
 
 import { logger } from './Log';
-import { ExtensionContext, RelativePattern, workspace, WorkspaceFolder } from 'vscode';
+import { Memento, RelativePattern, workspace } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
-import { crossPlatformPath, validFileExtension } from './utils';
+import { validFileExtension } from './utils';
 import { SUPPORTED_FILES } from './constant';
-import { parseStringPromise } from 'xml2js';
 import { FileTree } from './treeView/FileTree';
 import { FileAndModule } from './interfaces';
-import { ModuleHandler } from './ModuleHandler';
+import { getModuleFromWorkspacePath } from './utils';
 
 interface ModuleObject {
 	moduleName: string,
@@ -18,35 +17,27 @@ interface ModuleObject {
 }
 
 export class FileHandler {
-	fileTree: FileTree;
+	fileTree?: FileTree;
 	fileList: Array<File>;
-	private _moduleHandler: ModuleHandler;
-	private _context: ExtensionContext;
-	constructor(fileTree: FileTree, moduleHandler: ModuleHandler, context: ExtensionContext) {
-		this.fileTree = fileTree;
+	private _globalState: Memento;
+	constructor(globalState: Memento) {
 		this.fileList = [];
-		this._moduleHandler = moduleHandler;
-		this._context = context;
+		this._globalState = globalState;
 	}
 
-	static async build(fileTree: FileTree, moduleHandler: ModuleHandler, context: ExtensionContext): Promise<FileHandler> {
-		const fileHandler = new FileHandler(fileTree, moduleHandler, context);
+	static async build(globalState: Memento, modules: Module[]): Promise<FileHandler> {
+		const fileHandler = new FileHandler(globalState);
 		try {
-			const modules = await fileHandler.getSimpliciteModules();
-			const modulesToken = fileHandler.getTokenFromSimpliciteInfo(modules);
-			moduleHandler.setModules(modulesToken, false); // need modules to create File
-			fileHandler.fileList = await fileHandler.getFileOnStart();
-			await fileHandler.fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules));
+			fileHandler.fileList = await fileHandler.FileDetector(modules);
 		} catch (e) {
 			logger.error(e);
 		}
 		return fileHandler;
 	}
 
-	async simpliciteInfoGenerator(token: string, appURL: string): Promise<void> { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
+	async simpliciteInfoGenerator(token: string, appURL: string, modules: Module[]): Promise<void> { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
 		let toBeWrittenJSON: Module[] = [];
-		const simpliciteModules = await this.getSimpliciteModules();
-		for (const module of simpliciteModules) {
+		for (const module of modules) {
 			if (module.instanceUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
 				module.token = token;
 				toBeWrittenJSON = toBeWrittenJSON.concat([module]);
@@ -55,12 +46,12 @@ export class FileHandler {
 			}
 		}
 		toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-		this._context.globalState.update('simplicite-modules-info', toBeWrittenJSON);
+		this._globalState.update('simplicite-modules-info', toBeWrittenJSON);
 	}
 
 	private getTokenFromSimpliciteInfo(toBeWrittenJSON: Array<Module>) {
 		try {
-			const parsedJson: Array<Module> = this._context.globalState.get('simplicite-modules-info') || [];
+			const parsedJson: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
 			if (parsedJson.length === 0 || parsedJson === undefined) {
 				throw new Error('Cannot get token. No simplicite info content found');
 			}
@@ -79,11 +70,11 @@ export class FileHandler {
 	}
 
 	deleteSimpliciteInfo(): void {
-		this._context.globalState.update('simplicite-modules-info', undefined);
+		this._globalState.update('simplicite-modules-info', undefined);
 	}
 
 	deleteModule(instanceUrl: string | undefined, moduleName: string | undefined): void {
-		const moduleArray: Module[] = this._context.globalState.get('simplicite-modules-info') || [];
+		const moduleArray: Module[] = this._globalState.get('simplicite-modules-info') || [];
 		const newInfo = [];
 		if (moduleArray === null) {
 			throw new Error('Error getting simplicite info content');
@@ -99,50 +90,8 @@ export class FileHandler {
 				}
 			}
 		}
-		this._context.globalState.update('simplicite-modules-info', newInfo);
+		this._globalState.update('simplicite-modules-info', newInfo);
 	}
-
-	async getSimpliciteModules(): Promise<Module[]> { // returns array of module objects
-		const modules = [];
-		try {
-			if (workspace.workspaceFolders === undefined) {
-				throw new Error('No workspace detected');
-			}
-			for (const workspaceFolder of workspace.workspaceFolders) {
-				const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
-				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-				const modulePom = await workspace.findFiles(relativePattern);
-				if (modulePom.length === 0) {
-					throw new Error('No module found');
-				}
-				const instanceUrl = await this.getModuleInstanceUrl(workspaceFolder);
-				if (modulePom[0]) {
-					modules.push(new Module(workspaceFolder.name, crossPlatformPath(workspaceFolder.uri.path), instanceUrl, ''));
-				}
-			}
-		} catch (e: any) {
-			logger.warn(e);
-		}
-		return modules;
-	}
-
-	private async getModuleInstanceUrl(workspaceFolder: WorkspaceFolder): Promise<string | any> { // searches into pom.xml and returns the simplicite's instance url
-		const globPatern = '**pom.xml';
-		const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-		const file = await workspace.findFiles(relativePattern);
-		if (file.length === 0) {
-			throw new Error('No pom.xml has been found');
-		}
-		const pom = await (await workspace.openTextDocument(file[0])).getText();
-		try {
-			const res = await parseStringPromise(pom);
-			return res.project.properties[0]['simplicite.url'][0];
-		} catch (e) {
-			logger.error(e);
-		}
-	}
-
-	
 
 	bindFileAndModule(modules: Array<Module>): FileAndModule[] {
 		const fileModule = [];
@@ -165,14 +114,14 @@ export class FileHandler {
 				jsonContent.push({ filePath: file.filePath, tracked: file.tracked });
 			}
 		}
-		this._context.globalState.update('simplicite-files-info', jsonContent);
+		this._globalState.update('simplicite-files-info', jsonContent);
 	}
 
 	fileListLength(): number {
 		return this.fileList.length;
 	}
 
-	async getFileOnStart(): Promise<File[]> {
+	async FileDetector(modules: Module[]): Promise<File[]> {
 		if (workspace.workspaceFolders === undefined) {
 			throw new Error('no workspace detected');
 		}
@@ -184,22 +133,27 @@ export class FileHandler {
 				const files = await workspace.findFiles(relativePattern);
 				for (const file of files) {
 					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml')) {
-						fileList.push(new File(file.path, this._moduleHandler.getModuleUrlFromWorkspacePath(workspaceFolder.uri.path), workspaceFolder.uri.path, workspaceFolder.name, false));
+						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
+						if (!module) {
+							continue;
+						}
+						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, workspaceFolder.name, false));
 					}
 				}
 			}
 		}
 		try {
+			if (this.fileTree) await this.fileTree.setFileModule(this.bindFileAndModule(modules));
 			return this.setTrackedStatusPersistence(fileList);
 		} catch (e) {
-			logger.warn('getFileOnStart: ' + e);
+			logger.warn('File Detector: ' + e);
 			return fileList;
 		}
 	}
 
 	private setTrackedStatusPersistence(fileList: File[]): File[] {
 		try {
-			const jsonContent: File[] = this._context.globalState.get('simplicite-files-info') || [];
+			const jsonContent: File[] = this._globalState.get('simplicite-files-info') || [];
 			for (const file of fileList) {
 				for (const content of jsonContent) {
 					if (file.filePath === content.filePath) {
@@ -221,7 +175,7 @@ export class FileHandler {
 			}
 		}
 		this.updateFileStatus();
-		await this.fileTree.setFileModule(fileModule);
+		if (this.fileTree) await this.fileTree.setFileModule(fileModule);
 		Promise.resolve();
 	}
 

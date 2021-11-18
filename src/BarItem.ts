@@ -6,9 +6,9 @@ import { validFileExtension } from './utils';
 
 export class BarItem {
 	barItem: StatusBarItem;
-	constructor(text: string) {
+	constructor() {
 		this.barItem = window.createStatusBarItem(2);
-		this.barItem.text = text;
+		this.barItem.text = 'Simplicite';
 		this.barItem.command = 'simplicite-vscode-tools.showSimpliciteCommands'; // opens quick pick
 	}
 

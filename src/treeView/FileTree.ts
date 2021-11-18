@@ -10,11 +10,12 @@ import * as path from 'path';
 export class FileTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // these 2 attributes are mandatory to refresh the component
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
-	fileModule?: FileAndModule[]; // is set in setFileModule, which is called on every file changes (FileHandler: build() & setTrackedStatus())
+	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus())
 	runPath: string;
-	constructor(runPath: string) {
+	constructor(runPath: string, fileModule: FileAndModule[]) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+		this.fileModule = fileModule;
 		this.runPath = runPath;
 	}
 

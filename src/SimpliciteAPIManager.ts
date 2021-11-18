@@ -20,29 +20,14 @@ export class SimpliciteAPIManager {
 	appHandler: AppHandler;
 	fileHandler: FileHandler;
 	moduleHandler: ModuleHandler;
-	barItem: BarItem;
+	barItem?: BarItem;
 	moduleTreeView?: ModuleInfoTree;
-	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler, barItem: BarItem) {
+	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
 		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
 		this.appHandler = new AppHandler();
 		this.fileHandler = fileHandler;
 		this.moduleHandler = moduleHandler;
-		this.barItem = barItem;
-	}
-
-	static build(fileHandler: FileHandler, moduleHandler: ModuleHandler, barItem: BarItem): SimpliciteAPIManager {
-		const simpliciteAPIManager = new SimpliciteAPIManager(fileHandler, moduleHandler, barItem);
-		if (simpliciteAPIManager.moduleHandler.moduleLength() !== 0 && simpliciteAPIManager.fileHandler.fileListLength() !== 0) {
-			logger.info('Modules and files set on initialization');
-		}
-		if (simpliciteAPIManager.moduleHandler.moduleLength() === 0) {
-			logger.warn('No modules set on initialization');
-		}
-		if (simpliciteAPIManager.fileHandler.fileListLength() === 0) {
-			logger.warn('No files set on initialization');
-		}
-		return simpliciteAPIManager;
 	}
 
 	async loginHandler(): Promise<void> {
@@ -60,11 +45,10 @@ export class SimpliciteAPIManager {
 		} else {
 			window.showInformationMessage('Simplicite: No Simplicite module has been found');
 		}
-		await this.refreshModuleDevInfo();
 	}
 
 	async loginTokenOrCredentials(module: Module): Promise<void> {
-		const app = await this.appHandler.getApp(module.instanceUrl); // handleApp returns the app correct instance (one for every simplicite instance)
+		const app = this.appHandler.getApp(module.instanceUrl); // handleApp returns the app correct instance (one for every simplicite instance)
 		if (module.token === '') {
 			await this.authenticationWithCredentials(module.name, app, async () => {
 				await this.loginMethod(module, app);
@@ -73,6 +57,7 @@ export class SimpliciteAPIManager {
 			app.authtoken = module.token;
 			await this.loginMethod(module, app);
 		}
+		await this.refreshModuleDevInfo();
 	}
 
 	private async loginMethod(module: Module, app: any): Promise<void> {
@@ -81,13 +66,13 @@ export class SimpliciteAPIManager {
 			if (!this.devInfo) {
 				await this.setDevInfo(app);
 			}
-			await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url); // if logged in we write a JSON with connected modules objects;
+			await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url, this.moduleHandler.modules); // if logged in we write a JSON with connected modules objects;
 			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
-			this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
+			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 		} catch (e: any) {
 			if (e.status === 401) { 
 				this.fileHandler.deleteModule(undefined, module.name);
@@ -97,7 +82,7 @@ export class SimpliciteAPIManager {
 				app.setAuthToken(null);
 				app.setPassword(null);
 				app.setUsername(null);	
-				await this.specificLogout(module);
+				await this.specificLogout(module.instanceUrl);
 			}
 			window.showErrorMessage('Simplicite: ' + e.message);
 			logger.error(e);
@@ -140,7 +125,7 @@ export class SimpliciteAPIManager {
 				window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
 				logger.info(res.result + ' from: ' + app.parameters.url);
 				this.moduleHandler.removeInstanceUrl(app.parameters.url);
-				this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
+				if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 			}).catch((e: any) => {
 				logger.error(e);
 				window.showErrorMessage(e.message ? e.message : e);
@@ -151,20 +136,20 @@ export class SimpliciteAPIManager {
 		}
 	}
 
-	async specificLogout(module: Module): Promise<void> {
+	async specificLogout(instanceUrl: string): Promise<void> {
 		try {
-			const app = await this.appHandler.getApp(module.instanceUrl);
+			const app = this.appHandler.getApp(instanceUrl);
 			app.logout().then(async (res: any) => {
-				this.fileHandler.deleteModule(module.instanceUrl, undefined);
-				this.appHandler.appList.delete(module.instanceUrl);
-				this.moduleHandler.spreadToken(module.instanceUrl, '');
-				this.moduleHandler.removeConnectedInstancesUrl(module.instanceUrl);
+				this.fileHandler.deleteModule(instanceUrl, undefined);
+				this.appHandler.appList.delete(instanceUrl);
+				this.moduleHandler.spreadToken(instanceUrl, '');
+				this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
 				window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
 				logger.info(res.result + ' from: ' + app.parameters.url);
-				this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
+				if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 			}).catch((e: any) => {
 				if (e.status === 401 || e.code === 'ECONNREFUSED') {
-					window.showInformationMessage(`Simplicite: You are not connected to ${module.instanceUrl}`);
+					window.showInformationMessage(`Simplicite: You are not connected to ${instanceUrl}`);
 				} else {
 					logger.error(e);
 					window.showErrorMessage(`${e}`);
@@ -195,7 +180,7 @@ export class SimpliciteAPIManager {
 	}
 
 	private async applyModuleFiles(moduleName: string, instanceUrl: string) {
-		const app = await this.appHandler.getApp(instanceUrl);
+		const app = this.appHandler.getApp(instanceUrl);
 		let success = 0;
 		for (const file of this.fileHandler.fileList) {
 			if (file.moduleName === moduleName && file.tracked) {
@@ -216,7 +201,7 @@ export class SimpliciteAPIManager {
 		const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
 		let success = 0;
 		for (const instanceUrl of this.moduleHandler.connectedInstancesUrl) {
-			const app = await this.appHandler.getApp(instanceUrl);
+			const app = this.appHandler.getApp(instanceUrl);
 			if (fileModule.get(instanceUrl)) {
 				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 				for (const file of fileModule.get(instanceUrl)!) {
@@ -435,42 +420,34 @@ export class SimpliciteAPIManager {
 		}
 	}
 
-	private async setDevInfo(app: any, moduleName?: string) { // uses the first instance available to fetch the data
+	private async setDevInfo(app: any): Promise<void> {
 		try {
-			if (moduleName) {
-				const currentModule = this.moduleHandler.getModuleFromName(moduleName);
-				if (currentModule) {
-					currentModule.moduleDevInfo = await app.getDevInfo(moduleName);
-					this.moduleHandler.refreshTreeView(undefined);
-				}
-			} else {
-				try {
-					this.devInfo = await app.getDevInfo();
-					this.moduleTreeView?.setDevInfo(this.devInfo);
-				} catch (e) {
-					console.log(e);
-				}
-			}
+			this.devInfo = await app.getDevInfo();
+			if (this.moduleTreeView) this.moduleTreeView?.setDevInfo(this.devInfo);
+		} catch(e: any) {
+			logger.error('unable to fetch devInfo');
+		}
+	}
+
+	private async moduleDevInfo (app: any, module: Module): Promise<any> {
+		try {
+			return await app.getDevInfo(module.name);
 		} catch (e: any) {
-			logger.error('get dev info: ' + e.message);
+			logger.error('unable to fetch module dev info');
+			return false;
 		}
 	}
 
-	async moduleDevInfoSpecific(connectedInstance: string, moduleName: string): Promise<void> { // need for completion handler in extension.ts
-		const app = this.appHandler.getApp(connectedInstance);
-		if (app.authtoken === undefined) {
-			throw new Error(`Cannot get object fields, not connected to ${moduleName} (${connectedInstance})`);
-		}
-		await this.setDevInfo(app, moduleName);
-	}
-
-	async refreshModuleDevInfo(): Promise<void> {
+	async refreshModuleDevInfo(): Promise<void> { // changes directly module's attribute moduleDevInfo 
 		try {
-			this.moduleHandler.setModules(await this.fileHandler.getSimpliciteModules(), true);
 			for (const module of this.moduleHandler.modules) {
 				if (this.moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
-					await this.moduleDevInfoSpecific(module.instanceUrl, module.name);
+					const app = this.appHandler.getApp(module.instanceUrl);
+					module.moduleDevInfo = await this.moduleDevInfo(app, module);
 				}
+			}
+			if (this.moduleTreeView) {
+				this.moduleTreeView.setModules(this.moduleHandler.modules);
 			}
 		} catch (e) {
 			logger.error(e);
@@ -513,11 +490,6 @@ export class SimpliciteAPIManager {
 		}
 		return Promise.resolve('');
 	}
-
-	setBarItem(barItem: BarItem): void {
-		this.barItem = barItem;
-	}
-
 }
 
 function getResourceFileName(filePath: string): string {
