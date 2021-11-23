@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionProvider } from './CompletionProvider';
-import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand } from './commands';
+import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand, connectToRemoteFileSystemCommand, disconnectRemoteFileSystemCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -15,6 +15,7 @@ import { crossPlatformPath, validFileExtension } from './utils';
 import { OpenFileContext } from './interfaces';
 import { TEMPLATE } from './constant';
 import { Module } from './Module';
+import { RFSControl } from './rfs/RFSControl';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
@@ -22,6 +23,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
 	
 	const request = new SimpliciteAPIManager(fileHandler, moduleHandler);
+	const rfs = new RFSControl(request.appHandler, moduleHandler.modules, context.subscriptions);
+	request.RFSControl = rfs;
 
 	new QuickPick(context.subscriptions, request);
 
@@ -47,23 +50,25 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	// Commands have to be declared in package.json so VS Code knows that the extension provides a command
 	const applyChanges = applyChangesCommand(request);
-	const applySpecificModule = applySpecificModuleCommand(request);
+	const applySpecificModule = applySpecificModuleCommand(request, moduleHandler);
 	const compileWorkspace = compileWorkspaceCommand(request);
 	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
-	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request);
+	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request, moduleHandler);
 	const logout = logoutCommand(request);
-	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request);
-	const trackFile = trackFileCommand(request);
-	const untrackFile = untrackFilesCommand(request);
+	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, moduleHandler);
+	const trackFile = trackFileCommand(request, fileHandler, moduleHandler);
+	const untrackFile = untrackFilesCommand(request, fileHandler, moduleHandler);
 	const refreshModuleTree = refreshModuleTreeCommand(request);
-	const refreshFileHandler = refreshFileHandlerCommand(request);
+	const refreshFileHandler = refreshFileHandlerCommand(fileHandler, moduleHandler);
 
 	const fieldToClipBoard = copyLogicalNameCommand();
 	const copyPhysicalName = copyPhysicalNameCommand();
 	const copyJsonName = copyJsonNameCommand();
 	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
+	const connectToRemoteFileSystem = connectToRemoteFileSystemCommand(rfs, moduleHandler, moduleHandler.connectedInstancesUrl, request);
+	const disconnectRemoteFileSystem = disconnectRemoteFileSystemCommand(rfs, moduleHandler.modules);
 
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger);
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -154,6 +159,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	});
 
 	return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
+}
+
+export function deactivate(context: ExtensionContext) {
+	context.globalState.get('simplicite-modules-info', );
 }
 
 function completionProviderHandler(openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {

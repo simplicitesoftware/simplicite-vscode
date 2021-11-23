@@ -35,62 +35,8 @@ export class FileHandler {
 		return fileHandler;
 	}
 
-	async simpliciteInfoGenerator(token: string, appURL: string, modules: Module[]): Promise<void> { // generates a JSON [{"projet": "...", "module": "...", "token": "..."}]
-		let toBeWrittenJSON: Module[] = [];
-		for (const module of modules) {
-			if (module.instanceUrl === appURL && !module.token) { // only set the token for the object coming from the same instance => same token 
-				module.token = token;
-				toBeWrittenJSON = toBeWrittenJSON.concat([module]);
-			} else {
-				toBeWrittenJSON = toBeWrittenJSON.concat([module]);
-			}
-		}
-		toBeWrittenJSON = this.getTokenFromSimpliciteInfo(toBeWrittenJSON);
-		this._globalState.update('simplicite-modules-info', toBeWrittenJSON);
-	}
-
-	private getTokenFromSimpliciteInfo(toBeWrittenJSON: Array<Module>) {
-		try {
-			const parsedJson: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
-			if (parsedJson.length === 0 || parsedJson === undefined) {
-				throw new Error('Cannot get token. No simplicite info content found');
-			}
-			parsedJson.forEach((module: Module) => {
-				toBeWrittenJSON.forEach((preparedModule: Module) => {
-					if (preparedModule.name === module.name && module.token && preparedModule.token === '') {
-						preparedModule.token = module.token;
-					}
-				});
-			});
-			return toBeWrittenJSON;
-		} catch (e: any) {
-			logger.info(e);
-		}
-		return toBeWrittenJSON;
-	}
-
 	deleteSimpliciteInfo(): void {
 		this._globalState.update('simplicite-modules-info', undefined);
-	}
-
-	deleteModule(instanceUrl: string | undefined, moduleName: string | undefined): void {
-		const moduleArray: Module[] = this._globalState.get('simplicite-modules-info') || [];
-		const newInfo = [];
-		if (moduleArray === null) {
-			throw new Error('Error getting simplicite info content');
-		}
-		for (const module of moduleArray) {
-			if (instanceUrl) {
-				if (module.instanceUrl !== instanceUrl) {
-					newInfo.push(module);
-				}
-			} else if (moduleName) {
-				if (module.name !== moduleName) {
-					newInfo.push(module);
-				}
-			}
-		}
-		this._globalState.update('simplicite-modules-info', newInfo);
 	}
 
 	bindFileAndModule(modules: Array<Module>): FileAndModule[] {

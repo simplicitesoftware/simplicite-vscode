@@ -182,6 +182,14 @@
 			{
 				"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
 				"title": "double click trigger command"
+			},
+			{
+				"command": "simplicite-vscode-tools.connectToRemoteFileSystem",
+				"title": "Simplicite: Connect to module remote file system"
+			},
+			{
+				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
+				"title": "Simplicite: Disconnect from the module remote file system"
 			}
 		],
 		"configuration": {

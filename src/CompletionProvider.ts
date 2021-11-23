@@ -28,7 +28,7 @@ export class CompletionProvider implements CompletionItemProvider {
 			}
 			const completionItems: CustomCompletionItem[] = [];
 			for (const objectType in this._moduleDevInfo) {
-				if (objectType === this._fileInfo.object) {
+				if (objectType === this._fileInfo.objects) {
 					for (const object of this._moduleDevInfo[objectType]) {
 						if (object.name === this._openFileContext.fileName) {
 							for (const completionAttribute in this._fileInfo.completion) {

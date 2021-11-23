@@ -7,6 +7,9 @@ import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { crossPlatformPath } from './utils';
 import { Module } from './Module';
 import { File } from './File';
+import { RFSControl } from './rfs/RFSControl';
+import { ModuleHandler } from './ModuleHandler';
+import { FileHandler } from './FileHandler';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -27,13 +30,13 @@ export const applyChangesCommand = function (request: SimpliciteAPIManager): Dis
 	});
 };
 
-export const applySpecificModuleCommand = function (request: SimpliciteAPIManager): Disposable {
+export const applySpecificModuleCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteAPIManager | any) {
 		try {
 			// eslint-disable-next-line no-prototype-builtins
 			if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
 				element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-				const moduleObject: Module | undefined = request.moduleHandler.getModuleFromName(element);
+				const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element);
 				if (!moduleObject) {
 					const msg = 'Simplicite: Cannot find module or url ' + element;
 					throw new Error(msg);
@@ -67,13 +70,13 @@ export const compileWorkspaceCommand = function (request: SimpliciteAPIManager):
 
 // ------------------------------
 // Authentication commands
-export const loginIntoDetectedInstancesCommand = function (request: SimpliciteAPIManager): Disposable {
+export const loginIntoDetectedInstancesCommand = function (request: SimpliciteAPIManager, ): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
 		await request.loginHandler();
 	});
 };
 
-export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIManager): Disposable {
+export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
 		try {
 			const moduleName = await window.showInputBox({
@@ -86,7 +89,7 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 			let flag = false;
 			let module;
 			try {
-				for (const moduleLoop of request.moduleHandler.modules) {
+				for (const moduleLoop of moduleHandler.modules) {
 					if (moduleLoop.instanceUrl === moduleName) {
 						module = moduleLoop;
 						flag = true;
@@ -96,14 +99,14 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 					throw new Error('error no module found in LogInInstanceCommand');
 				}
 			} catch (e) {
-				for (const moduleLoop of request.moduleHandler.modules) {
+				for (const moduleLoop of moduleHandler.modules) {
 					if (moduleLoop.name === moduleName) {
 						module = moduleLoop;
 						flag = true;
 					}
 				}
 			}
-			if (module && !request.moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
+			if (module && !moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
 				await request.loginTokenOrCredentials(module);
 			}
 			if (!flag) {
@@ -122,7 +125,7 @@ export const logoutCommand = function (request: SimpliciteAPIManager): Disposabl
 	});
 };
 
-export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager): Disposable {
+export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {
 		try {
 			const input = await window.showInputBox({
@@ -135,7 +138,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 			let flag = false;
 			let module;
 			try {
-				for (const moduleLoop of request.moduleHandler.modules) {
+				for (const moduleLoop of moduleHandler.modules) {
 					if (moduleLoop.instanceUrl === input) {
 						module = moduleLoop;
 						flag = true;
@@ -145,7 +148,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 					throw new Error('error no module found in logoutFromSpecificInstanceCommand');
 				}
 			} catch (e) {
-				for (const moduleLoop of request.moduleHandler.modules) {
+				for (const moduleLoop of moduleHandler.modules) {
 					if (moduleLoop.name === input) {
 						module = moduleLoop;
 						flag = true;
@@ -168,20 +171,20 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 
 // ------------------------------
 // File handling commands
-export const trackFileCommand = function (request: SimpliciteAPIManager): Disposable {
+export const trackFileCommand = function (request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: any) {
 		try {
-			await trackAction(request, element, true);
+			await trackAction(request, fileHandler, moduleHandler, element, true);
 		} catch (e) {
 			logger.error(e);
 		}
 	});
 };
 
-export const untrackFilesCommand = function (request: SimpliciteAPIManager): Disposable {
+export const untrackFilesCommand = function (request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: any) {
 		try {
-			await trackAction(request, element, false);
+			await trackAction(request, fileHandler, moduleHandler, element, false);
 		} catch (e) {
 			logger.error(e);
 		}
@@ -196,11 +199,11 @@ export const refreshModuleTreeCommand = function (request: SimpliciteAPIManager)
 	});
 };
 
-export const refreshFileHandlerCommand = function (request: SimpliciteAPIManager): Disposable {
+export const refreshFileHandlerCommand = function (fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
-		if (request.fileHandler.fileTree) {
-			const modules = request.moduleHandler.modules;
-			request.fileHandler.fileList = await request.fileHandler.FileDetector(modules);
+		if (fileHandler.fileTree) {
+			const modules = moduleHandler.modules;
+			fileHandler.fileList = await fileHandler.FileDetector(modules);
 		}
 	});
 };
@@ -251,6 +254,54 @@ export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInf
 
 // ------------------------------
 
+export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
+		try {
+			const moduleName = await window.showInputBox({
+				placeHolder: 'module name',
+				title: 'Simplicite: Type the name of the module'
+			});
+			if (!moduleName) {
+				throw new Error();
+			}
+			let moduleTarget: Module | undefined = undefined;
+			for (const module of moduleHandler.modules) {
+				if (module.name === moduleName && connectedInstances.includes(module.instanceUrl)) {
+					module.remoteFileSystem = true;
+					moduleTarget = module;
+					moduleHandler.saveModules();
+					await rfs.init(moduleTarget, request.devInfo);
+				} else if (module.name === moduleName && !connectedInstances.includes(module.instanceUrl)) {
+					module.remoteFileSystem = true;
+					moduleTarget = module;
+					await request.loginTokenOrCredentials(moduleTarget);
+
+				}
+			}
+			if (!moduleTarget) {
+				window.showInformationMessage(`Simplicite: Cannot find module or url ${moduleName}`);
+				throw new Error();
+			}
+		} catch (e: any) {
+			logger.error(e);
+			window.showInformationMessage(e.message ? e.message : e);
+		}
+	});
+};
+
+export const disconnectRemoteFileSystemCommand = function (rfs: RFSControl, modules: Module[]): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', () => {
+		rfs.unset();
+		for (const module of modules) {
+			if (module.remoteFileSystem) {
+				module.remoteFileSystem = false;
+			}
+		}
+	});
+};
+
+// ------------------------------
+
 let firstClickTime = new Date().getTime();
 
 function doubleClickTrigger(): boolean {
@@ -264,10 +315,10 @@ function doubleClickTrigger(): boolean {
 	}
 }
 
-async function trackAction(request: SimpliciteAPIManager, element: any, trackedValue: boolean) {
+async function trackAction(request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler, element: any, trackedValue: boolean) {
 	const inputFile = await getInputFile(request, element);
-	const fileModule = request.fileHandler.bindFileAndModule(request.moduleHandler.modules);
-	await request.fileHandler.setTrackedStatus(inputFile.filePath, trackedValue, fileModule);
+	const fileModule = fileHandler.bindFileAndModule(moduleHandler.modules);
+	await fileHandler.setTrackedStatus(inputFile.filePath, trackedValue, fileModule);
 }
 
 async function getInputFile(request: SimpliciteAPIManager, element: any): Promise<File> {

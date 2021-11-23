@@ -13,6 +13,8 @@ import { removeFileExtension, replaceAll } from './utils';
 import { BarItem } from './BarItem';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
+import { SimpliciteFS } from './rfs/SimpliciteFS';
+import { RFSControl } from './rfs/RFSControl';
 
 export class SimpliciteAPIManager {
 	cache: Cache;
@@ -22,6 +24,7 @@ export class SimpliciteAPIManager {
 	moduleHandler: ModuleHandler;
 	barItem?: BarItem;
 	moduleInfoTree?: ModuleInfoTree;
+	RFSControl?: RFSControl;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
 		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
@@ -58,6 +61,7 @@ export class SimpliciteAPIManager {
 			await this.loginMethod(module, app);
 		}
 		await this.refreshModuleDevInfo();
+		this.moduleHandler.saveModules();
 	}
 
 	private async loginMethod(module: Module, app: any): Promise<void> {
@@ -66,16 +70,18 @@ export class SimpliciteAPIManager {
 			if (!this.devInfo) {
 				await this.setDevInfo(app);
 			}
-			await this.fileHandler.simpliciteInfoGenerator(res.authtoken, app.parameters.url, this.moduleHandler.modules); // if logged in we write a JSON with connected modules objects;
 			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
+			if (this.RFSControl && module.remoteFileSystem) {
+				this.RFSControl.init(module, this.devInfo);
+			}
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 		} catch (e: any) {
 			if (e.status === 401) { 
-				this.fileHandler.deleteModule(undefined, module.name);
+				this.moduleHandler.deleteModule(undefined, module.name);
 				this.appHandler.appList.delete(module.instanceUrl);
 				this.moduleHandler.spreadToken(module.instanceUrl, '');
 			} else {
@@ -120,11 +126,12 @@ export class SimpliciteAPIManager {
 		this.fileHandler.deleteSimpliciteInfo();
 		this.appHandler.appList.forEach(async (app: any) => {
 			app.logout().then((res: any) => {
+				this.moduleHandler.deleteModule(app.parameters.url, undefined);
 				this.appHandler.appList.delete(app.parameters.url);
 				this.moduleHandler.spreadToken(app.parameters.url, '');
+				this.moduleHandler.removeConnectedInstancesUrl(app.parameters.url);
 				window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
 				logger.info(res.result + ' from: ' + app.parameters.url);
-				this.moduleHandler.removeInstanceUrl(app.parameters.url);
 				if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 			}).catch((e: any) => {
 				logger.error(e);
@@ -140,7 +147,7 @@ export class SimpliciteAPIManager {
 		try {
 			const app = this.appHandler.getApp(instanceUrl);
 			app.logout().then(async (res: any) => {
-				this.fileHandler.deleteModule(instanceUrl, undefined);
+				this.moduleHandler.deleteModule(instanceUrl, undefined);
 				this.appHandler.appList.delete(instanceUrl);
 				this.moduleHandler.spreadToken(instanceUrl, '');
 				this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);

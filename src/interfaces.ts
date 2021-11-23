@@ -46,7 +46,7 @@ export interface DevInfoObject {
 	completion: any,
 	icon: string,
 	keyfield: string,
-	object: string,
+	objects: any,
 	package: string | undefined,
 	sourcefield: string
 }
