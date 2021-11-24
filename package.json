@@ -190,7 +190,16 @@
 			{
 				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
 				"title": "Simplicite: Disconnect from the module remote file system"
+			},
+			{
+				"command": "simplicite-vscode-tools.initWorkspace",
+				"title": "Simplicite: Init workspace"
+			},
+			{
+				"command": "simplicite-vscode-tools.initFiles",
+				"title": "Simplicite: Init files"
 			}
+			
 		],
 		"configuration": {
 			"properties": {

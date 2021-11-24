@@ -257,6 +257,13 @@ export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInf
 export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
 		try {
+			const instanceUrl = await window.showInputBox({
+				placeHolder: 'instance url',
+				title: 'Simplicite: Type the name of the instance url'
+			});
+			if (!instanceUrl) {
+				throw new Error();
+			}
 			const moduleName = await window.showInputBox({
 				placeHolder: 'module name',
 				title: 'Simplicite: Type the name of the module'
@@ -264,24 +271,12 @@ export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, modul
 			if (!moduleName) {
 				throw new Error();
 			}
-			let moduleTarget: Module | undefined = undefined;
-			for (const module of moduleHandler.modules) {
-				if (module.name === moduleName && connectedInstances.includes(module.instanceUrl)) {
-					module.remoteFileSystem = true;
-					moduleTarget = module;
-					moduleHandler.saveModules();
-					await rfs.init(moduleTarget, request.devInfo);
-				} else if (module.name === moduleName && !connectedInstances.includes(module.instanceUrl)) {
-					module.remoteFileSystem = true;
-					moduleTarget = module;
-					await request.loginTokenOrCredentials(moduleTarget);
-
-				}
+			const module = new Module(moduleName, '', instanceUrl, '', true);
+			if (!connectedInstances.includes(instanceUrl)) {
+				await request.loginTokenOrCredentials(module);
 			}
-			if (!moduleTarget) {
-				window.showInformationMessage(`Simplicite: Cannot find module or url ${moduleName}`);
-				throw new Error();
-			}
+			await rfs.init(module, request.devInfo);
+			moduleHandler.saveModules();
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -289,14 +284,19 @@ export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, modul
 	});
 };
 
-export const disconnectRemoteFileSystemCommand = function (rfs: RFSControl, modules: Module[]): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', () => {
+export const disconnectRemoteFileSystemCommand = function (rfs: RFSControl,  moduleHandler: ModuleHandler, request: SimpliciteAPIManager): Disposable {
+	return commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
+		if (!rfs.module?.instanceUrl) {
+			return;
+		}
+		await request.specificLogout(rfs.module?.instanceUrl);
 		rfs.unset();
-		for (const module of modules) {
+		for (const module of moduleHandler.modules) {
 			if (module.remoteFileSystem) {
 				module.remoteFileSystem = false;
 			}
 		}
+		moduleHandler.saveModules();
 	});
 };
 

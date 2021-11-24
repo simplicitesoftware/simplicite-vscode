@@ -66,7 +66,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const copyJsonName = copyJsonNameCommand();
 	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
 	const connectToRemoteFileSystem = connectToRemoteFileSystemCommand(rfs, moduleHandler, moduleHandler.connectedInstancesUrl, request);
-	const disconnectRemoteFileSystem = disconnectRemoteFileSystemCommand(rfs, moduleHandler.modules);
+	const disconnectRemoteFileSystem = disconnectRemoteFileSystemCommand(rfs, moduleHandler, request);
 
 	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 'use strict';
 
-import { workspace, Disposable, Uri, window } from 'vscode';
+import { workspace, Disposable, Uri, window, commands } from 'vscode';
 import { AppHandler } from '../AppHandler';
 import { DevInfoObject } from '../interfaces';
 import { logger } from '../Log';
@@ -16,6 +16,7 @@ export class RFSControl {
 	app?: any;
 	subscriptions: Disposable[];
 	scheme: string;
+	isInit: boolean;
 	firstConnection: boolean;
 	module?: Module;
 	FSPDisposable?: Disposable;
@@ -26,10 +27,20 @@ export class RFSControl {
 		this.modules = modules;
 		this.subscriptions = subscriptions;
 		this.scheme = 'simplicite';
+		this.isInit = false;
 		this.firstConnection = true;
 	}
 
 	async init (module: Module, devInfo: DevInfoObject): Promise<void> {
+		if (!this.isInit) {
+			this.subscriptions.push(commands.registerCommand('simplicite-vscode-tools.initWorkspace', () => {
+				workspace.updateWorkspaceFolders(0, 1, { uri: Uri.parse('simplicite:/'), name: this.module?.name });
+			}));
+			this.subscriptions.push(commands.registerCommand('simplicite-vscode-tools.initFiles', async () => {
+				await this.initFiles();
+			}));
+			this.isInit = true;
+		}
 		if (this.firstConnection) {
 			this.module = module;
 			this.devInfo = devInfo;
@@ -37,8 +48,8 @@ export class RFSControl {
 			this.simpliciteFS = new SimpliciteFS(this.app);
 			this.FSPDisposable = workspace.registerFileSystemProvider(this.scheme, this.simpliciteFS, { isCaseSensitive: true });
 			this.subscriptions.push(this.FSPDisposable);
-			await this.refreshWorkspace();
 			this.firstConnection = false;
+			await this.initFiles();
 			window.showInformationMessage('RFS INIT');
 		} else {
 			window.showErrorMessage('rfs already init');
@@ -54,7 +65,7 @@ export class RFSControl {
 		this.FSPDisposable = undefined;
 	}
 
-	async refreshWorkspace(): Promise<boolean> {
+	async initFiles(): Promise<boolean> {
 		if (!this.simpliciteFS || !this.module) {
 			return false;
 		}
@@ -63,14 +74,8 @@ export class RFSControl {
 			const ms = await mdl.search({ mdl_name: this.module.name} );
 			const m = ms[0];
 			await this.getAllFiles(m.row_id);
-			//await this.refreshBusinessObjects(m.row_id, this.module.name);
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
-			
 			this.simpliciteFS.writeFile(Uri.parse(this.scheme + ':/pom.xml'), Buffer.from(pom.content, 'base64'), { create: true, overwrite: true });
-			this.simpliciteFS.writeFile(Uri.parse(this.scheme + ':/src/test.java'), Buffer.from('test', 'base64'), { create: true, overwrite: true});
-
-			workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(this.scheme + ':/'), name: this.module?.name });
-			
 			return true;
 		} catch (e) {
 			logger.error(e);
@@ -82,30 +87,34 @@ export class RFSControl {
 		if (!this.devInfo || !this.simpliciteFS) {
 			return false;
 		}
+		this.initFodlerTree();
 		for (const devObj of this.devInfo.objects) {
 			if (!devObj.package) {
 				continue;
 			}
-			const replace = replaceAll(devObj.package, /\./, '/');
-			this.createFolderTree(replace);
 			const obj = this.app.getBusinessObject(devObj.object, 'ide_' + devObj.object);
 			const res = await obj.search({ row_module_id: mdl_id }, { inlineDocuments: [ true ] });
-			for (const object of res) {
-				/*const item = await obj.get(object.row_id, { inlineDocuments: true });
-				if (!item) {
-					continue;
-				}*/
-				const uri = Uri.parse(this.scheme + ':/' + replace + '/' + this.module?.name + '/' + object[devObj.sourcefield].name);
-				this.simpliciteFS!.writeFile(uri, object[devObj.sourcefield].content, { create: true, overwrite: true });
+			if (!res || res.length === 0) {
+				continue;
 			}
-			//this.simpliciteFS.writeFile(Uri.parse(this.scheme + ':/' + replace), );
+			const replace = 'src/' + replaceAll(devObj.package, /\./, '/');
+			this.createFolderTree(replace);
+			
+			for (const object of res) {
+				if (!object[devObj.sourcefield]) {
+					continue;
+				}
+				const uri = Uri.parse(this.scheme + ':/' + replace + '/' + this.module?.name + '/' + object[devObj.sourcefield].name);
+				this.simpliciteFS.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'), { create: true, overwrite: true });
+			}
 		}
 	}
 
-	// async writeFile () {
-
-	// }
-
+	initFodlerTree() {
+		this.simpliciteFS!.createDirectory(Uri.parse(this.scheme + ':/' + 'src'));
+		this.simpliciteFS!.createDirectory(Uri.parse(this.scheme + ':/' + 'src/com'));
+		this.simpliciteFS!.createDirectory(Uri.parse(this.scheme + ':/' + 'src/com/simplicite'));
+	}
 
 	async refreshBusinessObjects(mdlId: number, mdlName: string) {
 		const obj: any= this.app.getBusinessObject('ObjectInternal');
@@ -119,7 +128,7 @@ export class RFSControl {
 				const d: any = o.obo_script_id;
 				if (d) {
 					const u = Uri.parse(`${uri}/${d.name}`);
-					await this.simpliciteFS!.writeFile(u, Buffer.from(d.content, 'base64'), { create: true, overwrite: true });
+					this.simpliciteFS!.writeFile(u, Buffer.from(d.content, 'base64'), { create: true, overwrite: true });
 					this.simpliciteFS!.setRecord(u.path, obj.getName(), 'obo_script_id', o.row_id);
 				}
 			}
@@ -128,13 +137,16 @@ export class RFSControl {
 
 	createFolderTree (folderPath: string) {
 		const split = folderPath.split('/');
-		let pathBuilder = '';
-		for (const folder of split) {
-			pathBuilder += folder + '/';
-			this.simpliciteFS!.createDirectory(Uri.parse(this.scheme + ':/' + pathBuilder));
-		}
-		if (split.length > 0) {
-			this.simpliciteFS!.createDirectory(Uri.parse(this.scheme + ':/' + pathBuilder + this.module?.name));
+		if (split[split.length - 1] === 'dispositions') {
+			let path = this.scheme + ':/scripts';
+			this.simpliciteFS!.createDirectory(Uri.parse(path));
+			path += '/Disposition';
+			this.simpliciteFS!.createDirectory(Uri.parse(path));
+		} else {
+			let path = this.scheme + ':/src/com/simplicite/' + split[split.length - 1];
+			this.simpliciteFS!.createDirectory(Uri.parse(path));
+			path += '/' + this.module?.name;
+			this.simpliciteFS!.createDirectory(Uri.parse(path));
 		}
 	}
 }

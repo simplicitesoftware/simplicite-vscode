@@ -74,7 +74,7 @@ export class SimpliciteAPIManager {
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
 			if (this.RFSControl && module.remoteFileSystem) {
-				this.RFSControl.init(module, this.devInfo);
+				await this.RFSControl.init(module, this.devInfo);
 			}
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);

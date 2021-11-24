@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { SimpliciteApiObject } from '../SimpliciteApiObject';
 
 /**
  * Virtual file
@@ -89,23 +88,6 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 	}
 
 	/**
-	 * Create directory
-	 * @param uri Directory URI
-	 */
-	createDirectory(uri: vscode.Uri): void | Thenable<void> {
-		console.log('Create directory: ' + uri.path);
-		const basename = path.posix.basename(uri.path);
-		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-		const parent = this._lookupAsDirectory(dirname, false);
-
-		const entry = new Directory(basename);
-		parent.entries.set(entry.name, entry);
-		parent.mtime = Date.now();
-		parent.size += 1;
-		this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
-	}
-
-	/**
 	 * Read directory
 	 * @param uri Directory URI
 	 */
@@ -161,18 +143,15 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 		entry.size = content.byteLength;
 		entry.data = content;
 
-		const record: FileRecord | undefined = this.getRecord(uri.path);
+		/*const record: FileRecord | undefined = this.getRecord(uri.path);
 		if (record) {
 			const obj: any = this._app.getBusinessObject(record.obj);
-			obj.getForUpdate(record.rowId, { inlineDocuments: [record.fld] }).then((item: any) => {
-				item[record.fld].content = Buffer.from(content).toString('base64');
-				obj.update(item).then(() => {
-					this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
-				});
-			});
-		} else {
-			this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
-		}
+			const item = await obj.getForUpdate(record.rowId, { inlineDocuments: [record.fld] });
+			item[record.fld].content = Buffer.from(content).toString('base64');
+			const res = await obj.update(item);
+			console.log(res);
+		}*/
+		this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
 	}
 
 	private _records: Map<string, FileRecord> = new Map<string, FileRecord>();
@@ -201,9 +180,7 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 	 * @param uri File URI
 	 * @param options Options
 	 */
-	delete(): void | Thenable<void> {
-		throw new Error('delete: method not available.');
-	}
+	
 
 	/**
 	 * Rename file <strong>NOT AVAILABLE</strong>
@@ -214,11 +191,24 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 		throw new Error('rename: method not available.');
 	}
 
-	private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-	private _bufferedEvents: vscode.FileChangeEvent[] = [];
-	private _fireSoonHandle?: NodeJS.Timer;
+	delete(): void | Thenable<void> {
+		throw new Error('delete: method not available.');
+	}
 
-	readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
+	createDirectory(uri: vscode.Uri): void {
+		console.log('Create directory: ' + uri.path);
+		const basename = path.posix.basename(uri.path);
+		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
+		const parent = this._lookupAsDirectory(dirname, false);
+
+		const entry = new Directory(basename);
+		parent.entries.set(entry.name, entry);
+		parent.mtime = Date.now();
+		parent.size += 1;
+		this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
+	}
+
+	// --- lookup
 
 	private _lookup(uri: vscode.Uri, silent: false): Entry;
 	private _lookup(uri: vscode.Uri, silent: boolean): Entry | undefined;
@@ -265,6 +255,14 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 		const dirname = uri.with({ path: path.posix.dirname(uri.path) });
 		return this._lookupAsDirectory(dirname, false);
 	}
+
+	// --- manage file event
+
+	private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+	private _bufferedEvents: vscode.FileChangeEvent[] = [];
+	private _fireSoonHandle?: NodeJS.Timer;
+
+	readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
 
 	watch(): vscode.Disposable {
 		// eslint-disable-next-line @typescript-eslint/no-empty-function
