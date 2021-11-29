@@ -54,7 +54,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 				return Promise.resolve(this.getUntrackedFiles(element.moduleName));
 			}
 		}
-		return Promise.resolve([new TreeItem('Nothing to display', TreeItemCollapsibleState.None)]);
+		return Promise.resolve([]);
 	}
 
 	private async getModulesItem(): Promise<TreeItem[]> {
@@ -63,6 +63,9 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			return [];
 		}
 		for (const fm of this.fileModule) {
+			if (fm.remoteFileSystem) {
+				continue;
+			}
 			const treeItem = new ModuleItem(fm.moduleName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
 			treeItem.iconPath = {
 				light: path.join(this.runPath, 'resources/light/module.svg'),
@@ -102,7 +105,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			}
 		}
 		if (fileItems.length === 0) {
-			return [new TreeItem('No files to display', TreeItemCollapsibleState.None)];
+			return [];
 		}
 		return this.orderAlphab(fileItems);
 	}

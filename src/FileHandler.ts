@@ -14,6 +14,7 @@ interface ModuleObject {
 	moduleName: string,
 	instanceUrl: string,
 	fileList: File[],
+	remoteFileSystem: boolean
 }
 
 export class FileHandler {
@@ -42,7 +43,7 @@ export class FileHandler {
 	bindFileAndModule(modules: Array<Module>): FileAndModule[] {
 		const fileModule = [];
 		for (const module of modules) {
-			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
+			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [], remoteFileSystem: module.remoteFileSystem };
 			for (const file of this.fileList) {
 				if (file.moduleName === module.name) {
 					moduleObject.fileList.push(file);
@@ -74,7 +75,7 @@ export class FileHandler {
 				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
 				const files = await workspace.findFiles(relativePattern);
 				for (const file of files) {
-					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml')) {
+					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/temp/')) {
 						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
 						if (!module) {
 							continue;
@@ -123,8 +124,10 @@ export class FileHandler {
 
 	getFileFromFullPath(fullPath: string): File {
 		for (const file of this.fileList) {
-			const lowercasePath = file.filePath;
-			if (lowercasePath.toLowerCase() === fullPath.toLowerCase()) {
+			let lowercasePath = file.filePath;
+			lowercasePath = lowercasePath.toLowerCase();
+			fullPath = fullPath.toLowerCase();
+			if (lowercasePath === fullPath) {
 				return file;
 			}
 		}

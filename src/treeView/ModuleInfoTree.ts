@@ -100,7 +100,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private getObjectTypesItems(module: Module): TreeItem[] {
 		const moduleDevInfo = module.moduleDevInfo;
 		if (!moduleDevInfo) {
-			return [new TreeItem('Nothing to display', TreeItemCollapsibleState.None)];
+			return [];
 		}
 		const objectTypesItems = [];
 		for (const type in moduleDevInfo) {

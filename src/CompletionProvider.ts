@@ -2,7 +2,6 @@
 'use strict';
 
 import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
-import { crossPlatformPath } from './utils';
 import { logger } from './Log';
 import { OpenFileContext, DevInfoObject } from './interfaces';
 import { removeFileExtension } from './utils';
@@ -98,7 +97,7 @@ export class CompletionProvider implements CompletionItemProvider {
 	static getWorkspaceFromFileUri(uri: Uri): string {
 		const workspaceFolder = workspace.getWorkspaceFolder(uri);
 		if (workspaceFolder !== undefined) {
-			return crossPlatformPath(workspaceFolder.uri.path);
+			return workspaceFolder.uri.path;
 		}
 		return '';
 	}

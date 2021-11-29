@@ -49,7 +49,7 @@ export function removeFileExtension(template: string): string {
 
 export function getModuleFromWorkspacePath(wkPath: string, modules: Module[]): Module | false {
 	for (const module of modules) {
-		if (module.workspaceFolderPath === crossPlatformPath(wkPath)) {
+		if (module.workspaceFolderPath === wkPath) {
 			return module;
 		}
 	}

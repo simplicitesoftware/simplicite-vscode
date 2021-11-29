@@ -31,7 +31,8 @@ export interface ObjectInfo {
 export interface FileAndModule {
 	moduleName: string,
 	instanceUrl: string,
-	fileList: File[]
+	fileList: File[],
+	remoteFileSystem: boolean
 }
 
 export interface OpenFileContext {
