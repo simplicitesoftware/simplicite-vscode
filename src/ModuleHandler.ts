@@ -2,7 +2,6 @@
 
 import { logger } from './Log';
 import { Module } from './Module';
-import { crossPlatformPath } from './utils';
 import { workspace, RelativePattern, WorkspaceFolder, Memento } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { PomXMLData } from './interfaces';
@@ -34,7 +33,7 @@ export class ModuleHandler {
 		return this.modules.length;
 	}
 
-	private setSavedData() {
+	setSavedData() {
 		const parsedModuleState: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
 		for (const stateModule of parsedModuleState) {
 			if (this.modules.length === 0 && parsedModuleState.length > 0) { // potentially get a module with remote file system
@@ -76,7 +75,7 @@ export class ModuleHandler {
 	getModuleFromWorkspacePath(workspacePath: string): Module | false {
 		try {
 			for (const module of this.modules) {
-				if (module.workspaceFolderPath === crossPlatformPath(workspacePath)) {
+				if (module.workspaceFolderPath === workspacePath) {
 					return module;
 				}
 			}
@@ -106,7 +105,7 @@ export class ModuleHandler {
 				}
 				const pomXMLData: PomXMLData = await this.getModuleInstanceUrlAndNameFromDisk(workspaceFolder);
 				if (modulePom[0]) {
-					modules.push(new Module(pomXMLData.name, crossPlatformPath(workspaceFolder.uri.path), pomXMLData.instanceUrl, '', false));
+					modules.push(new Module(pomXMLData.name, workspaceFolder.uri.path, pomXMLData.instanceUrl, '', false));
 				}
 			} catch (e: any) {
 				logger.warn(e);
@@ -148,16 +147,29 @@ export class ModuleHandler {
 		}
 		for (const module of moduleArray) {
 			if (instanceUrl) {
-				if (module.instanceUrl !== instanceUrl) {
+				if (module.instanceUrl !== instanceUrl || this.apiModuleSecurityGuard(module.name)) {
 					newInfo.push(module);
 				}
-			} else if (moduleName) {
+			} else if (moduleName || this.apiModuleSecurityGuard(module.name)) {
 				if (module.name !== moduleName) {
 					newInfo.push(module);
 				}
 			}
 		}
 		this._globalState.update('simplicite-modules-info', newInfo);
+	}
+
+	private apiModuleSecurityGuard(moduleName: string): boolean {
+		const wks = workspace.workspaceFolders;
+		if (!wks) {
+			return false;
+		}
+		for (const wk of wks) {
+			if (wk.name === 'Api_' + moduleName) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

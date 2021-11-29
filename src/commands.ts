@@ -1,10 +1,9 @@
 'use strict';
 
-import { commands, window, env, Disposable } from 'vscode';
+import { commands, window, env, Disposable, Uri, workspace } from 'vscode';
 import { logger } from './Log';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { crossPlatformPath } from './utils';
 import { Module } from './Module';
 import { File } from './File';
 import { RFSControl } from './rfs/RFSControl';
@@ -254,7 +253,7 @@ export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInf
 
 // ------------------------------
 
-export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
+export const connectToRemoteFileSystemCommand = function (moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
 		try {
 			const instanceUrl = await window.showInputBox({
@@ -272,11 +271,22 @@ export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, modul
 				throw new Error();
 			}
 			const module = new Module(moduleName, '', instanceUrl, '', true);
+			if (moduleHandler.moduleLength() === 0) {
+				moduleHandler.modules.push(module);
+			} else {
+				for (const mod of moduleHandler.modules) {
+					if (mod.instanceUrl === module.instanceUrl && mod.name === module.name) {
+						mod.remoteFileSystem = module.remoteFileSystem; // = true
+					}
+				}
+			}
 			if (!connectedInstances.includes(instanceUrl)) {
 				await request.loginTokenOrCredentials(module);
+			} else {
+				request.RFSControl = new RFSControl(request.appHandler.getApp(instanceUrl), module, request.devInfo);
+				await request.RFSControl.initAll(moduleHandler);
+				console.log('created rfs from connectToRemoteFileSystemCommand');
 			}
-			await rfs.init(module, request.devInfo);
-			moduleHandler.saveModules();
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -284,19 +294,56 @@ export const connectToRemoteFileSystemCommand = function (rfs: RFSControl, modul
 	});
 };
 
-export const disconnectRemoteFileSystemCommand = function (rfs: RFSControl,  moduleHandler: ModuleHandler, request: SimpliciteAPIManager): Disposable {
+export const disconnectRemoteFileSystemCommand = function (moduleHandler: ModuleHandler, request: SimpliciteAPIManager): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
-		if (!rfs.module?.instanceUrl) {
+		if (!request.RFSControl) {
 			return;
 		}
-		await request.specificLogout(rfs.module?.instanceUrl);
-		rfs.unset();
+		await request.specificLogout(request.RFSControl.module.instanceUrl);
 		for (const module of moduleHandler.modules) {
 			if (module.remoteFileSystem) {
 				module.remoteFileSystem = false;
 			}
 		}
 		moduleHandler.saveModules();
+	});
+};
+
+// ------------------------------
+
+export const initApiWorkspaceCommand = function () {
+	return commands.registerCommand('simplicite-vscode-tools.initApiWorkspace', (baseUrl: string) => {
+		workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(baseUrl), name: baseUrl });
+	});
+};
+
+export const initApiFilesCommand = function (request: SimpliciteAPIManager) {
+	return commands.registerCommand('simplicite-vscode-tools.initApiFiles', async () => {
+		if (!request.RFSControl) {
+			window.showErrorMessage('Simplicite: Cannot initialize the api files, run command "Simplicite: Connect to module remote file system" and make sure the workspace has been correctly set');
+			return;
+		}
+		await request.RFSControl.initFiles();
+	});
+};
+
+export const deleteApiWorkspaceCommand = function (request: SimpliciteAPIManager) {
+	return commands.registerCommand('simplicite-vscode-tools.deleteApiWorkspace', async () => {
+		if (!request.RFSControl) {
+			window.showErrorMessage('Simplicite: Cannot delete api workspace because RFSControl is not set');
+			return;
+		}
+		try {
+			// implement the removal of the module workspace folder and delete the files
+			// remove workspace first as resource is considered busy when opened in a workspace
+			//const res = workspace.updateWorkspaceFolders(workspace.workspaceFolders ? workspace.workspaceFolders.length : 0, null, { uri: Uri.parse('D:\\Repositories\\Github\\Training'), name: 'mourir' });
+			//const uri = Uri.parse(request.RFSControl.baseUrl);
+			//const res = workspace.updateWorkspaceFolders(0, 1);
+			//console.log(res);
+			//await workspace.fs.delete(uri, { recursive: true });
+		} catch (e) {
+			logger.error(e);
+		}
 	});
 };
 
@@ -338,7 +385,7 @@ async function inputFilePath(title: string, placeHolder: string) {
 	if (!fileInput) {
 		throw new Error('Simplicite: file input cancelled');
 	}
-	return crossPlatformPath(fileInput);
+	return fileInput;
 }
 
 

@@ -1,10 +1,9 @@
 'use strict';
 
 import { Module } from './Module';
-import { window, commands, workspace, extensions, env } from 'vscode';
+import { window, commands, workspace, extensions, env, Uri, QuickPickItem } from 'vscode';
 import { Cache } from './Cache';
 import { FileHandler } from './FileHandler';
-import { crossPlatformPath } from './utils';
 import { AppHandler } from './AppHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { logger } from './Log';
@@ -13,8 +12,9 @@ import { removeFileExtension, replaceAll } from './utils';
 import { BarItem } from './BarItem';
 import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './interfaces';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { SimpliciteFS } from './rfs/SimpliciteFS';
 import { RFSControl } from './rfs/RFSControl';
+import { Buffer } from 'buffer';
+import { buffer } from 'stream/consumers';
 
 export class SimpliciteAPIManager {
 	cache: Cache;
@@ -25,12 +25,14 @@ export class SimpliciteAPIManager {
 	barItem?: BarItem;
 	moduleInfoTree?: ModuleInfoTree;
 	RFSControl?: RFSControl;
+	conflictStatus: boolean;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
 		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
 		this.appHandler = new AppHandler();
 		this.fileHandler = fileHandler;
 		this.moduleHandler = moduleHandler;
+		this.conflictStatus = false;
 	}
 
 	async loginHandler(): Promise<void> {
@@ -73,12 +75,13 @@ export class SimpliciteAPIManager {
 			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
-			if (this.RFSControl && module.remoteFileSystem) {
-				await this.RFSControl.init(module, this.devInfo);
-			}
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
+			if (module.remoteFileSystem) {
+				this.RFSControl = new RFSControl(app, module, this.devInfo);
+				await this.RFSControl.initAll(this.moduleHandler);
+			}
 		} catch (e: any) {
 			if (e.status === 401) { 
 				this.moduleHandler.deleteModule(undefined, module.name);
@@ -245,7 +248,7 @@ export class SimpliciteAPIManager {
 
 	private async sendFile(file: File, app: any): Promise<boolean> {
 		try {
-			await this.attachFileAndSend(file.filePath, app);
+			await this.attachFileAndSend(file, app);
 			logger.info('Successfully applied' + file.filePath);
 			return Promise.resolve(true);
 		} catch (e: any) {
@@ -321,31 +324,41 @@ export class SimpliciteAPIManager {
 	}
 
 	// Called by synchronize
-	private async attachFileAndSend(filePath: string, app: any) {
+	async attachFileAndSend(file: File, app: any) {
 		// get fileType and Filename
 		let fileType: string;
 		let fileName: string;
 		let properNameField: string;
 		let fileExtension: string;
 		// eslint-disable-next-line prefer-const
-		({ fileType, fileName, properNameField, fileExtension } = this.operationsBeforeObjectManipulation(filePath));
+		({ fileType, fileName, properNameField, fileExtension } = this.operationsBeforeObjectManipulation(file.filePath));
 		// get the item for the update
 		const obj = await app.getBusinessObject(fileType, 'ide_' + fileType);
-		const item = await this.searchForUpdate(fileName, obj, properNameField, fileType, filePath);
-		// give the field, ex: obo_script_id, scr_file
+		const item = await this.searchForUpdate(fileName, obj, properNameField, fileType, file.filePath);
 		const fieldScriptId = this.getProperScriptField(fileType);
+		const workingFileContent = await workspace.fs.readFile(Uri.parse(file.filePath));
+		
+		if (this.moduleHandler.getModuleFromName(file.moduleName)?.remoteFileSystem) {
+			await this.conflictChecker(workingFileContent, file, fileName, fileExtension, item, fieldScriptId);
+		}
+		// give the field, ex: obo_script_id, scr_file
+		
 		const doc = obj.getFieldDocument(fieldScriptId);
 		if (doc === undefined) {
 			throw new Error('No document returned, cannot update content');
 		}
 		// get the file content for setContent
 
-		const fileContent = await workspace.findFiles('**/' + fileName + fileExtension);
+		const fileContent = await workspace.findFiles('**/src/**/' + fileName + fileExtension);
 		workspace.openTextDocument(fileContent[0]).then((document) => {
 			const text = document.getText();
 			doc.setContentFromText(text);
 			obj.setFieldValue(fieldScriptId, doc);
-			obj.update(item, { inlineDocuments: true }).then(() => {
+			obj.update(item, { inlineDocuments: true }).then(async () => {
+				// once the object is updated, write the content in the temp files so all the files share the same state (workingFileContent, localInitialFileContent & remoteFileContent) 
+				await workspace.fs.writeFile(Uri.parse('Api_' + file.moduleName + '/temp/' + fileName + fileExtension), workingFileContent);
+				await workspace.fs.delete(Uri.parse('Api_' + file.moduleName + '/RemoteFile.java'));
+				this.conflictStatus = false;
 				Promise.resolve();
 			}).catch((e: Error) => {
 				logger.error(e);
@@ -354,9 +367,60 @@ export class SimpliciteAPIManager {
 		});
 	}
 
+	async conflictChecker (workingFileContent: Uint8Array, file: File, fileName: string, fileExtension: string, item: any, fieldScriptId: string): Promise<void> {
+		try {
+			if (this.conflictStatus) {
+				return;
+			}
+			const initialFilePath = Uri.parse('Api_' + file.moduleName + '/temp/' + fileName + fileExtension);
+			const localInitialFileContent =  await workspace.fs.readFile(initialFilePath); 
+			const remoteFileContent = Buffer.from(item[fieldScriptId].content, 'base64');
+			// check if the local initial state of the file is the same as the remote file
+			const isRemoteEqualToInitial = Buffer.compare(remoteFileContent, localInitialFileContent);
+			const isWorkingEqualToInitial = Buffer.compare(workingFileContent, localInitialFileContent);
+			if (isRemoteEqualToInitial !== 0 && isWorkingEqualToInitial !== 0) {
+				const remoteFilePath = Uri.parse('Api_' + file.moduleName + '/RemoteFile.java');
+				this.conflictStatus = true;
+				// need to write the file in order to get the file content in vscode.diff
+				await workspace.fs.writeFile(remoteFilePath, Buffer.from(item[fieldScriptId].content, 'base64'));
+				await commands.executeCommand('vscode.diff', Uri.parse(file.filePath), remoteFilePath);
+				window.showWarningMessage('Simplicite: Conflict detected with remote file, edit the file on the left panel and save to apply the modifications. If you do not want to merge the two versions, you can overwrite the content of the file of your choice by clicking on the following button and choose between these two actions: \'Remote\' to overwrite the local content with the remote content & \'Local\' to overwrite the remote content with the local content. Note that the modifications on the overwritten file will be lost', 'Choose action').then(async (click) => {
+					if (click === 'Choose action') {
+						const choice = await window.showQuickPick([{ label: 'Remote' }, { label: 'Local' }]);
+						if (!choice) {
+							const msg = 'No file has been chosen';
+							window.showInformationMessage('Simplicite: ' + msg);
+							throw new Error(msg);
+						} else if (choice.label === 'Remote') { // just write content on local file
+							await workspace.fs.writeFile(Uri.parse(file.filePath), Buffer.from(item[fieldScriptId].content, 'base64'));
+							await workspace.fs.writeFile(initialFilePath, item[fieldScriptId].content);
+							await workspace.fs.delete(remoteFilePath);
+							this.conflictStatus = false;
+						} else if (choice.label === 'Local') {
+							await this.sendFile(file, this.appHandler.getApp(file.instanceUrl));
+						}
+					}
+				});
+				throw new Error('Conflict');
+			} else if (isWorkingEqualToInitial === 0 && isRemoteEqualToInitial !== 0) {
+				// if no local changes and remote changed, update local files
+				await workspace.fs.writeFile(Uri.parse(file.filePath), Buffer.from(item[fieldScriptId].content, 'base64'));
+				await workspace.fs.writeFile(initialFilePath, Buffer.from(item[fieldScriptId].content, 'base64'));
+				window.showInformationMessage('Simplicite: Local file content hasn\'t changed. Fetched latest remote file content');
+				throw new Error('No local changes on save, remote file was changed --> fetched file content to local');
+			} else if (isRemoteEqualToInitial === 0 && isWorkingEqualToInitial === 0) {
+				throw new Error('No changes');
+			}
+			//workspace.fs.delete(Uri.parse('Api_' + file.moduleName + '/RemoteFile.java'));
+		} catch (e: any) {
+			throw new Error(e);
+		}
+	}
+	
+
 	private operationsBeforeObjectManipulation(filePath: string): ReturnValueOperationsBeforeObjectManipulation {
 		const fileType = this.getBusinessObjectType(filePath);
-		const filePathDecomposed = crossPlatformPath(filePath).split('/');
+		const filePathDecomposed = filePath.split('/');
 		const lastOfPath = filePathDecomposed[filePathDecomposed.length - 1];
 		const fileExtensionTab = lastOfPath.split('.');
 		const fileExtension = '.' + fileExtensionTab[fileExtensionTab.length - 1];
