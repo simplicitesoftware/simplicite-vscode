@@ -102,6 +102,16 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+			  "view": "simpliciteFile",
+			  "contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your disk."
+			},
+			{
+				"view": "simpliciteModuleInfo",
+				"contents": "No module info available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)"
+			}
+		],
 		"commands": [
 			{
 				"command": "simplicite-vscode-tools.applyChanges",
@@ -192,14 +202,17 @@
 				"title": "Simplicite: Disconnect from the module remote file system"
 			},
 			{
-				"command": "simplicite-vscode-tools.initWorkspace",
-				"title": "Simplicite: Init workspace"
+				"command": "simplicite-vscode-tools.initApiWorkspace",
+				"title": "Simplicite: Init api workspace"
 			},
 			{
-				"command": "simplicite-vscode-tools.initFiles",
-				"title": "Simplicite: Init files"
+				"command": "simplicite-vscode-tools.initApiFiles",
+				"title": "Simplicite: Init api files"
+			},
+			{
+				"command": "simplicite-vscode-tools.deleteApiWorkspace",
+				"title": "Simplicite: Delete api workspace"
 			}
-			
 		],
 		"configuration": {
 			"properties": {
