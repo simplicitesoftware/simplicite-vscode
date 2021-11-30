@@ -1,6 +1,6 @@
 'use strict';
 
-import { window, MarkdownString, StatusBarItem, env } from 'vscode';
+import { window, MarkdownString, StatusBarItem, env, Uri } from 'vscode';
 import { Module } from './Module';
 import { validFileExtension } from './utils';
 
@@ -52,7 +52,11 @@ export class BarItem {
 				moduleMarkdown += url + ':\n';
 				for (const module of modules) {
 					if (url === module.instanceUrl) {
-						moduleMarkdown += '- ' + module.name + '\n\n';
+						moduleMarkdown += '- ';
+						if (module.remoteFileSystem) {
+							moduleMarkdown += 'Api_';
+						}
+						moduleMarkdown += module.name + '\n\n';
 					}
 				}
 			}
@@ -78,13 +82,5 @@ export class BarItem {
 			}
 		}
 		return moduleMarkdown;
-	}
-
-	fileName(filePath: string): string {
-		const fileList = filePath.split('/');
-		if (validFileExtension(fileList[fileList.length - 1])) {
-			return fileList[fileList.length - 1];
-		}
-		return '';
 	}
 }

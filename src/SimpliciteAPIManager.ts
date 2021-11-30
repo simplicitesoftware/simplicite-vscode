@@ -1,7 +1,7 @@
 'use strict';
 
 import { Module } from './Module';
-import { window, commands, workspace, extensions, env, Uri, QuickPickItem } from 'vscode';
+import { window, commands, workspace, extensions, env, Uri } from 'vscode';
 import { Cache } from './Cache';
 import { FileHandler } from './FileHandler';
 import { AppHandler } from './AppHandler';
@@ -14,7 +14,7 @@ import { ReturnValueOperationsBeforeObjectManipulation, CustomMessage } from './
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { RFSControl } from './rfs/RFSControl';
 import { Buffer } from 'buffer';
-import { buffer } from 'stream/consumers';
+import { isHttpsUri } from 'valid-url';
 
 export class SimpliciteAPIManager {
 	cache: Cache;
@@ -28,7 +28,7 @@ export class SimpliciteAPIManager {
 	conflictStatus: boolean;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
-		this.devInfo = null; // needs to be logged in, fetch on first login (provides services only when connected)
+		this.devInfo = undefined; // needs to be logged in, fetch on first login (provides services only when connected)
 		this.appHandler = new AppHandler();
 		this.fileHandler = fileHandler;
 		this.moduleHandler = moduleHandler;
@@ -53,17 +53,30 @@ export class SimpliciteAPIManager {
 	}
 
 	async loginTokenOrCredentials(module: Module): Promise<void> {
-		const app = this.appHandler.getApp(module.instanceUrl); // handleApp returns the app correct instance (one for every simplicite instance)
-		if (module.token === '') {
-			await this.authenticationWithCredentials(module.name, app, async () => {
+		try {
+			if (!isHttpsUri(module.instanceUrl)) {
+				throw new Error('Simplicite: ' + module.instanceUrl + ' is not a valid url');
+			}
+			const app = this.appHandler.getApp(module.instanceUrl); // handleApp returns the app correct instance (one for every simplicite instance)
+			if (module.token === '') {
+				await this.authenticationWithCredentials(module.name, app);
 				await this.loginMethod(module, app);
-			});
-		} else {
-			app.authtoken = module.token;
-			await this.loginMethod(module, app);
+			} else {
+				app.authtoken = module.token;
+				await this.loginMethod(module, app);
+			}
+			await this.refreshModuleDevInfo();
+			this.moduleHandler.saveModules();
+		} catch(e: any) {
+			for (const mod of this.moduleHandler.modules) {
+				if (mod.workspaceFolderPath === module.workspaceFolderPath) {
+					mod.remoteFileSystem = false;
+				}
+			}
+			this.moduleHandler.deleteModule(module.instanceUrl, undefined);
+			window.showErrorMessage(e);
 		}
-		await this.refreshModuleDevInfo();
-		this.moduleHandler.saveModules();
+
 	}
 
 	private async loginMethod(module: Module, app: any): Promise<void> {
@@ -75,54 +88,59 @@ export class SimpliciteAPIManager {
 			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
-			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
-			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
-			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
-			if (module.remoteFileSystem) {
+			if (module.remoteFileSystem && this.devInfo) {
 				this.RFSControl = new RFSControl(app, module, this.devInfo);
 				await this.RFSControl.initAll(this.moduleHandler);
 			}
+			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
+			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
+			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 		} catch (e: any) {
-			if (e.status === 401) { 
-				this.moduleHandler.deleteModule(undefined, module.name);
-				this.appHandler.appList.delete(module.instanceUrl);
-				this.moduleHandler.spreadToken(module.instanceUrl, '');
-			} else {
-				app.setAuthToken(null);
-				app.setPassword(null);
-				app.setUsername(null);	
-				await this.specificLogout(module.instanceUrl);
+			module.remoteFileSystem = false;
+			this.moduleHandler.deleteModule(undefined, module.workspaceFolderPath);
+			this.appHandler.appList.delete(module.instanceUrl);
+			this.moduleHandler.spreadToken(module.instanceUrl, '');
+			let msg = e.message;
+			if (e.message === 'Failed to fetch') {
+				msg = app.parameters.url + ' is not responding';
+			} else if (e.message === 'Cannot read field "m_lang" because "this.m_data" is null') {
+				this.moduleHandler.modules = [];
+				this.moduleHandler.saveModules();
 			}
-			window.showErrorMessage('Simplicite: ' + e.message);
+			window.showErrorMessage('Simplicite: ' + msg);
 			logger.error(e);
 		}
-	}
+	} 
 
-	private async authenticationWithCredentials(moduleName: string, app: any, callback: () => Promise<void>) {
-		let usernamePlaceHolder = 'username';
-		let passwordPlaceHolder = 'password';
-		if (env.appHost !== 'desktop') {
-			usernamePlaceHolder = `username (instance url: ${app.parameters.url})`;
-			passwordPlaceHolder = `password (instance url: ${app.parameters.url})`;
+	private async authenticationWithCredentials(moduleName: string, app: any) {
+		try {
+			let usernamePlaceHolder = 'username';
+			let passwordPlaceHolder = 'password';
+			if (env.appHost !== 'desktop') {
+				usernamePlaceHolder = `username (instance url: ${app.parameters.url})`;
+				passwordPlaceHolder = `password (instance url: ${app.parameters.url})`;
+			}
+			const username = await window.showInputBox({
+				placeHolder: usernamePlaceHolder,
+				title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url + ')'
+			});
+			if (!username) {
+				throw new Error('Authentication cancelled');
+			}
+			const password = await window.showInputBox({
+				placeHolder: passwordPlaceHolder,
+				title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url + ')',
+				password: true
+			});
+			if (!password) {
+				throw new Error('Authentication cancelled');
+			}
+			app.setPassword(password);
+			app.setUsername(username);
+		} catch (e) {
+			this.appHandler.appList.delete(app.parameters.url);
+			throw new Error('Check instance Url');
 		}
-		const username = await window.showInputBox({
-			placeHolder: usernamePlaceHolder,
-			title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url + ')'
-		});
-		if (!username) {
-			throw new Error('Authentication cancelled');
-		}
-		const password = await window.showInputBox({
-			placeHolder: passwordPlaceHolder,
-			title: 'Simplicite: Authenticate to ' + moduleName + ' API (' + app.parameters.url + ')',
-			password: true
-		});
-		if (!password) {
-			throw new Error('Authentication cancelled');
-		}
-		app.setPassword(password);
-		app.setUsername(username);
-		await callback();
 	}
 
 	async logout(): Promise<void> {
@@ -337,8 +355,8 @@ export class SimpliciteAPIManager {
 		const item = await this.searchForUpdate(fileName, obj, properNameField, fileType, file.filePath);
 		const fieldScriptId = this.getProperScriptField(fileType);
 		const workingFileContent = await workspace.fs.readFile(Uri.parse(file.filePath));
-		
-		if (this.moduleHandler.getModuleFromName(file.moduleName)?.remoteFileSystem) {
+		const module = this.moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
+		if (module !== false && module.remoteFileSystem) {
 			await this.conflictChecker(workingFileContent, file, fileName, fileExtension, item, fieldScriptId);
 		}
 		// give the field, ex: obo_script_id, scr_file
@@ -452,6 +470,9 @@ export class SimpliciteAPIManager {
 	}
 
 	private getProperScriptField(fileType: string) {
+		if (!this.devInfo) {
+			return;
+		}
 		for (const object of this.devInfo.objects) {
 			if (fileType === object.object) {
 				return object.sourcefield;
@@ -460,6 +481,9 @@ export class SimpliciteAPIManager {
 	}
 
 	private getProperNameField(fileType: string) {
+		if (!this.devInfo) {
+			return;
+		}
 		for (const object of this.devInfo.objects) {
 			if (fileType === object.object) {
 				return object.keyfield;

@@ -35,22 +35,34 @@ export class ModuleHandler {
 
 	setSavedData() {
 		const parsedModuleState: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
-		for (const stateModule of parsedModuleState) {
-			if (this.modules.length === 0 && parsedModuleState.length > 0) { // potentially get a module with remote file system
-				for (const module of parsedModuleState) {
-					if (module.remoteFileSystem) {
-						this.modules.push(module);
-					}
+		for (const module of parsedModuleState) {
+			if (parsedModuleState.length > 0) { // potentially get a module with remote file system
+				const includes = this.getModuleFromWorkspacePath(module.workspaceFolderPath);
+				if (module.remoteFileSystem && !includes) {
+					this.modules.push(module);
 				}
-			} else if (this.modules.length > 0) {
-				for (const module of this.modules) {
-					if (stateModule.instanceUrl === module.instanceUrl) {
-						module.token = stateModule.token;
-						module.remoteFileSystem = stateModule.remoteFileSystem;
+			} if (this.modules.length > 0) {
+				for (const mod of this.modules) {
+					if (module.instanceUrl === mod.instanceUrl) {
+						mod.token = module.token;
+					} if (module.workspaceFolderPath === mod.workspaceFolderPath) {
+						mod.remoteFileSystem = module.remoteFileSystem;
 					}
 				}
 			}
-			
+		}
+		// sort the list so the api file system appears first
+		const tempModules = this.modules;
+		this.modules = [];
+		for (const module of tempModules) {
+			if (module.remoteFileSystem) {
+				this.modules.push(module);
+			}
+		}
+		for (const module of tempModules) {
+			if (!module.remoteFileSystem) {
+				this.modules.push(module);
+			}
 		}
 	}
 
@@ -140,36 +152,24 @@ export class ModuleHandler {
 	}
 
 	deleteModule(instanceUrl: string | undefined, moduleName: string | undefined): void {
-		const moduleArray: Module[] = this._globalState.get('simplicite-modules-info') || [];
+		const moduleArray: Module[] = this.modules;
 		const newInfo = [];
 		if (moduleArray === null) {
 			throw new Error('Error getting simplicite info content');
 		}
 		for (const module of moduleArray) {
 			if (instanceUrl) {
-				if (module.instanceUrl !== instanceUrl || this.apiModuleSecurityGuard(module.name)) {
+				if (module.instanceUrl !== instanceUrl || module.remoteFileSystem) {
 					newInfo.push(module);
 				}
-			} else if (moduleName || this.apiModuleSecurityGuard(module.name)) {
-				if (module.name !== moduleName) {
+			} else if (moduleName) {
+				if (module.name !== moduleName || module.remoteFileSystem) {
 					newInfo.push(module);
 				}
 			}
 		}
+		this.modules = newInfo;
 		this._globalState.update('simplicite-modules-info', newInfo);
-	}
-
-	private apiModuleSecurityGuard(moduleName: string): boolean {
-		const wks = workspace.workspaceFolders;
-		if (!wks) {
-			return false;
-		}
-		for (const wk of wks) {
-			if (wk.name === 'Api_' + moduleName) {
-				return true;
-			}
-		}
-		return false;
 	}
 }
 

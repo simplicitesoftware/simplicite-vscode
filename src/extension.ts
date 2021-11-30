@@ -4,7 +4,7 @@ import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable } from 'vscode';
 import { SimpliciteAPIManager } from './SimpliciteAPIManager';
 import { CompletionProvider } from './CompletionProvider';
-import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand, connectToRemoteFileSystemCommand, disconnectRemoteFileSystemCommand, initApiWorkspaceCommand, initApiFilesCommand, deleteApiWorkspaceCommand } from './commands';
+import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand, connectToRemoteFileSystemCommand, disconnectRemoteFileSystemCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -12,9 +12,9 @@ import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
-import { OpenFileContext } from './interfaces';
 import { TEMPLATE } from './constant';
 import { Module } from './Module';
+import { File } from './File';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
@@ -56,11 +56,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
 	const connectToRemoteFileSystem = connectToRemoteFileSystemCommand(moduleHandler, moduleHandler.connectedInstancesUrl, request);
 	const disconnectRemoteFileSystem = disconnectRemoteFileSystemCommand(moduleHandler, request);
-	const initApiWorkspace = initApiWorkspaceCommand();
-	const initApiFiles = initApiFilesCommand(request);
-	const deleteApiWorkspace = deleteApiWorkspaceCommand(request);
 
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem, initApiWorkspace, initApiFiles, deleteApiWorkspace);
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
 		try {
@@ -79,11 +76,13 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			const file = fileHandler.getFileFromFullPath(event.uri.path);
 			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
 			if (!module) {
-				logger.error('Cannot get module info from ' + file.workspaceFolderPath);
+				logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
 				return;
 			}
 			if (module.remoteFileSystem && request.RFSControl) {
 				await request.attachFileAndSend(file, request.appHandler.getApp(module.instanceUrl));
+			} else {
+				await fileHandler.setTrackedStatus(file.filePath, true, fileHandler.bindFileAndModule(moduleHandler.modules));
 			}
 		}
 	});
@@ -95,7 +94,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		moduleHandler.setSavedData();
 		if (event.added.length > 0) { // If a folder is added to workspace
 			try {
-				const currentModule = moduleHandler.getModuleFromName(event.added[0].name);
+				const currentModule = moduleHandler.getModuleFromWorkspacePath(event.added[0].uri.path);
 				if (!currentModule) {
 					throw new Error('No known module name matches with the root folder of the project. Root folder = ' + event.added[0].name);
 				}
@@ -124,28 +123,21 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			&& request.devInfo
 			&& moduleHandler.modules.length
 			&& window.activeTextEditor) {
-			const filePath = window.activeTextEditor.document.fileName;
+			const filePath = window.activeTextEditor.document.uri.path;
 			if (!filePath.includes('.java')) {
 				return undefined;
 			}
-			const currentPageUri = window.activeTextEditor.document.uri;
-			const workspaceUrl = CompletionProvider.getWorkspaceFromFileUri(currentPageUri);
-			const module = moduleHandler.getModuleFromWorkspacePath(workspaceUrl);
+			const file = fileHandler.getFileFromFullPath(filePath);
+			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
 			if (!module) {
 				return undefined;
 			}
-			const instanceUrl = module.instanceUrl;
-			if (!connectedInstances.includes(instanceUrl)) {
+			if (!connectedInstances.includes(file.instanceUrl)) {
 				logger.warn('Cannot provide completion, not connected to the module\'s instance');
 				return undefined;
 			}
-			const openFileContext: OpenFileContext = {
-				filePath: filePath,
-				fileName: CompletionProvider.getFileNameFromPath(filePath),
-				workspaceUrl: workspaceUrl,
-				instanceUrl: instanceUrl
-			};
-			completionProvider = completionProviderHandler(openFileContext, request.devInfo, module.moduleDevInfo, context);
+			
+			completionProvider = completionProviderHandler(request.devInfo, module.moduleDevInfo, context, file);
 			return completionProvider;
 		}
 		return undefined;
@@ -177,8 +169,8 @@ export function deactivate(context: ExtensionContext) {
 	context.globalState.get('simplicite-modules-info', );
 }
 
-function completionProviderHandler(openFileContext: OpenFileContext, devInfo: any, moduleDevInfo: any, context: ExtensionContext): Disposable {
-	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, openFileContext);
+function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {
+	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, file);
 	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
 	logger.info('completion ready');

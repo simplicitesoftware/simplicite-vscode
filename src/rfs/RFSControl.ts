@@ -7,13 +7,12 @@ import { Module } from '../Module';
 import { ModuleHandler } from '../ModuleHandler';
 import { replaceAll } from '../utils';
 import { Buffer } from 'buffer';
-import { File } from '../File';
 
 export class RFSControl {
 	app: any;
 	baseUrl: string;
 	module: Module;
-	devInfo: DevInfoObject;
+	devInfo: any;
 
 	constructor (app: any, module: Module, devInfo: DevInfoObject) {
 		this.app = app;
@@ -35,7 +34,18 @@ export class RFSControl {
 			}
 			moduleHandler.saveModules();
 			await this.initFiles();
-			commands.executeCommand('simplicite-vscode-tools.initApiWorkspace', 'Api_' + this.module.name);
+			const wks = workspace.workspaceFolders;
+			let flag = false;
+			if (wks) {
+				for (const wk of wks) {
+					if (wk.name === this.baseUrl) {
+						flag = true;
+					}
+				}
+			}
+			if (!flag) {
+				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(this.baseUrl), name: this.baseUrl });
+			}
 		} catch (e) {
 			logger.error(e);
 		}

@@ -32,7 +32,6 @@ export interface FileAndModule {
 	moduleName: string,
 	instanceUrl: string,
 	fileList: File[],
-	remoteFileSystem: boolean
 }
 
 export interface OpenFileContext {
@@ -47,7 +46,7 @@ export interface DevInfoObject {
 	completion: any,
 	icon: string,
 	keyfield: string,
-	objects: any,
+	object: any,
 	package: string | undefined,
 	sourcefield: string
 }

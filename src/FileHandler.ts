@@ -13,8 +13,7 @@ import { getModuleFromWorkspacePath } from './utils';
 interface ModuleObject {
 	moduleName: string,
 	instanceUrl: string,
-	fileList: File[],
-	remoteFileSystem: boolean
+	fileList: File[]
 }
 
 export class FileHandler {
@@ -43,7 +42,10 @@ export class FileHandler {
 	bindFileAndModule(modules: Array<Module>): FileAndModule[] {
 		const fileModule = [];
 		for (const module of modules) {
-			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [], remoteFileSystem: module.remoteFileSystem };
+			if (module.remoteFileSystem) {
+				continue;
+			}
+			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
 			for (const file of this.fileList) {
 				if (file.moduleName === module.name) {
 					moduleObject.fileList.push(file);
@@ -77,7 +79,7 @@ export class FileHandler {
 				for (const file of files) {
 					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/temp/')) {
 						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
-						if (!module) {
+						if (!module || !file.path.includes(module.name)) {
 							continue;
 						}
 						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));

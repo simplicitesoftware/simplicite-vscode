@@ -26,7 +26,15 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	}
 
 	setModules(modules: Array<Module>): void {
-		this._modules = modules;
+		this._modules = [];
+		const addedModules: string[] = []; // avoid adding the same module
+		for (const module of modules) {	
+			if (addedModules.includes(module.name)) {
+				continue;
+			}
+			this._modules?.push(module);
+			addedModules.push(module.name);
+		}
 		this.refresh();
 	}
 
@@ -92,6 +100,9 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 		const modulesItems = [];
 		for (const module of this._modules) {
+			if (!module.moduleDevInfo) {
+				continue;
+			}
 			modulesItems.push(new CustomTreeItem(module.name, TreeItemCollapsibleState.Collapsed, module.instanceUrl, ItemType.module, module, 'module', undefined, this._runPath));
 		}
 		return modulesItems;

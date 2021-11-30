@@ -3,19 +3,20 @@
 
 import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
 import { logger } from './Log';
-import { OpenFileContext, DevInfoObject } from './interfaces';
+import { DevInfoObject } from './interfaces';
 import { removeFileExtension } from './utils';
+import { File } from './File';
 
 export class CompletionProvider implements CompletionItemProvider {
 	private _devInfo: any;
 	private _moduleDevInfo: any;
-	private _openFileContext: OpenFileContext;
+	private _file: File;
 	private _fileInfo: DevInfoObject | undefined;
 	private _completionItems: CustomCompletionItem[];
-	constructor(devInfo: any, moduleDevInfo: any, openFileContext: OpenFileContext,) {
+	constructor(devInfo: any, moduleDevInfo: any, file: File,) {
 		this._devInfo = devInfo;
 		this._moduleDevInfo = moduleDevInfo;
-		this._openFileContext = openFileContext;
+		this._file = file;
 		this._fileInfo = this.getFileObject();
 		this._completionItems = this.computeCompletionItems();
 	}
@@ -27,9 +28,10 @@ export class CompletionProvider implements CompletionItemProvider {
 			}
 			const completionItems: CustomCompletionItem[] = [];
 			for (const objectType in this._moduleDevInfo) {
-				if (objectType === this._fileInfo.objects) {
+				if (objectType === this._fileInfo.object) {
 					for (const object of this._moduleDevInfo[objectType]) {
-						if (object.name === this._openFileContext.fileName) {
+						const fileName = CompletionProvider.getFileNameFromPath(this._file.filePath);
+						if (object.name === fileName) {
 							for (const completionAttribute in this._fileInfo.completion) {
 								// eslint-disable-next-line no-prototype-builtins
 								if (object.hasOwnProperty(completionAttribute)) {
@@ -84,22 +86,9 @@ export class CompletionProvider implements CompletionItemProvider {
 		return specificItems;
 	}
 
-	static getModuleName(workspaceUrl: string): string {
-		const decomposedUrl = workspaceUrl.split('/');
-		return decomposedUrl[decomposedUrl.length - 1];
-	}
-
 	static getFileNameFromPath(filePath: string): string {
 		const decomposedPath = filePath.split('/');
 		return removeFileExtension(decomposedPath[decomposedPath.length - 1]);
-	}
-
-	static getWorkspaceFromFileUri(uri: Uri): string {
-		const workspaceFolder = workspace.getWorkspaceFolder(uri);
-		if (workspaceFolder !== undefined) {
-			return workspaceFolder.uri.path;
-		}
-		return '';
 	}
 
 	private getFileObject(): DevInfoObject | undefined {
@@ -117,7 +106,7 @@ export class CompletionProvider implements CompletionItemProvider {
 
 	private doesFilePathContainsObjectPackage(objectPackage: string): boolean {
 		const packagePathFormat = objectPackage.replace(/\./g, '/');
-		if (this._openFileContext.filePath.includes(packagePathFormat)) {
+		if (this._file.filePath.includes(packagePathFormat)) {
 			return true;
 		}
 		return false;
