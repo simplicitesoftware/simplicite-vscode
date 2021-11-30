@@ -104,8 +104,8 @@
 		},
 		"viewsWelcome": [
 			{
-			  "view": "simpliciteFile",
-			  "contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your disk."
+				"view": "simpliciteFile",
+				"contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your disk."
 			},
 			{
 				"view": "simpliciteModuleInfo",
@@ -255,6 +255,7 @@
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.0.0",
 		"@types/node": "16.x",
+		"@types/valid-url": "^1.0.3",
 		"@types/vscode": "^1.52.0",
 		"@types/xml2js": "^0.4.9",
 		"@typescript-eslint/eslint-plugin": "^5.4.0",
@@ -285,6 +286,7 @@
 		"stream-http": "^3.2.0",
 		"timers-browserify": "^2.0.12",
 		"url": "^0.11.0",
+		"valid-url": "^1.0.9",
 		"vscode-uri": "^3.0.2",
 		"winston": "^3.3.3",
 		"xml2js": "^0.4.23"
