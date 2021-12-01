@@ -28,7 +28,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const barItem = new BarItem();
 	request.barItem = barItem; // refresh on log in and logout
 
-	const bindedFileAndModule = fileHandler.bindFileAndModule(moduleHandler.modules);
+	const bindedFileAndModule = fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList);
 	const fileTree = new FileTree(context.extensionUri.path, bindedFileAndModule);
 	window.registerTreeDataProvider('simpliciteFile', fileTree);
 	fileHandler.fileTree = fileTree;
@@ -82,7 +82,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			if (module.remoteFileSystem && request.RFSControl) {
 				await request.attachFileAndSend(file, request.appHandler.getApp(module.instanceUrl));
 			} else {
-				await fileHandler.setTrackedStatus(file.filePath, true, fileHandler.bindFileAndModule(moduleHandler.modules));
+				await fileHandler.setTrackedStatus(file.filePath, true, fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
 			}
 		}
 	});
@@ -104,15 +104,15 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.error(e);
 			}
 		} else if (event.removed.length > 0) { // in this case, if a folder is removed we check if it's a simplicite module	
-			const instance = getDisconnectedInstance(moduleHandler.connectedInstancesUrl, oldModules);
-			if (instance) {
-				await request.specificLogout(instance);
-			}
+			// const instance = getDisconnectedInstance(moduleHandler.connectedInstancesUrl, oldModules);
+			// if (instance) {
+			// 	await request.specificLogout(instance);
+			// }
 			logger.info('removed module from workspace');
 		}
-		await fileHandler.FileDetector(moduleHandler.modules);
+		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
 		await request.refreshModuleDevInfo();
-		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules));
+		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
 	});
 
 	// Completion
@@ -136,7 +136,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.warn('Cannot provide completion, not connected to the module\'s instance');
 				return undefined;
 			}
-			
 			completionProvider = completionProviderHandler(request.devInfo, module.moduleDevInfo, context, file);
 			return completionProvider;
 		}

@@ -1,6 +1,6 @@
 'use strict';
 
-import { workspace, Uri, commands } from 'vscode';
+import { workspace, Uri } from 'vscode';
 import { DevInfoObject } from '../interfaces';
 import { logger } from '../Log';
 import { Module } from '../Module';
@@ -27,11 +27,10 @@ export class RFSControl {
 			if (wk) {
 				this.module.workspaceFolderPath = wk;
 			}
-			for (let mod of moduleHandler.modules) {
-				if (mod.name === this.module.name) {
-					mod = this.module;
-				}
-			}
+			//this.module.token = moduleHandler.getTokenIfExist(this.module.instanceUrl);
+			// for (const mod of moduleHandler.modules) {
+			// 	if (mod.remoteFileSystem && mod.name === this.module.)
+			// }
 			moduleHandler.saveModules();
 			await this.initFiles();
 			const wks = workspace.workspaceFolders;
@@ -45,6 +44,7 @@ export class RFSControl {
 			}
 			if (!flag) {
 				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(this.baseUrl), name: this.baseUrl });
+				throw new Error('Workspace update');
 			}
 		} catch (e) {
 			logger.error(e);

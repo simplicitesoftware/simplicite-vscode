@@ -24,7 +24,7 @@ export class SimpliciteAPIManager {
 	moduleHandler: ModuleHandler;
 	barItem?: BarItem;
 	moduleInfoTree?: ModuleInfoTree;
-	RFSControl?: RFSControl;
+	RFSControl: RFSControl[];
 	conflictStatus: boolean;
 	constructor(fileHandler: FileHandler, moduleHandler: ModuleHandler) {
 		this.cache = new Cache();
@@ -33,6 +33,7 @@ export class SimpliciteAPIManager {
 		this.fileHandler = fileHandler;
 		this.moduleHandler = moduleHandler;
 		this.conflictStatus = false;
+		this.RFSControl = [];
 	}
 
 	async loginHandler(): Promise<void> {
@@ -66,6 +67,7 @@ export class SimpliciteAPIManager {
 				await this.loginMethod(module, app);
 			}
 			await this.refreshModuleDevInfo();
+			this.moduleHandler.setSavedData();
 			this.moduleHandler.saveModules();
 		} catch(e: any) {
 			for (const mod of this.moduleHandler.modules) {
@@ -89,8 +91,9 @@ export class SimpliciteAPIManager {
 			this.appHandler.setApp(module.instanceUrl, app);
 			this.moduleHandler.addInstanceUrl(module.instanceUrl);
 			if (module.remoteFileSystem && this.devInfo) {
-				this.RFSControl = new RFSControl(app, module, this.devInfo);
-				await this.RFSControl.initAll(this.moduleHandler);
+				const rfsControl = new RFSControl(app, module, this.devInfo);
+				this.RFSControl.push(rfsControl);
+				await rfsControl.initAll(this.moduleHandler);
 			}
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
@@ -257,7 +260,7 @@ export class SimpliciteAPIManager {
 			if (res) {
 				success++;
 			}
-			await this.fileHandler.setTrackedStatus(file.filePath, false, this.fileHandler.bindFileAndModule(this.moduleHandler.modules));
+			await this.fileHandler.setTrackedStatus(file.filePath, false, this.fileHandler.bindFileAndModule(this.moduleHandler.modules, this.fileHandler.fileList));
 		} catch (e) {
 			logger.error('Cannot apply ' + file.filePath);
 		}

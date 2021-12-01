@@ -9,7 +9,7 @@ import { File } from './File';
 import { RFSControl } from './rfs/RFSControl';
 import { ModuleHandler } from './ModuleHandler';
 import { FileHandler } from './FileHandler';
-import { isHttpsUri } from 'valid-url';
+import { isHttpsUri, isHttpUri } from 'valid-url';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -257,42 +257,33 @@ export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInf
 export const connectToRemoteFileSystemCommand = function (moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
 	return commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
 		try {
-			/*const instanceUrl = await window.showInputBox({
+			const instanceUrl = await window.showInputBox({
 				placeHolder: 'instance url',
 				title: 'Simplicite: Type the name of the instance url'
 			});
 			if (!instanceUrl) {
 				throw new Error();
-			} if (!isHttpsUri(instanceUrl)) {
+			} if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) {
 				throw new Error(instanceUrl + ' is not a valid url');
-			}*//*
+			}
 			const moduleName = await window.showInputBox({
 				placeHolder: 'module name',
 				title: 'Simplicite: Type the name of the module'
 			});
 			if (!moduleName) {
 				throw new Error();
-			}*/
-			const moduleName = 'Demo';
-			const instanceUrl = 'https://gaubert.demo.simplicite.io';
-			const module = new Module(moduleName, '', instanceUrl, '', true);
-			if (moduleHandler.moduleLength() === 0) {
-				moduleHandler.modules.push(module);
-			} else {
-				for (const mod of moduleHandler.modules) {
-					if (mod.instanceUrl === module.instanceUrl && mod.name === module.name) {
-						mod.remoteFileSystem = module.remoteFileSystem; // = true
-					}
-				}
 			}
+			const module = new Module(moduleName, '', instanceUrl, '', true, true);
 			if (!connectedInstances.includes(instanceUrl)) {
+				moduleHandler.modules.push(module);
 				await request.loginTokenOrCredentials(module);
 			}
 			if (!request.devInfo) {
-				throw new Error('');
+				throw new Error('Simplicite: no dev info cannot set api file system');
 			}
-			request.RFSControl = new RFSControl(request.appHandler.getApp(instanceUrl), module, request.devInfo);
-			await request.RFSControl.initAll(moduleHandler);
+			const rfsControl = new RFSControl(request.appHandler.getApp(instanceUrl), module, request.devInfo);
+			request.RFSControl.push(rfsControl);
+			rfsControl.initAll(moduleHandler);
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -305,21 +296,48 @@ export const disconnectRemoteFileSystemCommand = function (moduleHandler: Module
 		if (!request.RFSControl) {
 			return;
 		}
+		const moduleName = await window.showInputBox({
+			placeHolder: 'module name',
+			title: 'Simplicite: Type the name of the remote module to remove from workspace'
+		});
+		if (!moduleName) {
+			throw new Error();
+		}
 		let tempmodule = undefined;
+		let module: undefined | Module;
+		let index = 0;
+		for (const rfs of request.RFSControl) {
+			index++;
+			if (rfs.module.name === moduleName) {
+				module = rfs.module;
+			}
+		}
+		if (!module) {
+			throw new Error('Simplicite: Module not found');
+		}
 		for (const module of moduleHandler.modules) {
-			if (module.workspaceFolderPath === request.RFSControl.module.workspaceFolderPath) {
+			if (module.workspaceFolderPath === module.workspaceFolderPath) {
 				module.remoteFileSystem = false;
 				tempmodule = module;
 			}
 		}
-		const instanceUrl = request.RFSControl.module.instanceUrl;
-		request.RFSControl = undefined;
+		const instanceUrl = module.instanceUrl;
+		request.RFSControl = request.RFSControl.splice(index, 1);
 		await request.specificLogout(instanceUrl);
 		try {
-			workspace.updateWorkspaceFolders(0, 1);
+			if (!workspace.workspaceFolders) {
+				throw new Error();
+			}
+			let index = 0;
+			for (const wk of workspace.workspaceFolders) {
+				if (wk.name === 'Api_' + tempmodule?.name) {
+					workspace.updateWorkspaceFolders(index, 1);
+				}
+				index++;
+			}
 			await workspace.fs.delete(Uri.parse('Api_' + tempmodule?.name), { recursive: true });
 		} catch (e) {
-			console.log(e);
+			logger.error(e);
 		}
 	});
 };
@@ -341,7 +359,7 @@ function doubleClickTrigger(): boolean {
 
 async function trackAction(request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler, element: any, trackedValue: boolean) {
 	const inputFile = await getInputFile(request, element);
-	const fileModule = fileHandler.bindFileAndModule(moduleHandler.modules);
+	const fileModule = fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList);
 	await fileHandler.setTrackedStatus(inputFile.filePath, trackedValue, fileModule);
 }
 

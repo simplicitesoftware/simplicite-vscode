@@ -39,15 +39,15 @@ export class FileHandler {
 		this._globalState.update('simplicite-modules-info', undefined);
 	}
 
-	bindFileAndModule(modules: Array<Module>): FileAndModule[] {
+	bindFileAndModule(modules: Array<Module>, files: File[]): FileAndModule[] {
 		const fileModule = [];
 		for (const module of modules) {
 			if (module.remoteFileSystem) {
 				continue;
 			}
 			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
-			for (const file of this.fileList) {
-				if (file.moduleName === module.name) {
+			for (const file of files) {
+				if (file.workspaceFolderPath === module.workspaceFolderPath) {
 					moduleObject.fileList.push(file);
 				}
 			}
@@ -67,6 +67,7 @@ export class FileHandler {
 	}
 
 	async FileDetector(modules: Module[]): Promise<File[]> {
+		this.fileList = [];
 		if (workspace.workspaceFolders === undefined) {
 			throw new Error('no workspace detected');
 		}
@@ -88,7 +89,7 @@ export class FileHandler {
 			}
 		}
 		try {
-			if (this.fileTree) await this.fileTree.setFileModule(this.bindFileAndModule(modules));
+			if (this.fileTree) await this.fileTree.setFileModule(this.bindFileAndModule(modules, fileList));
 			return this.setTrackedStatusPersistence(fileList);
 		} catch (e) {
 			logger.warn('File Detector: ' + e);
