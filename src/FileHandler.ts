@@ -80,7 +80,11 @@ export class FileHandler {
 				for (const file of files) {
 					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/temp/')) {
 						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
-						if (!module || !file.path.includes(module.name)) {
+						const wk = workspaceFolder.uri.path.toLowerCase();
+						let filePath = file.path;
+						filePath = filePath.toLowerCase();
+						const test = !filePath.includes(wk);
+						if (!module || test)  {
 							continue;
 						}
 						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));

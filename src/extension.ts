@@ -13,8 +13,8 @@ import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
 import { TEMPLATE } from './constant';
-import { Module } from './Module';
 import { File } from './File';
+import { RFSControl } from './rfs/RFSControl';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
@@ -66,6 +66,28 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			logger.error(e);
 		}
 	}
+	// init potentials api file systems
+	const initApiFileSystems = async () => {
+		for (const module of moduleHandler.modules) {
+			try {
+				for (const rfs of request.RFSControl) {
+					if (rfs.module.name === module.name) {
+						throw new Error();
+					}
+				}
+				if (module.remoteFileSystem && request.devInfo) {
+					const app = request.appHandler.getApp(module.instanceUrl);
+					const rfsControl = new RFSControl(app, module, request.devInfo);
+					request.RFSControl.push(rfsControl);
+					await rfsControl.initAll(moduleHandler);	
+				}
+			} catch (e) {
+				continue;
+			}
+		}
+	};
+
+	await initApiFileSystems();
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -89,7 +111,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
-		const oldModules = moduleHandler.modules;
 		await moduleHandler.setSimpliciteModulesFromDisk();
 		moduleHandler.setSavedData();
 		if (event.added.length > 0) { // If a folder is added to workspace
@@ -103,15 +124,28 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			} catch (e) {
 				logger.error(e);
 			}
-		} else if (event.removed.length > 0) { // in this case, if a folder is removed we check if it's a simplicite module	
-			// const instance = getDisconnectedInstance(moduleHandler.connectedInstancesUrl, oldModules);
-			// if (instance) {
-			// 	await request.specificLogout(instance);
-			// }
+		} else if (event.removed.length > 0) {
+			// refresh for potential api file systems
+			// usefull when user removes the workspace using the vscode shortcut (should be using the command)
+
+			const module = moduleHandler.removeModuleFromWkPath(event.removed[0].uri.path);
+			let index = 0;
+			if (module) {
+				for (const rfs of request.RFSControl) {
+					index++;
+					if (rfs.module.name === module.name) {
+						request.RFSControl = request.RFSControl.splice(index, 1);
+						break;
+					}
+				}
+			}
+			await initApiFileSystems();
 			logger.info('removed module from workspace');
 		}
+		// refresh all
 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
 		await request.refreshModuleDevInfo();
+		barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
 		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
 	});
 
@@ -174,25 +208,4 @@ function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: Ex
 	context.subscriptions.push(completionProvider);
 	logger.info('completion ready');
 	return completionProvider;
-}
-
-function getDisconnectedInstance (connectedInstances: string[], modules: Module[]): string | false {
-	const listInstance = [];
-	for (const instance of connectedInstances) {
-		listInstance.push({instance: instance, current: false});
-	}
-	for (const mod of modules) {
-		for (const currentInstance of listInstance) {
-			if (mod.instanceUrl === currentInstance.instance) {
-				currentInstance.current = true;
-			}
-		}
-	}
-	let instance: string | false = false;
-	for (const currentInstance of listInstance) {
-		if (!currentInstance.current) {
-			instance = currentInstance.instance;
-		}
-	}
-	return instance;
 }

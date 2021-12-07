@@ -66,16 +66,15 @@ export class SimpliciteAPIManager {
 				app.authtoken = module.token;
 				await this.loginMethod(module, app);
 			}
-			await this.refreshModuleDevInfo();
-			this.moduleHandler.setSavedData();
 			this.moduleHandler.saveModules();
+			await this.refreshModuleDevInfo();
 		} catch(e: any) {
 			for (const mod of this.moduleHandler.modules) {
 				if (mod.workspaceFolderPath === module.workspaceFolderPath) {
 					mod.remoteFileSystem = false;
 				}
 			}
-			this.moduleHandler.deleteModule(module.instanceUrl, undefined);
+			this.moduleHandler.removeModuleFromWkPath(module.workspaceFolderPath);
 			window.showErrorMessage(e);
 		}
 
@@ -87,20 +86,13 @@ export class SimpliciteAPIManager {
 			if (!this.devInfo) {
 				await this.setDevInfo(app);
 			}
-			this.moduleHandler.spreadToken(module.instanceUrl, res.authtoken);
 			this.appHandler.setApp(module.instanceUrl, app);
-			this.moduleHandler.addInstanceUrl(module.instanceUrl);
-			if (module.remoteFileSystem && this.devInfo) {
-				const rfsControl = new RFSControl(app, module, this.devInfo);
-				this.RFSControl.push(rfsControl);
-				await rfsControl.initAll(this.moduleHandler);
-			}
+			this.moduleHandler.afterConnectionModule(module, res.authtoken);
 			window.showInformationMessage('Simplicite: Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			logger.info('Logged in as ' + res.login + ' at: ' + app.parameters.url);
 			if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
 		} catch (e: any) {
 			module.remoteFileSystem = false;
-			this.moduleHandler.deleteModule(undefined, module.workspaceFolderPath);
 			this.appHandler.appList.delete(module.instanceUrl);
 			this.moduleHandler.spreadToken(module.instanceUrl, '');
 			let msg = e.message;
@@ -150,7 +142,7 @@ export class SimpliciteAPIManager {
 		this.fileHandler.deleteSimpliciteInfo();
 		this.appHandler.appList.forEach(async (app: any) => {
 			app.logout().then((res: any) => {
-				this.moduleHandler.deleteModule(app.parameters.url, undefined);
+				this.moduleHandler.removeModuleFromInstance(app.parameters.url);
 				this.appHandler.appList.delete(app.parameters.url);
 				this.moduleHandler.spreadToken(app.parameters.url, '');
 				this.moduleHandler.removeConnectedInstancesUrl(app.parameters.url);
@@ -170,22 +162,23 @@ export class SimpliciteAPIManager {
 	async specificLogout(instanceUrl: string): Promise<void> {
 		try {
 			const app = this.appHandler.getApp(instanceUrl);
-			app.logout().then(async (res: any) => {
-				this.moduleHandler.deleteModule(instanceUrl, undefined);
+			try {
+				const res = await app.logout();
+				this.moduleHandler.removeModuleFromInstance(instanceUrl);
 				this.appHandler.appList.delete(instanceUrl);
 				this.moduleHandler.spreadToken(instanceUrl, '');
 				this.moduleHandler.removeConnectedInstancesUrl(instanceUrl);
 				window.showInformationMessage('Simplicite: ' + res.result + ' from: ' + app.parameters.url);
 				logger.info(res.result + ' from: ' + app.parameters.url);
 				if (this.barItem) this.barItem.show(this.moduleHandler.modules, this.moduleHandler.connectedInstancesUrl);
-			}).catch((e: any) => {
+			}catch(e: any) {
 				if (e.status === 401 || e.code === 'ECONNREFUSED') {
 					window.showInformationMessage(`Simplicite: You are not connected to ${instanceUrl}`);
 				} else {
 					logger.error(e);
 					window.showErrorMessage(`${e}`);
 				}
-			});
+			}
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -368,24 +361,41 @@ export class SimpliciteAPIManager {
 		if (doc === undefined) {
 			throw new Error('No document returned, cannot update content');
 		}
-		// get the file content for setContent
-
-		const fileContent = await workspace.findFiles('**/src/**/' + fileName + fileExtension);
-		workspace.openTextDocument(fileContent[0]).then((document) => {
+		if (module !== false) {
+			// get the file content for setContent
+			const find = '**/src/**/' + fileName + fileExtension;
+			const fileContentList = await workspace.findFiles(find);
+			const fileContent = this.getContentFromModuleFile(fileContentList, module);
+			const document = await workspace.openTextDocument(fileContent);
 			const text = document.getText();
 			doc.setContentFromText(text);
 			obj.setFieldValue(fieldScriptId, doc);
 			obj.update(item, { inlineDocuments: true }).then(async () => {
 				// once the object is updated, write the content in the temp files so all the files share the same state (workingFileContent, localInitialFileContent & remoteFileContent) 
-				await workspace.fs.writeFile(Uri.parse('Api_' + file.moduleName + '/temp/' + fileName + fileExtension), workingFileContent);
-				await workspace.fs.delete(Uri.parse('Api_' + file.moduleName + '/RemoteFile.java'));
-				this.conflictStatus = false;
+				if (module.remoteFileSystem) {
+					await workspace.fs.writeFile(Uri.parse('Api_' + file.moduleName + '/temp/' + fileName + fileExtension), workingFileContent);
+					await workspace.fs.delete(Uri.parse('Api_' + file.moduleName + '/RemoteFile.java'));
+					this.conflictStatus = false;
+				}
 				Promise.resolve();
 			}).catch((e: Error) => {
 				logger.error(e);
 				throw e;
 			});
-		});
+		}
+	}
+
+	getContentFromModuleFile (fileContentList: any, module: Module): any {
+		if (!fileContentList) {
+			return undefined;
+		}
+		for (const file of fileContentList) {
+			if (file.path.includes('Api_') && module.remoteFileSystem) {
+				return file;
+			} else if (file.path.includes(module.name) && !file.path.includes('Api_') && !module.remoteFileSystem) {
+				return file;
+			}
+		}
 	}
 
 	async conflictChecker (workingFileContent: Uint8Array, file: File, fileName: string, fileExtension: string, item: any, fieldScriptId: string): Promise<void> {

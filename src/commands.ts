@@ -275,8 +275,8 @@ export const connectToRemoteFileSystemCommand = function (moduleHandler: ModuleH
 			}
 			const module = new Module(moduleName, '', instanceUrl, '', true, true);
 			if (!connectedInstances.includes(instanceUrl)) {
-				moduleHandler.modules.push(module);
 				await request.loginTokenOrCredentials(module);
+				moduleHandler.addModule(module);
 			}
 			if (!request.devInfo) {
 				throw new Error('Simplicite: no dev info cannot set api file system');
@@ -303,7 +303,6 @@ export const disconnectRemoteFileSystemCommand = function (moduleHandler: Module
 		if (!moduleName) {
 			throw new Error();
 		}
-		let tempmodule = undefined;
 		let module: undefined | Module;
 		let index = 0;
 		for (const rfs of request.RFSControl) {
@@ -315,12 +314,11 @@ export const disconnectRemoteFileSystemCommand = function (moduleHandler: Module
 		if (!module) {
 			throw new Error('Simplicite: Module not found');
 		}
-		for (const module of moduleHandler.modules) {
-			if (module.workspaceFolderPath === module.workspaceFolderPath) {
-				module.remoteFileSystem = false;
-				tempmodule = module;
+		/*for (const mod of moduleHandler.modules) {
+			if (mod.workspaceFolderPath === module.workspaceFolderPath) {
+				mod.remoteFileSystem = false;
 			}
-		}
+		}*/
 		const instanceUrl = module.instanceUrl;
 		request.RFSControl = request.RFSControl.splice(index, 1);
 		await request.specificLogout(instanceUrl);
@@ -330,12 +328,12 @@ export const disconnectRemoteFileSystemCommand = function (moduleHandler: Module
 			}
 			let index = 0;
 			for (const wk of workspace.workspaceFolders) {
-				if (wk.name === 'Api_' + tempmodule?.name) {
+				if (wk.name === 'Api_' + module.name) {
 					workspace.updateWorkspaceFolders(index, 1);
 				}
 				index++;
 			}
-			await workspace.fs.delete(Uri.parse('Api_' + tempmodule?.name), { recursive: true });
+			await workspace.fs.delete(Uri.parse('Api_' + module.name), { recursive: true });
 		} catch (e) {
 			logger.error(e);
 		}

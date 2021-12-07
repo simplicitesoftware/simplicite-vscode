@@ -22,17 +22,18 @@ export class RFSControl {
 	}
 
 	async initAll(moduleHandler: ModuleHandler) {
-		try {
-			const wk = this.getWorkspaceFolderPath(this.module);
-			if (wk) {
-				this.module.workspaceFolderPath = wk;
-			}
-			//this.module.token = moduleHandler.getTokenIfExist(this.module.instanceUrl);
-			// for (const mod of moduleHandler.modules) {
-			// 	if (mod.remoteFileSystem && mod.name === this.module.)
-			// }
+		if (this.module.instanceJump) {
+			moduleHandler.addModule(this.module);
+			moduleHandler.spreadAllToken(); // may get the token of the connected instance
 			moduleHandler.saveModules();
-			await this.initFiles();
+			// need to save the module => updating the first workspace folder implies that all extensions are restarted by VS Code
+		}
+		try {
+			try {
+				await workspace.fs.readDirectory(Uri.parse(this.baseUrl));
+			} catch (e) {
+				await this.initFiles();
+			}
 			const wks = workspace.workspaceFolders;
 			let flag = false;
 			if (wks) {
@@ -43,13 +44,14 @@ export class RFSControl {
 				}
 			}
 			if (!flag) {
+			// create the workspace only once
+			// extension will reload
 				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(this.baseUrl), name: this.baseUrl });
 				throw new Error('Workspace update');
 			}
 		} catch (e) {
 			logger.error(e);
 		}
-		
 	}
 
 	async initFiles(): Promise<boolean> {
@@ -113,17 +115,5 @@ export class RFSControl {
 			path += '/' + this.module.name;
 			workspace.fs.createDirectory(Uri.parse(path));
 		}
-	}
-
-	getWorkspaceFolderPath(module: Module): string | false {
-		if (!workspace.workspaceFolders) {
-			return false;
-		}
-		for (const wk of workspace.workspaceFolders) {
-			if (wk.name ===  'Api_' + module.name) {
-				return wk.uri.path;
-			}
-		}
-		return false;
 	}
 }
