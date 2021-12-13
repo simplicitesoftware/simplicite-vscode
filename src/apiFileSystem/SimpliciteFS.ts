@@ -216,9 +216,7 @@ export class SimpliciteFS implements vscode.FileSystemProvider {
 		const parts = uri.path.split('/');
 		let entry: Entry = this.root;
 		for (const part of parts) {
-			if (!part) {
-				continue;
-			}
+			if (!part) continue;
 			let child: Entry | undefined;
 			if (entry instanceof Directory) {
 				child = entry.entries.get(part);

@@ -4,6 +4,9 @@ import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleSta
 import { FileAndModule } from '../interfaces';
 import { UntrackedItem, ModuleItem, FileItem } from '../classes';
 import { SUPPORTED_FILES } from '../constant';
+import { bindFileAndModule } from '../utils';
+import { Module } from '../Module';
+import { File } from '../File';
 import * as path from 'path';
 
 // File handler tree view
@@ -12,10 +15,10 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
 	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus())
 	runPath: string;
-	constructor(runPath: string, fileModule: FileAndModule[]) {
+	constructor(runPath: string, modules: Module[], files: File[]) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-		this.fileModule = fileModule;
+		this.fileModule = bindFileAndModule(modules, files);
 		this.runPath = runPath;
 	}
 
@@ -23,8 +26,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		this._onDidChangeTreeData.fire();
 	}
 
-	async setFileModule(fileModule: FileAndModule[]): Promise<void> {
-		this.fileModule = fileModule;
+	async setFileModule(modules: Module[], fileList: File[]): Promise<void> {
+		this.fileModule = bindFileAndModule(modules, fileList);
 		this.refresh();
 	}
 
@@ -63,7 +66,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			return [];
 		}
 		for (const fm of this.fileModule) {
-			const treeItem = new ModuleItem(fm.moduleName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
+			const treeItem = new ModuleItem(fm.parentFolderName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
 			treeItem.iconPath = {
 				light: path.join(this.runPath, 'resources/light/module.svg'),
 				dark: path.join(this.runPath, 'resources/dark/module.svg')
@@ -80,11 +83,11 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		}
 		for (const fm of this.fileModule) {
 			let untrackedFlag = false;
-			if (fm.fileList.length > 0 && fm.moduleName === label) {
+			if (fm.fileList.length > 0 && fm.parentFolderName === label) {
 				for (const file of fm.fileList) {
 					if (file.tracked) {
-						const legibleFileName = this.legibleFileName(file.filePath);
-						const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.filePath, true, label);
+						const legibleFileName = this.legibleFileName(file.path);
+						const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.path, true, label);
 						fileItems.push(treeItem);
 					} else {
 						untrackedFlag = true;
@@ -111,11 +114,11 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		const untrackedFiles = [];
 		if (this.fileModule) {
 			for (const fm of this.fileModule) {
-				if (fm.fileList.length > 0 && fm.moduleName === moduleName) {
+				if (fm.fileList.length > 0 && fm.parentFolderName === moduleName) {
 					for (const file of fm.fileList) {
 						if (!file.tracked) {
-							const legibleFileName = this.legibleFileName(file.filePath);
-							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.filePath, false, moduleName);
+							const legibleFileName = this.legibleFileName(file.path);
+							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.path, false, moduleName);
 							untrackedFiles.push(treeItem);
 						}
 					}
@@ -159,8 +162,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	}
 
 	// returns a part of the file path for tree view readability
-	private legibleFileName(filePäth: string) {
-		const decomposedPath = filePäth.split('/');
+	private legibleFileName(filePath: string) {
+		const decomposedPath = filePath.split('/');
 		const index = decomposedPath.length - 1;
 		return decomposedPath[index - 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
 	}

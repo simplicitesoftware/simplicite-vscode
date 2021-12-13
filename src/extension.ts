@@ -1,10 +1,8 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable } from 'vscode';
-import { SimpliciteAPIManager } from './SimpliciteAPIManager';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri } from 'vscode';
 import { CompletionProvider } from './CompletionProvider';
-import { applyChangesCommand, applySpecificModuleCommand, compileWorkspaceCommand, loginIntoDetectedInstancesCommand, logIntoSpecificInstanceCommand, logoutCommand, logoutFromSpecificInstanceCommand, trackFileCommand, untrackFilesCommand, refreshModuleTreeCommand, refreshFileHandlerCommand, copyLogicalNameCommand, copyPhysicalNameCommand, copyJsonNameCommand, itemDoubleClickTriggerCommand, connectToRemoteFileSystemCommand, disconnectRemoteFileSystemCommand } from './commands';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -14,54 +12,37 @@ import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
 import { TEMPLATE } from './constant';
 import { File } from './File';
-import { RFSControl } from './rfs/RFSControl';
+import { SimpliciteApiController } from './SimpliciteApiController';
+import { SimpliciteApi } from './SimpliciteApi';
+import { AppHandler } from './AppHandler';
+import { ApiFileSystemController } from './apiFileSystem/ApiFileSystemController';
+import { commandInit } from './commands';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
-	const moduleHandler = await ModuleHandler.build(context.globalState);
+    const barItem = new BarItem();
+	const moduleHandler = await ModuleHandler.build(context.globalState, barItem);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
-	
-	const request = new SimpliciteAPIManager(fileHandler, moduleHandler);
+    const appHandler = new AppHandler();
+	const storageUri = extensionStoragePathMaker(context.globalStorageUri.path);
 
-	new QuickPick(context.subscriptions, request);
+	const simpliciteApi = new SimpliciteApi(appHandler, storageUri);
+	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler);
+	new QuickPick(context.subscriptions, simpliciteApiController);
 
-	const barItem = new BarItem();
-	request.barItem = barItem; // refresh on log in and logout
-
-	const bindedFileAndModule = fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList);
-	const fileTree = new FileTree(context.extensionUri.path, bindedFileAndModule);
+	const fileTree = new FileTree(context.extensionUri.path, moduleHandler.modules, fileHandler.fileList);
 	window.registerTreeDataProvider('simpliciteFile', fileTree);
 	fileHandler.fileTree = fileTree;
 
-	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, request.devInfo, context.extensionUri.path);
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApiController.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
-	request.moduleInfoTree = moduleInfoTree;
+	simpliciteApiController.moduleInfoTree = moduleInfoTree;
 
-	// Commands have to be declared in package.json so VS Code knows that the extension provides a command
-	const applyChanges = applyChangesCommand(request);
-	const applySpecificModule = applySpecificModuleCommand(request, moduleHandler);
-	const compileWorkspace = compileWorkspaceCommand(request);
-	const loginIntoDetectedInstances = loginIntoDetectedInstancesCommand(request);
-	const logIntoSpecificInstance = logIntoSpecificInstanceCommand(request, moduleHandler);
-	const logout = logoutCommand(request);
-	const logoutFromSpecificInstance = logoutFromSpecificInstanceCommand(request, moduleHandler);
-	const trackFile = trackFileCommand(request, fileHandler, moduleHandler);
-	const untrackFile = untrackFilesCommand(request, fileHandler, moduleHandler);
-	const refreshModuleTree = refreshModuleTreeCommand(request);
-	const refreshFileHandler = refreshFileHandlerCommand(fileHandler, moduleHandler);
-
-	const fieldToClipBoard = copyLogicalNameCommand();
-	const copyPhysicalName = copyPhysicalNameCommand();
-	const copyJsonName = copyJsonNameCommand();
-	const itemDoubleClickTrigger = itemDoubleClickTriggerCommand(moduleInfoTree);
-	const connectToRemoteFileSystem = connectToRemoteFileSystemCommand(moduleHandler, moduleHandler.connectedInstancesUrl, request);
-	const disconnectRemoteFileSystem = disconnectRemoteFileSystemCommand(moduleHandler, request);
-
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, fieldToClipBoard, refreshModuleTree, refreshFileHandler, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
+	commandInit(context, simpliciteApiController, moduleHandler, fileHandler, moduleInfoTree, storageUri);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
 		try {
-			await request.loginHandler();
+			await simpliciteApiController.loginAll();
 		} catch (e) {
 			logger.error(e);
 		}
@@ -70,15 +51,15 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const initApiFileSystems = async () => {
 		for (const module of moduleHandler.modules) {
 			try {
-				for (const rfs of request.RFSControl) {
+				for (const rfs of simpliciteApiController.apiFileSystemController) {
 					if (rfs.module.name === module.name) {
 						throw new Error();
 					}
 				}
-				if (module.remoteFileSystem && request.devInfo) {
-					const app = request.appHandler.getApp(module.instanceUrl);
-					const rfsControl = new RFSControl(app, module, request.devInfo);
-					request.RFSControl.push(rfsControl);
+				if (module.apiFileSystem && simpliciteApiController.devInfo) {
+					const app = simpliciteApiController.appHandler.getApp(module.instanceUrl);
+					const rfsControl = new ApiFileSystemController(app, module, simpliciteApiController.devInfo, storageUri);
+					simpliciteApiController.apiFileSystemController.push(rfsControl);
 					await rfsControl.initAll(moduleHandler);	
 				}
 			} catch (e) {
@@ -101,25 +82,24 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
 				return;
 			}
-			if (module.remoteFileSystem && request.RFSControl) {
-				await request.attachFileAndSend(file, request.appHandler.getApp(module.instanceUrl));
+			if (module.apiFileSystem && simpliciteApiController.apiFileSystemController) {
+				await simpliciteApi.writeFile(file, simpliciteApiController.devInfo, module);
 			} else {
-				await fileHandler.setTrackedStatus(file.filePath, true, fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
+				await fileHandler.setTrackedStatus(file.path, true, moduleHandler.modules);
 			}
 		}
 	});
 
 	// workspace handler
 	workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => { // The case where one folder is added and one removed should not happen
-		await moduleHandler.setSimpliciteModulesFromDisk();
-		moduleHandler.setSavedData();
+		await moduleHandler.setModulesFromScratch();
 		if (event.added.length > 0) { // If a folder is added to workspace
 			try {
 				const currentModule = moduleHandler.getModuleFromWorkspacePath(event.added[0].uri.path);
 				if (!currentModule) {
 					throw new Error('No known module name matches with the root folder of the project. Root folder = ' + event.added[0].name);
 				}
-				await request.loginTokenOrCredentials(currentModule); // connect with the module informations
+				await simpliciteApiController.tokenOrCredentials(currentModule); // connect with the module informations
 				logger.info('successfully added module to workspace');
 			} catch (e) {
 				logger.error(e);
@@ -127,34 +107,32 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		} else if (event.removed.length > 0) {
 			// refresh for potential api file systems
 			// usefull when user removes the workspace using the vscode shortcut (should be using the command)
-
 			const module = moduleHandler.removeModuleFromWkPath(event.removed[0].uri.path);
 			let index = 0;
 			if (module) {
-				for (const rfs of request.RFSControl) {
+				for (const rfs of simpliciteApiController.apiFileSystemController) {
 					index++;
 					if (rfs.module.name === module.name) {
-						request.RFSControl = request.RFSControl.splice(index, 1);
+						const uri = Uri.parse(rfs.module.workspaceFolderPath + '/' + rfs.module.parentFolderName);
+						workspace.fs.delete(uri);
+						simpliciteApiController.apiFileSystemController = simpliciteApiController.apiFileSystemController.splice(index, 1);
 						break;
 					}
 				}
 			}
-			await initApiFileSystems();
 			logger.info('removed module from workspace');
 		}
 		// refresh all
 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
-		await request.refreshModuleDevInfo();
-		barItem.show(moduleHandler.modules, moduleHandler.connectedInstancesUrl);
-		fileTree.setFileModule(fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
+		await initApiFileSystems();
 	});
 
 	// Completion
 	let completionProvider: Disposable | undefined = undefined;
 	const prodiverMaker = async function (): Promise<Disposable | undefined> { // see following try catch and onDidChangeActiveTextEditor
-		const connectedInstances: string[] = moduleHandler.connectedInstancesUrl;
+		const connectedInstances: string[] = moduleHandler.connectedInstances;
 		if (connectedInstances.length > 0
-			&& request.devInfo
+			&& simpliciteApiController.devInfo
 			&& moduleHandler.modules.length
 			&& window.activeTextEditor) {
 			const filePath = window.activeTextEditor.document.uri.path;
@@ -170,7 +148,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.warn('Cannot provide completion, not connected to the module\'s instance');
 				return undefined;
 			}
-			completionProvider = completionProviderHandler(request.devInfo, module.moduleDevInfo, context, file);
+			completionProvider = completionProviderHandler(simpliciteApiController.devInfo, module.moduleDevInfo, context, file);
 			return completionProvider;
 		}
 		return undefined;
@@ -195,7 +173,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		}
 	});
 
-	return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
+	//return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
 }
 
 export function deactivate(context: ExtensionContext) {
@@ -208,4 +186,12 @@ function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: Ex
 	context.subscriptions.push(completionProvider);
 	logger.info('completion ready');
 	return completionProvider;
+}
+
+function extensionStoragePathMaker (path: string) {
+	const decomposed = path.split('/');
+	decomposed.splice(decomposed.length - 1);
+	const newPath = decomposed.join('/');
+	const uri = Uri.parse(newPath);
+	return uri;
 }

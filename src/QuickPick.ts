@@ -3,12 +3,12 @@
 import { commands, Command, extensions, window, Disposable } from 'vscode';
 import { EXTENSION_ID, SHOW_SIMPLICITE_COMMAND_ID } from './constant';
 import { logger } from './Log';
-import { SimpliciteAPIManager } from './SimpliciteAPIManager';
+import { SimpliciteApiController } from './SimpliciteApiController';
 
 export class QuickPick {
-	private _request: SimpliciteAPIManager;
-	constructor(subscriptions: Disposable[], request: SimpliciteAPIManager) {
-		this._request = request;
+	private _simpliciteApiController: SimpliciteApiController;
+	constructor(subscriptions: Disposable[], simpliciteApiController: SimpliciteApiController) {
+		this._simpliciteApiController = simpliciteApiController;
 		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
 	}
 
@@ -33,7 +33,7 @@ export class QuickPick {
 			const target = await window.showQuickPick(commandQuickPick);
 			if (target) {
 				try {
-					await commands.executeCommand(target.commandId, this._request);
+					await commands.executeCommand(target.commandId, this._simpliciteApiController);
 				} catch (e) {
 					logger.error(e + 'Error occured while executing command');
 				}

@@ -1,83 +1,63 @@
 'use strict';
 
-import { commands, window, env, Disposable, Uri, workspace } from 'vscode';
+import { commands, window, env, Uri, workspace, ExtensionContext } from 'vscode';
 import { logger } from './Log';
-import { SimpliciteAPIManager } from './SimpliciteAPIManager';
+import { SimpliciteApiController } from './SimpliciteApiController';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { Module } from './Module';
 import { File } from './File';
-import { RFSControl } from './rfs/RFSControl';
+import { ApiFileSystemController } from './apiFileSystem/ApiFileSystemController';
 import { ModuleHandler } from './ModuleHandler';
 import { FileHandler } from './FileHandler';
 import { isHttpsUri, isHttpUri } from 'valid-url';
+import { SimpliciteApi } from './SimpliciteApi';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands
-export const applyChangesCommand = function (request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
-		try {
-			await request.applyChangesHandler(undefined, undefined);
-		} catch (e: any) {
-			if (e !== '') {
-				window.showErrorMessage(e.message ? e.message : e);
-				logger.error(e);
-			}
 
-		}
+export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, storageUri: Uri) {
+	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
+		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
 	});
-};
-
-export const applySpecificModuleCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteAPIManager | any) {
-		try {
-			// eslint-disable-next-line no-prototype-builtins
-			if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
-				element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-				const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element);
-				if (!moduleObject) {
-					const msg = 'Simplicite: Cannot find module or url ' + element;
-					throw new Error(msg);
-				}
-				if (moduleObject instanceof Module) {
-					await request.applyChangesHandler(moduleObject.name, moduleObject.instanceUrl);
-				}
-			} else {
-				await request.applyChangesHandler(element.label, element.description);
+	
+	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteApiController | any) {
+		// eslint-disable-next-line no-prototype-builtins
+		if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
+			element = await inputFilePath('Simplicite: Type in the module name', 'module name');
+			const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element);
+			if (!moduleObject) {
+				window.showErrorMessage('Simplicite: ' + element + ' is not a module');
 			}
-		} catch (e: any) {
-			window.showErrorMessage(e.message);
-			logger.error(e);
 		}
+		const module = moduleHandler.getModuleFromParentFolder(element.label);
+		if (!module) {
+			window.showErrorMessage('Simplicite: ' + element + ' is not a module');
+			return;
+		}
+		await simpliciteApiController.applyModuleFiles(fileHandler, module, moduleHandler.modules);
 	});
-};
-
-// ------------------------------
-// Compiling commands
-export const compileWorkspaceCommand = function (request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.compileWorkspace', async function () {
+	
+	// ------------------------------
+	// Compiling commands
+	const compileWorkspace = commands.registerCommand('simplicite-vscode-tools.compileWorkspace', async function () {
 		try {
-			const status = await request.compileJava();
+			const status = await simpliciteApiController.compileJava();
 			logger.info(status);
 		} catch (e) {
 			logger.error(e);
 		}
-
 	});
-};
-
-// ------------------------------
-// Authentication commands
-export const loginIntoDetectedInstancesCommand = function (request: SimpliciteAPIManager, ): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
-		await request.loginHandler();
+	
+	// ------------------------------
+	// Authentication commands
+	const loginIntoDetectedInstances = commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
+		await simpliciteApiController.loginAll();
 	});
-};
-
-export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
+	
+	const logIntoSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
 		try {
 			const moduleName = await window.showInputBox({
 				placeHolder: 'module name / url',
@@ -106,8 +86,8 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 					}
 				}
 			}
-			if (module && !moduleHandler.connectedInstancesUrl.includes(module.instanceUrl)) {
-				await request.loginTokenOrCredentials(module);
+			if (module && !moduleHandler.connectedInstances.includes(module.instanceUrl)) {
+				await simpliciteApiController.tokenOrCredentials(module);
 			}
 			if (!flag) {
 				throw new Error(`Simplicite: Cannot find module or url ${moduleName}`);
@@ -117,16 +97,13 @@ export const logIntoSpecificInstanceCommand = function (request: SimpliciteAPIMa
 			window.showInformationMessage(e.message ? e.message : e);
 		}
 	});
-};
-
-export const logoutCommand = function (request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.logOut', async function () {
-		await request.logout();
+	
+	const logout = commands.registerCommand('simplicite-vscode-tools.logOut', async function () {
+		await simpliciteApiController.logoutAll();
+		
 	});
-};
-
-export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAPIManager, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {
+	
+	const logoutFromSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {
 		try {
 			const input = await window.showInputBox({
 				placeHolder: 'module name / url',
@@ -156,7 +133,7 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 				}
 			}
 			if (module) {
-				await request.specificLogout(module.instanceUrl);
+				await simpliciteApiController.instanceLogout(module.instanceUrl);
 			}
 			if (!flag) {
 				throw new Error(`Simplicite: Cannot find module or url ${input}`);
@@ -166,82 +143,69 @@ export const logoutFromSpecificInstanceCommand = function (request: SimpliciteAP
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
 		}
-	});
-};
 
-// ------------------------------
-// File handling commands
-export const trackFileCommand = function (request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: any) {
+	});
+	
+	// ------------------------------
+	// File handling commands
+	const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: any) {
 		try {
-			await trackAction(request, fileHandler, moduleHandler, element, true);
+			await trackAction(fileHandler, moduleHandler.modules, element, true);
 		} catch (e) {
 			logger.error(e);
 		}
 	});
-};
-
-export const untrackFilesCommand = function (request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: any) {
+	
+	const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: any) {
 		try {
-			await trackAction(request, fileHandler, moduleHandler, element, false);
+			await trackAction(fileHandler, moduleHandler.modules, element, false);
 		} catch (e) {
 			logger.error(e);
 		}
+		
 	});
-};
-
-// ------------------------------
-
-export const refreshModuleTreeCommand = function (request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
-		await request.refreshModuleDevInfo();
+	
+	// ------------------------------
+	
+	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
+		moduleHandler.refreshModulesDevInfo(simpliciteApiController.simpliciteApi);
+		simpliciteApiController.moduleInfoTree?.feedData(simpliciteApiController.devInfo, moduleHandler.modules);
 	});
-};
-
-export const refreshFileHandlerCommand = function (fileHandler: FileHandler, moduleHandler: ModuleHandler): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
+	
+	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
 		if (fileHandler.fileTree) {
 			const modules = moduleHandler.modules;
 			fileHandler.fileList = await fileHandler.FileDetector(modules);
 		}
 	});
-};
-
-// ------------------------------
-// Tree view commands
-export const copyLogicalNameCommand = function (): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element) => {
+	
+	// ------------------------------
+	// Tree view commands
+	const copyLogicalName = commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element) => {
 		if (!element.label) {
 			logger.error('cannot copy logical name: label is undefined');
 		} else {
 			env.clipboard.writeText(element.label);
 		}
 	});
-};
-
-export const copyPhysicalNameCommand = function (): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element) => {
+	
+	const copyPhysicalName = commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element) => {
 		if (!element.description) {
 			logger.error('cannot copy copy physical name: description is undefined');
 		} else {
 			env.clipboard.writeText(element.description);
 		}
 	});
-};
-
-export const copyJsonNameCommand = function (): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element) => {
+	
+	const copyJsonName = commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element) => {
 		if (!element.additionalInfo) {
 			logger.error('cannot copy jsonName: additionalInfo is undefined');
 		} else {
 			env.clipboard.writeText(element.additionalInfo);
 		}
 	});
-};
-
-export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInfoTree): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.itemDoubleClickTrigger', (logicName: string) => {
+	
+	const itemDoubleClickTrigger = commands.registerCommand('simplicite-vscode-tools.itemDoubleClickTrigger', (logicName: string) => {
 		if (doubleClickTrigger()) {
 			try {
 				moduleInfoTree.insertFieldInDocument(logicName);
@@ -250,12 +214,10 @@ export const itemDoubleClickTriggerCommand = function (moduleInfoTree: ModuleInf
 			}
 		}
 	});
-};
-
-// ------------------------------
-
-export const connectToRemoteFileSystemCommand = function (moduleHandler: ModuleHandler, connectedInstances: string[], request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
+	
+	// ------------------------------
+	
+	const connectToRemoteFileSystem = commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
 		try {
 			const instanceUrl = await window.showInputBox({
 				placeHolder: 'instance url',
@@ -273,27 +235,24 @@ export const connectToRemoteFileSystemCommand = function (moduleHandler: ModuleH
 			if (!moduleName) {
 				throw new Error();
 			}
-			const module = new Module(moduleName, '', instanceUrl, '', true, true);
-			if (!connectedInstances.includes(instanceUrl)) {
-				await request.loginTokenOrCredentials(module);
-				moduleHandler.addModule(module);
+			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
+			const module = new Module(moduleName, '', instanceUrl, token, true, true);
+			moduleHandler.addModule(module, true);
+			await simpliciteApiController.tokenOrCredentials(module);
+			if (!simpliciteApiController.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
+				throw new Error();
 			}
-			if (!request.devInfo) {
-				throw new Error('Simplicite: no dev info cannot set api file system');
-			}
-			const rfsControl = new RFSControl(request.appHandler.getApp(instanceUrl), module, request.devInfo);
-			request.RFSControl.push(rfsControl);
-			rfsControl.initAll(moduleHandler);
+			const apiFileSystemController = new ApiFileSystemController(simpliciteApiController.appHandler.getApp(instanceUrl), module, simpliciteApiController.devInfo, storageUri);
+			simpliciteApiController.apiFileSystemController.push(apiFileSystemController);
+			apiFileSystemController.initAll(moduleHandler);
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
 		}
 	});
-};
-
-export const disconnectRemoteFileSystemCommand = function (moduleHandler: ModuleHandler, request: SimpliciteAPIManager): Disposable {
-	return commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
-		if (!request.RFSControl) {
+	
+	const disconnectRemoteFileSystem = commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
+		if (!simpliciteApiController.apiFileSystemController) {
 			return;
 		}
 		const moduleName = await window.showInputBox({
@@ -304,43 +263,63 @@ export const disconnectRemoteFileSystemCommand = function (moduleHandler: Module
 			throw new Error();
 		}
 		let module: undefined | Module;
-		let index = 0;
-		for (const rfs of request.RFSControl) {
-			index++;
+		let objIndex = 0;
+		for (const rfs of simpliciteApiController.apiFileSystemController) {
+			objIndex++;
 			if (rfs.module.name === moduleName) {
 				module = rfs.module;
 			}
 		}
 		if (!module) {
-			throw new Error('Simplicite: Module not found');
-		}
-		/*for (const mod of moduleHandler.modules) {
-			if (mod.workspaceFolderPath === module.workspaceFolderPath) {
-				mod.remoteFileSystem = false;
+			try {
+				let index = 0;
+				if (!workspace.workspaceFolders) {
+					throw new Error();
+				}
+				for (const wk of workspace.workspaceFolders) {
+					if (wk.name === 'Api_' + moduleName) {
+						moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApiController.devInfo);
+						workspace.updateWorkspaceFolders(index, 1);
+					}
+					index++;
+				}
+			} catch (e) {
+				return;
 			}
-		}*/
-		const instanceUrl = module.instanceUrl;
-		request.RFSControl = request.RFSControl.splice(index, 1);
-		await request.specificLogout(instanceUrl);
+			return;
+		}
+		simpliciteApiController.apiFileSystemController.splice(objIndex - 1, 1); // remove apiFileSystemController
+		if (moduleHandler.countModulesOfInstance(module.instanceUrl) === 1) { // if the removed api module is the only module connected to the instance, disconnect
+			await simpliciteApiController.instanceLogout(module.instanceUrl);
+		} else { // else remove the module 
+			moduleHandler.removeApiModule(module.parentFolderName, moduleInfoTree, simpliciteApiController.devInfo);
+		}
 		try {
 			if (!workspace.workspaceFolders) {
 				throw new Error();
 			}
 			let index = 0;
 			for (const wk of workspace.workspaceFolders) {
-				if (wk.name === 'Api_' + module.name) {
+				if (wk.name === module.parentFolderName) {
 					workspace.updateWorkspaceFolders(index, 1);
 				}
 				index++;
 			}
-			await workspace.fs.delete(Uri.parse('Api_' + module.name), { recursive: true });
+			// need to delete after workspace change, otherwise resource is busy
+			if (module.workspaceFolderPath === '') {
+				throw 'No module workspaceFolderPath';
+			}
+			const uri = Uri.parse(module.workspaceFolderPath);
+			await workspace.fs.delete(uri , { recursive: true });
 		} catch (e) {
 			logger.error(e);
 		}
 	});
-};
+	
+	// ------------------------------
 
-// ------------------------------
+	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
+};
 
 let firstClickTime = new Date().getTime();
 
@@ -355,18 +334,17 @@ function doubleClickTrigger(): boolean {
 	}
 }
 
-async function trackAction(request: SimpliciteAPIManager, fileHandler: FileHandler, moduleHandler: ModuleHandler, element: any, trackedValue: boolean) {
-	const inputFile = await getInputFile(request, element);
-	const fileModule = fileHandler.bindFileAndModule(moduleHandler.modules, fileHandler.fileList);
-	await fileHandler.setTrackedStatus(inputFile.filePath, trackedValue, fileModule);
+async function trackAction(fileHandler: FileHandler, modules: Module[], element: any, trackedValue: boolean) {
+	const inputFile = await getInputFile(fileHandler, element);
+	await fileHandler.setTrackedStatus(inputFile.path, trackedValue, modules);
 }
 
-async function getInputFile(request: SimpliciteAPIManager, element: any): Promise<File> {
+async function getInputFile(fileHandler: FileHandler, element: any): Promise<File> {
 	if (element.fullPath) {
-		return request.fileHandler.getFileFromFullPath(element.fullPath);
+		return fileHandler.getFileFromFullPath(element.fullPath);
 	} else {
 		const input = await inputFilePath('Simplicite: Type in the file\'s absolute path', 'path');
-		return request.fileHandler.getFileFromFullPath(input);
+		return fileHandler.getFileFromFullPath(input);
 	}
 }
 

@@ -3,7 +3,7 @@
 
 import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
 import { logger } from './Log';
-import { DevInfoObject } from './interfaces';
+import { ModuleDevInfo } from './interfaces';
 import { removeFileExtension } from './utils';
 import { File } from './File';
 
@@ -11,7 +11,7 @@ export class CompletionProvider implements CompletionItemProvider {
 	private _devInfo: any;
 	private _moduleDevInfo: any;
 	private _file: File;
-	private _fileInfo: DevInfoObject | undefined;
+	private _fileInfo: ModuleDevInfo | undefined;
 	private _completionItems: CustomCompletionItem[];
 	constructor(devInfo: any, moduleDevInfo: any, file: File,) {
 		this._devInfo = devInfo;
@@ -30,7 +30,7 @@ export class CompletionProvider implements CompletionItemProvider {
 			for (const objectType in this._moduleDevInfo) {
 				if (objectType === this._fileInfo.object) {
 					for (const object of this._moduleDevInfo[objectType]) {
-						const fileName = CompletionProvider.getFileNameFromPath(this._file.filePath);
+						const fileName = CompletionProvider.getFileNameFromPath(this._file.path);
 						if (object.name === fileName) {
 							for (const completionAttribute in this._fileInfo.completion) {
 								// eslint-disable-next-line no-prototype-builtins
@@ -91,12 +91,11 @@ export class CompletionProvider implements CompletionItemProvider {
 		return removeFileExtension(decomposedPath[decomposedPath.length - 1]);
 	}
 
-	private getFileObject(): DevInfoObject | undefined {
-		let fileObject: DevInfoObject | undefined = undefined;
+	private getFileObject(): ModuleDevInfo | undefined {
+		let fileObject: ModuleDevInfo | undefined = undefined;
 		for (const object of this._devInfo.objects) {
-			if (!object.package) {
-				continue;
-			}
+			if (!object.package) continue;
+
 			if (this.doesFilePathContainsObjectPackage(object.package)) {
 				fileObject = object;
 			}
@@ -106,7 +105,7 @@ export class CompletionProvider implements CompletionItemProvider {
 
 	private doesFilePathContainsObjectPackage(objectPackage: string): boolean {
 		const packagePathFormat = objectPackage.replace(/\./g, '/');
-		if (this._file.filePath.includes(packagePathFormat)) {
+		if (this._file.path.includes(packagePathFormat)) {
 			return true;
 		}
 		return false;

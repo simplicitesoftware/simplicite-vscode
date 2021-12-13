@@ -4,9 +4,8 @@
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, window } from 'vscode';
 import { Module } from '../Module';
 import * as path from 'path';
-import { DevInfoObject } from '../interfaces';
+import { ModuleDevInfo } from '../interfaces';
 
-// Object Info tree view
 export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
@@ -25,22 +24,20 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		this._onDidChangeTreeData.fire();
 	}
 
-	setModules(modules: Array<Module>): void {
-		this._modules = [];
-		const addedModules: string[] = []; // avoid adding the same module
-		for (const module of modules) {	
-			if (addedModules.includes(module.name)) {
-				continue;
-			}
-			this._modules?.push(module);
-			addedModules.push(module.name);
-		}
+	feedData(devInfo: any, modules: Module[]) {
+		this._devInfo = devInfo;
+		this.setModules(modules);
 		this.refresh();
 	}
 
-	setDevInfo(devInfo: any): void {
-		this._devInfo = devInfo;
-		this.refresh();
+	private setModules(modules: Array<Module>): void {
+		this._modules = [];
+		const addedModules: string[] = []; // avoid adding the same module
+		for (const module of modules) {	
+			if (addedModules.includes(module.name)) continue;
+			this._modules?.push(module);
+			addedModules.push(module.name);
+		}
 	}
 
 	getTreeItem(element: CustomTreeItem | TreeItem): CustomTreeItem | TreeItem {
@@ -100,9 +97,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 		const modulesItems = [];
 		for (const module of this._modules) {
-			if (!module.moduleDevInfo) {
-				continue;
-			}
+			if (!module.moduleDevInfo) continue;
 			modulesItems.push(new CustomTreeItem(module.name, TreeItemCollapsibleState.Collapsed, module.instanceUrl, ItemType.module, module, 'module', undefined, this._runPath));
 		}
 		return modulesItems;
@@ -115,15 +110,13 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 		const objectTypesItems = [];
 		for (const type in moduleDevInfo) {
-			if (type === 'name' || type === 'version' || moduleDevInfo[type].length === 0) {
-				continue;
-			}
+			if (type === 'name' || type === 'version' || moduleDevInfo[type].length === 0) continue;
 			objectTypesItems.push(new CustomTreeItem(type, TreeItemCollapsibleState.Collapsed, '', ItemType.objectType, moduleDevInfo[type], '', undefined, this._runPath));
 		}
 		return objectTypesItems;
 	}
 
-	private getObjectItems(objects: any, devInfoObject: DevInfoObject | void): TreeItem[] {
+	private getObjectItems(objects: any, devInfoObject: ModuleDevInfo | void): TreeItem[] {
 		if (!objects || !devInfoObject) {
 			return [];
 		}
@@ -148,9 +141,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		let technicalAttributeName = '';
 		let technicalAttribute = undefined;
 		for (const attributeName in attributes) {
-			if (attributes[attributeName].length === 0 || !acceptedAttributes.includes(attributeName)) {
-				continue;
-			}
+			if (attributes[attributeName].length === 0 || !acceptedAttributes.includes(attributeName)) continue;
 			for (const item of attributes[attributeName]) {
 				let itemName = '';
 				const collapsibleState = TreeItemCollapsibleState.None;
@@ -212,7 +203,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 	}
 
-	getObjectDevInfo(objectType: string): DevInfoObject | void {
+	getObjectDevInfo(objectType: string): ModuleDevInfo | void {
 		for (const object of this._devInfo.objects) {
 			if (objectType === object.object) {
 				return object;

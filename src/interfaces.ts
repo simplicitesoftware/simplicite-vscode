@@ -29,7 +29,7 @@ export interface ObjectInfo {
 }
 
 export interface FileAndModule {
-	moduleName: string,
+	parentFolderName: string,
 	instanceUrl: string,
 	fileList: File[],
 }
@@ -41,7 +41,7 @@ export interface OpenFileContext {
 	instanceUrl: string
 }
 
-export interface DevInfoObject {
+export interface ModuleDevInfo {
 	classnamefield: string | undefined,
 	completion: any,
 	icon: string,
@@ -54,4 +54,15 @@ export interface DevInfoObject {
 export interface PomXMLData {
 	instanceUrl: string,
 	name: string
+}
+
+export interface Credentials {
+	userName: string;
+	password: string;
+}
+
+export interface ModuleObject {
+	moduleName: string,
+	instanceUrl: string,
+	fileList: File[]
 }

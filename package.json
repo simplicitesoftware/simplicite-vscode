@@ -3,7 +3,7 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.15",
+	"version": "1.0.17",
 	"engines": {
 		"vscode": "^1.52.0",
 		"node": ">=12"
@@ -109,7 +109,7 @@
 			},
 			{
 				"view": "simpliciteModuleInfo",
-				"contents": "No module info available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)"
+				"contents": "No module info available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nIf you already have imported your modules click on the following button\n[Log into all modules in workspace](command:simplicite-vscode-tools.logIn)"
 			}
 		],
 		"commands": [
@@ -200,18 +200,6 @@
 			{
 				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
 				"title": "Simplicite: Disconnect from the module remote file system"
-			},
-			{
-				"command": "simplicite-vscode-tools.initApiWorkspace",
-				"title": "Simplicite: Init api workspace"
-			},
-			{
-				"command": "simplicite-vscode-tools.initApiFiles",
-				"title": "Simplicite: Init api files"
-			},
-			{
-				"command": "simplicite-vscode-tools.deleteApiWorkspace",
-				"title": "Simplicite: Delete api workspace"
 			}
 		],
 		"configuration": {

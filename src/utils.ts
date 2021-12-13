@@ -1,6 +1,8 @@
 'use strict';
 
 import { Module } from './Module';
+import { ModuleObject, FileAndModule } from './interfaces';
+import { File } from './File';
 
 export function crossPlatformPath(path: string): string {
 	if (path[0] === '/' || path[0] === '\\') {
@@ -54,4 +56,19 @@ export function getModuleFromWorkspacePath(wkPath: string, modules: Module[]): M
 		}
 	}
 	return false;
+}
+
+export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAndModule[] {
+	const fileModule = [];
+	for (const module of modules) {
+		if (module.apiFileSystem) continue;
+		const moduleObject: FileAndModule = { parentFolderName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
+		for (const file of files) {
+			if (file.workspaceFolderPath === module.workspaceFolderPath) {
+				moduleObject.fileList.push(file);
+			}
+		}
+		fileModule.push(moduleObject);
+	}
+	return fileModule;
 }

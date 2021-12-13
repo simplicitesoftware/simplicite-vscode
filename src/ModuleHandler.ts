@@ -5,44 +5,44 @@ import { Module } from './Module';
 import { workspace, RelativePattern, WorkspaceFolder, Memento } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { PomXMLData } from './interfaces';
+import { BarItem } from './BarItem';
+import { SimpliciteApi } from './SimpliciteApi';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 
 export class ModuleHandler {
 	modules: Array<Module>;
-	connectedInstancesUrl: Array<string>;
+	connectedInstances: string[];
 	_globalState: Memento;
-	constructor(globalState: Memento) {
-		this.connectedInstancesUrl = [];
+	_barItem: BarItem;
+	constructor(globalState: Memento, barItem: BarItem) {
 		this.modules = [];
 		this._globalState = globalState;
+		this.connectedInstances = [];
+		this._barItem = barItem;
 	}
 
-	static async build (globalState: Memento): Promise<ModuleHandler> {
-		const moduleHandler = new ModuleHandler(globalState);
-		await moduleHandler.setSimpliciteModulesFromDisk();
-		moduleHandler.setSavedData();
+	static async build (globalState: Memento, barItem: BarItem): Promise<ModuleHandler> {
+		const moduleHandler = new ModuleHandler(globalState, barItem);
+		await moduleHandler.setModulesFromScratch();
 		return moduleHandler;
 	}
-
-	addInstanceUrl(instanceUrl: string): void {
-		if (!this.connectedInstancesUrl.includes(instanceUrl)) {
-			this.connectedInstancesUrl.push(instanceUrl);
-		}
-	}
 	
-	addModule (module: Module) {
+	addModule (module: Module, onInitialization: boolean) {
 		let flag = true;
 		for (const mod of this.modules) {
-			if (mod.name === module.name && mod.remoteFileSystem === module.remoteFileSystem) {
+			if (mod.name === module.name && mod.apiFileSystem === module.apiFileSystem) {
 				flag = false;
 			}
 		}
-		// if not already in, add module to list
-		if (module.workspaceFolderPath === '') {
+		if (module.workspaceFolderPath === '' || module.parentFolderName === '') {
 			const wk = this.getWorkspaceFolderPath(module);
 			module.workspaceFolderPath = wk ? wk : '';
+			module.parentFolderName = Module.computeParentFolderName(module.workspaceFolderPath);
 		}
+		// if not already in, add module to list
 		if (flag) {
 			this.modules.push(module);
+			if (!onInitialization) this._moduleHasBeenModified(); // do not save the modules on initialization
 		}
 	}
 
@@ -57,52 +57,40 @@ export class ModuleHandler {
 			}
 		}
 		this.modules = tempModules;
-		this.saveModules();
+		this._moduleHasBeenModified();
 		return module;
 	}
 
-	getTokenIfExist (instanceUrl: string): string {
-		for (const mod of this.modules) {
-			if (mod.instanceUrl === instanceUrl && mod.token !== '' && mod.token !== null) {
-				return mod.token;
+	async setModulesFromScratch() {
+		await this.setSimpliciteModulesFromDisk();
+		this.compareWithPersistence();
+	}
+
+	compareWithPersistence() { // compare the initial modules found in the workspace with the persistent datas. Mandatory to get api file system module
+		const parsedModule: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
+		for (const parMod of parsedModule) {
+			if (this.modules.length === 0 && !parMod.apiFileSystem) { // if no module is not found on disk delete
+				continue;
+			} else if (!parMod.apiFileSystem) {
+				let isModuleOnDisk = false;
+				for (const mod of this.modules) {
+					if (parMod.parentFolderName === mod.parentFolderName) {
+						isModuleOnDisk = true;
+					}
+				}
+				if (!isModuleOnDisk) {
+					continue;
+				} 
 			}
+			parMod.connected = false;
+			this.addModule(parMod, false);
+			if (parMod.token !== '') this.spreadToken(parMod.instanceUrl, parMod.token);
 		}
-		return '';
+
 	}
 
 	moduleLength(): number {
 		return this.modules.length;
-	}
-
-	setSavedData() {
-		const parsedModuleState: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
-		for (const mod of parsedModuleState) {
-			if (mod.remoteFileSystem) {
-				mod.instanceJump = false;
-				this.addModule(mod);
-			} else {
-				const res = this.isModule(mod);
-				if (res && mod.token) {
-					this.spreadToken(mod.instanceUrl, mod.token);
-				} else if (!res) {
-					this.addModule(mod);
-				}
-			}
-		}
-		// sort the list so the api file system appears first
-		const tempModules = this.modules;
-		this.modules = [];
-		for (const module of tempModules) {
-			if (module.remoteFileSystem) {
-				this.addModule(module);
-			}
-		}
-		for (const module of tempModules) {
-			if (!module.remoteFileSystem) {
-				this.addModule(module);
-			}
-		}
-		this.spreadAllToken();
 	}
 
 	isModule (mod: Module): boolean {
@@ -123,7 +111,7 @@ export class ModuleHandler {
 
 	isRemoteModuleInWorkspace (wks: readonly WorkspaceFolder[], module: Module): boolean {
 		for (const wk of wks) {
-			if (wk.name === 'Api_' + module.name) {
+			if (wk.name === module.parentFolderName) {
 				return true;
 			}
 		}
@@ -138,13 +126,13 @@ export class ModuleHandler {
 		}
 	}
 
-	spreadAllToken() {
+	/*spreadAllToken() {
 		for (const module of this.modules) {
 			if (module.token !== '' && module.token !== null) {
 				this.spreadToken(module.instanceUrl, module.token);
 			}
 		}
-	}
+	}*/
 
 	getModuleFromName(moduleName: string): Module | undefined {
 		for (const module of this.modules) {
@@ -155,23 +143,28 @@ export class ModuleHandler {
 		return undefined;
 	}
 
-	getModuleFromWorkspacePath(workspacePath: string): Module | false {
-		try {
-			for (const module of this.modules) {
-				if (module.workspaceFolderPath === workspacePath) {
-					return module;
-				}
+	getModuleFromParentFolder(parentFolderPath: string): Module | undefined {
+		for (const module of this.modules) {
+			if (module.parentFolderName === parentFolderPath) {
+				return module;
 			}
-		} catch (e) {
-			logger.error(e);
 		}
-		return false;
+		return undefined;
 	}
 
-	removeConnectedInstancesUrl(instanceUrl: string): void {
-		const index = this.connectedInstancesUrl.indexOf(instanceUrl);
-		this.connectedInstancesUrl.splice(index, 1);
+	getModuleFromWorkspacePath(workspacePath: string): Module | undefined {
+		for (const module of this.modules) {
+			if (module.workspaceFolderPath === workspacePath) {
+				return module;
+			}
+		}
+		return undefined;
 	}
+
+	// removeConnectedInstancesUrl(instanceUrl: string): void {
+	// 	const index = this.connectedInstancesUrl.indexOf(instanceUrl);
+	// 	this.connectedInstancesUrl.splice(index, 1);
+	// }
 
 	async setSimpliciteModulesFromDisk(): Promise<void> { // returns array of module objects
 		if (workspace.workspaceFolders === undefined) {
@@ -187,7 +180,7 @@ export class ModuleHandler {
 				}
 				const pomXMLData: PomXMLData = await this.getModuleInstanceUrlAndNameFromDisk(workspaceFolder);
 				if (modulePom[0]) {
-					this.addModule(new Module(pomXMLData.name, workspaceFolder.uri.path, pomXMLData.instanceUrl, '', false, false));
+					this.addModule(new Module(pomXMLData.name, workspaceFolder.uri.path, pomXMLData.instanceUrl, '', false, false), true);
 				}
 			} catch (e: any) {
 				logger.warn(e);
@@ -197,7 +190,7 @@ export class ModuleHandler {
 
 	getSimpliciteRFSModules (): Module | undefined {
 		for (const module of this.modules) {
-			if (module.remoteFileSystem) {
+			if (module.apiFileSystem) {
 				return module;
 			}
 		}
@@ -208,49 +201,115 @@ export class ModuleHandler {
 		const globPatern = '**pom.xml';
 		const relativePattern = new RelativePattern(workspaceFolder, globPatern);
 		const file = await workspace.findFiles(relativePattern);
-		if (file.length === 0) {
-			throw new Error('No pom.xml has been found');
-		}
+		if (file.length === 0) throw new Error('No pom.xml has been found');
 		const pom = (await workspace.openTextDocument(file[0])).getText();
 		const res = await parseStringPromise(pom);
 		return {instanceUrl: res.project.properties[0]['simplicite.url'][0], name: res.project['name'][0]};
-	}
-
-	saveModules () {
-		this._globalState.update('simplicite-modules-info', this.modules);
-	}
-
-	removeModuleFromInstance(instanceUrl: string): void {
-		const moduleArray: Module[] = this.modules;
-		const newInfo = [];
-		if (moduleArray === null) {
-			throw new Error('Error getting simplicite info content');
-		}
-		for (const module of moduleArray) {
-			if (module.instanceUrl !== instanceUrl) {
-				newInfo.push(module);
-			}
-		}
-		this.modules = newInfo;
-		this._globalState.update('simplicite-modules-info', newInfo);
-	}
-
-	afterConnectionModule (module: Module, token: string) {
-		this.spreadToken(module.instanceUrl, token);
-		this.addInstanceUrl(module.instanceUrl);
-		this.saveModules();
-	}
+	}	
 
 	getWorkspaceFolderPath(module: Module): string | false {
 		if (!workspace.workspaceFolders) {
 			return false;
 		}
 		for (const wk of workspace.workspaceFolders) {
-			if (wk.name ===  'Api_' + module.name) {
-				return wk.uri.path;
-			}
+			if (wk.name ===  module.name && !module.apiFileSystem) return wk.uri.path;
+			else if (wk.name === 'Api_' + module.name && module.apiFileSystem) return wk.uri.path;
 		}
 		return false;
+	}
+
+	removeAllModuleWithInstance(instanceUrl: string): void {
+		const moduleArray: Module[] = this.modules;
+		const newInfo = [];
+		for (const module of moduleArray) {
+			if (module.instanceUrl !== instanceUrl) newInfo.push(module);
+		}
+		this.modules = newInfo;
+		this._moduleHasBeenModified();
+	}
+
+	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: any): void {
+		this.removeConnectedInstance(instanceUrl);
+		for (const mod of this.modules) {
+			if (mod.apiFileSystem) {
+				this.removeModuleFromWkPath(mod.workspaceFolderPath);
+			}
+			if (mod.instanceUrl === instanceUrl) {
+				mod.connected = false;
+				mod.moduleDevInfo = null;
+				mod.token = '';
+			}
+		}
+		moduleInfoTree.feedData(devInfo, this.modules);
+		this._moduleHasBeenModified();
+	}
+
+	removeApiModule(parentFolderName: string, moduleInfoTree: ModuleInfoTree, devInfo: any) {
+		let index = 0;
+		for (const mod of this.modules) {
+			if (mod.parentFolderName === parentFolderName) {
+				this.modules.splice(index, 1);
+			}
+			index++;
+		}
+		moduleInfoTree.feedData(devInfo, this.modules);
+		this._moduleHasBeenModified();
+	}
+
+	async loginModuleState(simpliciteApi: SimpliciteApi, module: Module, token: string): Promise<void> {
+		this.addConnectedInstance(module.instanceUrl);
+		for (const mod of this.modules) {
+			if (mod.instanceUrl === module.instanceUrl) { // share connected values to every module from instance
+				mod.connected = true;
+				mod.token = token;
+			}
+		}
+		await this.refreshModulesDevInfo(simpliciteApi);
+		this._moduleHasBeenModified();
+	}
+	
+	addConnectedInstance(instanceUrl: string): void {
+		if (!this.connectedInstances.includes(instanceUrl)) this.connectedInstances.push(instanceUrl);
+	}
+
+	removeConnectedInstance(instanceUrl: string): void {
+		if (this.connectedInstances.includes(instanceUrl)) {
+			const index = this.connectedInstances.indexOf(instanceUrl);
+			this.connectedInstances.splice(index, 1);
+		}
+	}
+
+	saveModules () {
+		this._globalState.update('simplicite-modules-info', this.modules);
+	}
+
+	private _moduleHasBeenModified () { // save the modules and refresh bar item
+		this.saveModules();
+		this._barItem.show(this.modules, this.connectedInstances);
+	}
+
+	async refreshModulesDevInfo (simpliciteApi: SimpliciteApi): Promise<void> {
+		for (const mod of this.modules) {
+			if (mod.connected) mod.moduleDevInfo = await simpliciteApi.fetchDevOrModuleInfo(mod.instanceUrl, mod.name);	
+			else mod.moduleDevInfo = undefined;
+		}
+	}
+
+	getInstanceToken(instanceUrl: string): string {
+		for (const mod of this.modules) {
+			if (mod.instanceUrl === instanceUrl && mod.token !== '') {
+				return mod.token;
+			}
+		}
+		return '';
+	}
+
+	countModulesOfInstance(instanceUrl: string): number {
+		let index = 0;
+		for (const mod of this.modules) {
+			if (mod.instanceUrl === instanceUrl) index++;
+		}
+		return index;
 	}
 }
 

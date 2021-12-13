@@ -1,16 +1,30 @@
 'use strict';
 
 export class File {
-	filePath: string;
+	path: string;
 	instanceUrl: string;
 	workspaceFolderPath: string;
-	moduleName: string;
+	parentFolderName: string;
 	tracked: boolean;
-	constructor(filePath: string, instanceUrl: string, workspaceFolderPath: string, moduleName: string, tracked: boolean) {
-		this.filePath = filePath;
+	fileName: string;
+	fileType: string | undefined;
+	scriptField: string | undefined;
+	properNameField: string | undefined;
+	constructor(path: string, instanceUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
+		this.path = path;
 		this.instanceUrl = instanceUrl;
 		this.workspaceFolderPath = workspaceFolderPath;
-		this.moduleName = moduleName;
+		this.parentFolderName = parentFolderName;
 		this.tracked = tracked;
+		this.fileName = this.fileNameFromPath(path);
+		this.fileType = undefined;
+		this.scriptField = undefined;
+		this.properNameField = undefined;
+	}
+
+	private fileNameFromPath(filePath: string): string {
+		const decomposed = filePath.split('/');
+		const decomposeDot = decomposed[decomposed.length - 1].split('.'); // remove extension
+		return decomposeDot[decomposeDot.length - 2];
 	}
 }

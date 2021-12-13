@@ -7,14 +7,7 @@ import { Module } from './Module';
 import { validFileExtension } from './utils';
 import { SUPPORTED_FILES } from './constant';
 import { FileTree } from './treeView/FileTree';
-import { FileAndModule } from './interfaces';
 import { getModuleFromWorkspacePath } from './utils';
-
-interface ModuleObject {
-	moduleName: string,
-	instanceUrl: string,
-	fileList: File[]
-}
 
 export class FileHandler {
 	fileTree?: FileTree;
@@ -35,32 +28,11 @@ export class FileHandler {
 		return fileHandler;
 	}
 
-	deleteSimpliciteInfo(): void {
-		this._globalState.update('simplicite-modules-info', undefined);
-	}
-
-	bindFileAndModule(modules: Array<Module>, files: File[]): FileAndModule[] {
-		const fileModule = [];
-		for (const module of modules) {
-			if (module.remoteFileSystem) {
-				continue;
-			}
-			const moduleObject: ModuleObject = { moduleName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
-			for (const file of files) {
-				if (file.workspaceFolderPath === module.workspaceFolderPath) {
-					moduleObject.fileList.push(file);
-				}
-			}
-			fileModule.push(moduleObject);
-		}
-		return fileModule;
-	}
-
 	private updateFileStatus() {
 		const jsonContent = [];
 		for (const file of this.fileList) {
 			if (file.tracked) {
-				jsonContent.push({ filePath: file.filePath, tracked: file.tracked });
+				jsonContent.push({ path: file.path, tracked: file.tracked });
 			}
 		}
 		this._globalState.update('simplicite-files-info', jsonContent);
@@ -72,7 +44,8 @@ export class FileHandler {
 			throw new Error('no workspace detected');
 		}
 		const fileList = [];
-		for (const workspaceFolder of workspace.workspaceFolders) {
+		const wks = workspace.workspaceFolders;
+		for (const workspaceFolder of wks) {
 			for (const valid of SUPPORTED_FILES) {
 				const globPatern = '**/*' + valid;
 				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
@@ -84,16 +57,16 @@ export class FileHandler {
 						let filePath = file.path;
 						filePath = filePath.toLowerCase();
 						const test = !filePath.includes(wk);
-						if (!module || test)  {
+						if (!module || test) {
 							continue;
 						}
-						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));
+						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.parentFolderName, false));
 					}
 				}
 			}
 		}
 		try {
-			if (this.fileTree) await this.fileTree.setFileModule(this.bindFileAndModule(modules, fileList));
+			if (this.fileTree) await this.fileTree.setFileModule(modules, fileList);
 			return this.setTrackedStatusPersistence(fileList);
 		} catch (e) {
 			logger.warn('File Detector: ' + e);
@@ -106,7 +79,7 @@ export class FileHandler {
 			const jsonContent: File[] = this._globalState.get('simplicite-files-info') || [];
 			for (const file of fileList) {
 				for (const content of jsonContent) {
-					if (file.filePath === content.filePath) {
+					if (file.path === content.path) {
 						file.tracked = content.tracked;
 						break;
 					}
@@ -118,20 +91,19 @@ export class FileHandler {
 		return fileList;
 	}
 
-	async setTrackedStatus(filePath: string, status: boolean, fileModule: FileAndModule[]): Promise<void> {
+	async setTrackedStatus(filePath: string, status: boolean, modules: Module[]): Promise<void> {
 		for (const file of this.fileList) {
-			if (file.filePath.toLowerCase() === filePath.toLowerCase()) {
+			if (file.path.toLowerCase() === filePath.toLowerCase()) {
 				file.tracked = status;
 			}
 		}
 		this.updateFileStatus();
-		if (this.fileTree) await this.fileTree.setFileModule(fileModule);
-		Promise.resolve();
+		if (this.fileTree) await this.fileTree.setFileModule(modules, this.fileList);
 	}
 
 	getFileFromFullPath(fullPath: string): File {
 		for (const file of this.fileList) {
-			let lowercasePath = file.filePath;
+			let lowercasePath = file.path;
 			lowercasePath = lowercasePath.toLowerCase();
 			fullPath = fullPath.toLowerCase();
 			if (lowercasePath === fullPath) {
