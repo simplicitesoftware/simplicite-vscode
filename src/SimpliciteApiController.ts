@@ -190,8 +190,8 @@ export class SimpliciteApiController {
 		let flag = false;
 		const fileModule: Map<string, Array<File>> = new Map();
 		for (const file of fileList) {
-			if (this.moduleHandler.connectedInstances.includes(file.instanceUrl)) {
-				fileModule.get(file.instanceUrl) ? fileModule.get(file.instanceUrl)?.push(file) : fileModule.set(file.instanceUrl, [file]);
+			if (this.moduleHandler.connectedInstances.includes(file.simpliciteUrl)) {
+				fileModule.get(file.simpliciteUrl) ? fileModule.get(file.simpliciteUrl)?.push(file) : fileModule.set(file.simpliciteUrl, [file]);
 				flag = true;
 			}
 		}

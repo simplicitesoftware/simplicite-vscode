@@ -2,22 +2,22 @@
 
 export class File {
 	path: string;
-	instanceUrl: string;
+	simpliciteUrl: string;
 	workspaceFolderPath: string;
 	parentFolderName: string;
 	tracked: boolean;
-	fileName: string;
-	fileType: string | undefined;
+	name: string;
+	type: string | undefined;
 	scriptField: string | undefined;
 	properNameField: string | undefined;
-	constructor(path: string, instanceUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
+	constructor(path: string, simpliciteUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
 		this.path = path;
-		this.instanceUrl = instanceUrl;
+		this.simpliciteUrl = simpliciteUrl;
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.parentFolderName = parentFolderName;
 		this.tracked = tracked;
-		this.fileName = this.fileNameFromPath(path);
-		this.fileType = undefined;
+		this.name = this.fileNameFromPath(path);
+		this.type = undefined;
 		this.scriptField = undefined;
 		this.properNameField = undefined;
 	}

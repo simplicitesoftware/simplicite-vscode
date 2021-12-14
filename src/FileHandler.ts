@@ -91,7 +91,7 @@ export class FileHandler {
 		return fileList;
 	}
 
-	async setTrackedStatus(filePath: string, status: boolean, modules: Module[]): Promise<void> {
+	async setTrackedStatus(filePath: string, status: boolean, modules: Module[]): Promise<void> { // set the status true / false, and spread value to other objects
 		for (const file of this.fileList) {
 			if (file.path.toLowerCase() === filePath.toLowerCase()) {
 				file.tracked = status;

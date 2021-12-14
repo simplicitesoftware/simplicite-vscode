@@ -176,7 +176,7 @@ export class ModuleHandler {
 				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
 				const modulePom = await workspace.findFiles(relativePattern);
 				if (modulePom.length === 0) {
-					throw new Error('No module found');
+					continue;
 				}
 				const pomXMLData: PomXMLData = await this.getModuleInstanceUrlAndNameFromDisk(workspaceFolder);
 				if (modulePom[0]) {

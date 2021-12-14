@@ -77,14 +77,14 @@ export class SimpliciteApi {
 	}
 
 	async writeFile(file: File, devInfo: any, module: Module): Promise<boolean> {
-		if (!file.fileType && !file.scriptField && !file.properNameField) { // set the values only once
-			file.fileType = this.getBusinessObjectType(file.path, devInfo); 	
-			file.scriptField = this.getProperScriptField(file.fileType, devInfo);
-			file.properNameField = this.getProperNameField(file.fileType, devInfo);
+		if (!file.type && !file.scriptField && !file.properNameField) { // set the values only once
+			file.type = this.getBusinessObjectType(file.path, devInfo); 	
+			file.scriptField = this.getProperScriptField(file.type, devInfo);
+			file.properNameField = this.getProperNameField(file.type, devInfo);
 		}
-		const app = this._appHandler.getApp(file.instanceUrl);
-		const obj = await app.getBusinessObject(file.fileType, 'ide_' + file.fileType);
-		const item = await this.searchForUpdate(file.fileName, obj, file.properNameField!, file.fileType!, file.path);
+		const app = this._appHandler.getApp(file.simpliciteUrl);
+		const obj = await app.getBusinessObject(file.type, 'ide_' + file.type);
+		const item = await this.searchForUpdate(file.name, obj, file.properNameField!, file.type!, file.path);
 		const workingFileContent = await workspace.fs.readFile(Uri.parse(file.path));
 		const fileExtension = this.getFileExtension(file.path);
 		
@@ -98,7 +98,7 @@ export class SimpliciteApi {
 		}
 		
 		// get the file content for setContent
-		const find = '**/src/**/' + file.fileName + fileExtension;
+		const find = '**/src/**/' + file.name + fileExtension;
 		const fileContentList = await workspace.findFiles(find);
 		const fileContent = this.getContentFromModuleFile(fileContentList, module);
 		const document = await workspace.openTextDocument(fileContent); // to do
@@ -113,15 +113,19 @@ export class SimpliciteApi {
 		
 		// once the object is updated, write the content in the temp files so all the files share the same state (workingFileContent, localInitialFileContent & remoteFileContent) 
 		if (module.apiFileSystem) {
-			await workspace.fs.writeFile(Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.fileName + fileExtension), workingFileContent);
+			await workspace.fs.writeFile(Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.name + fileExtension), workingFileContent);
 			const uri = Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java');
-			await workspace.fs.delete(uri);
+			try {
+				await workspace.fs.delete(uri);
+			} catch (e) {
+				logger.error(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java' + ' does not exist (no conflict)');
+			}
 			this._conflictStatus = false;
 		}
 		return true;
 	}
 
-	async searchForUpdate(fileName: string, obj: any, properNameField: string, fileType: string, filePath: string): Promise<any> {
+	async searchForUpdate(fileName: string, obj: any, properNameField: string, fileType: string, filePath: string): Promise<any> { // todo return, just return rowId with cache
 		if (!this._cache.isInCache(fileName)) {
 			const list = await obj.search({ [properNameField]: fileName });
 			if (list.length === 0) {
@@ -141,8 +145,6 @@ export class SimpliciteApi {
 		const item = await obj.getForUpdate(rowId, { inlineDocuments: true });
 		return item;
 	}
-
-	
 
 	private getProperNameField(fileType: string, devInfo: any) {
 		if (!devInfo) {
@@ -194,7 +196,7 @@ export class SimpliciteApi {
 			if (this._conflictStatus) {
 				return;
 			}
-			const initialFilePath = Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.fileName + fileExtension);
+			const initialFilePath = Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.name + fileExtension);
 			const localInitialFileContent =  await workspace.fs.readFile(initialFilePath); 
 			const remoteFileContent = Buffer.from(item[fieldScriptId].content, 'base64');
 			// check if the local initial state of the file is the same as the remote file
@@ -237,6 +239,12 @@ export class SimpliciteApi {
 		} catch (e: any) {
 			throw new Error(e);
 		}
+	}
+
+	search (instanceUrl: string, fieldName: string, fieldContent: string): unknown {
+		const app = this._appHandler.getApp(instanceUrl);
+		const res = app.search({ [fieldName]: fieldContent });
+		return res;
 	}
 
 	private getContentFromModuleFile (fileContentList: any, module: Module): any { // to do

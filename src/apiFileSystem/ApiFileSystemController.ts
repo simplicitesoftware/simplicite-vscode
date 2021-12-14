@@ -47,7 +47,7 @@ export class ApiFileSystemController {
 			}
 			if (!flag) {
 			// create the workspace only once, extension will reload
-				workspace.updateWorkspaceFolders(workspace.workspaceFolders ? workspace.workspaceFolders?.length : 0, 0, { uri: Uri.parse(this._storageUri + '/Api_' + this.module.name), name: 'Api_' + this.module.name });
+				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(this._storageUri + '/Api_' + this.module.name), name: 'Api_' + this.module.name });
 			}
 		} catch (e) {
 			logger.error(e);
@@ -59,14 +59,14 @@ export class ApiFileSystemController {
 			return false;
 		}
 		try {
-			const uri = Uri.parse(this.baseUrl);
+			const uri = Uri.parse(this._storageUri + '/Api_' + this.module.name);
 			const res = workspace.fs.createDirectory(uri);
 			const mdl = await this._app.getBusinessObject('Module');
 			const ms = await mdl.search({ mdl_name: this.module.name} );
 			const m = ms[0];
 			await this.getAllFiles(m.row_id);
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
-			workspace.fs.writeFile(Uri.parse(this.baseUrl + '/pom.xml'), Buffer.from(pom.content, 'base64'));
+			workspace.fs.writeFile(Uri.parse(this._storageUri + '/Api_' + this.module.name + '/pom.xml'), Buffer.from(pom.content, 'base64'));
 			return true;
 		} catch (e) {
 			logger.error(e);
@@ -88,9 +88,9 @@ export class ApiFileSystemController {
 			
 			for (const object of res) {
 				if (!object[devObj.sourcefield]) continue;
-				let uri = Uri.parse(this.baseUrl + '/temp/' + object[devObj.sourcefield].name);
+				let uri = Uri.parse(this._storageUri + '/Api_' + this.module.name + '/temp/' + object[devObj.sourcefield].name);
 				workspace.fs.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'));
-				uri = Uri.parse(this.baseUrl + '/' + replace + '/' + this.module.name + '/' + object[devObj.sourcefield].name);
+				uri = Uri.parse(this._storageUri + '/Api_' + this.module.name + '/' + replace + '/' + this.module.name + '/' + object[devObj.sourcefield].name);
 				workspace.fs.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'));
 			}
 		}
@@ -99,12 +99,12 @@ export class ApiFileSystemController {
 	createFolderTree (folderPath: string) {
 		const split = folderPath.split('/');
 		if (split[split.length - 1] === 'dispositions') {
-			let path = this.baseUrl + '/scripts';
+			let path = this._storageUri + '/Api_' + this.module.name + '/scripts';
 			workspace.fs.createDirectory(Uri.parse(path));
 			path += '/Disposition';
 			workspace.fs.createDirectory(Uri.parse(path));
 		} else {
-			let path = this.baseUrl + '/src/com/simplicite/' + split[split.length - 1];
+			let path = this._storageUri + '/Api_' + this.module.name + '/src/com/simplicite/' + split[split.length - 1];
 			workspace.fs.createDirectory(Uri.parse(path));
 			path += '/' + this.module.name;
 			workspace.fs.createDirectory(Uri.parse(path));

@@ -306,7 +306,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				index++;
 			}
 			// need to delete after workspace change, otherwise resource is busy
-			if (module.workspaceFolderPath === '') {
+			if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.parse can resolve to the root of the main disk and delete every file
 				throw 'No module workspaceFolderPath';
 			}
 			const uri = Uri.parse(module.workspaceFolderPath);
