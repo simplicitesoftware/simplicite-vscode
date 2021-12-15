@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 'use strict';
 
-import { window, workspace, Uri, commands, ExtensionContext } from 'vscode';
+import { window, workspace, Uri, commands } from 'vscode';
 import { AppHandler } from './AppHandler';
 import { File } from './File';
 import { Credentials } from './interfaces';
@@ -13,9 +13,10 @@ import { Buffer } from 'buffer';
 
 export class SimpliciteApi {
 	_appHandler: AppHandler;
+	_cache: Cache;	
 	_conflictStatus: boolean;
-	_cache: Cache;
 	_extensionStoragePath: Uri;
+	devInfo: any;
 	constructor(appHandler: AppHandler, storageUri: Uri) {
 		this._appHandler = appHandler;
 		this._conflictStatus = false;
@@ -35,6 +36,9 @@ export class SimpliciteApi {
 		}
 		try {
 			const res = await app.login();
+			if (!this.devInfo) {
+				this.devInfo = await this.fetchDevOrModuleInfo(instanceUrl, undefined);
+			}
 			const message = 'Logged in as ' + res.login + ' at: ' + app.parameters.url;
 			window.showInformationMessage('Simplicite: ' + message);
 			logger.info(message);
@@ -76,21 +80,19 @@ export class SimpliciteApi {
 		}
 	}
 
-	async writeFile(file: File, devInfo: any, module: Module): Promise<boolean> {
-		if (!file.type && !file.scriptField && !file.properNameField) { // set the values only once
-			file.type = this.getBusinessObjectType(file.path, devInfo); 	
-			file.scriptField = this.getProperScriptField(file.type, devInfo);
-			file.properNameField = this.getProperNameField(file.type, devInfo);
+	async writeFile(file: File, module: Module): Promise<boolean> {
+		if (!file.type && !file.scriptField && !file.fieldName) { // set the values only once
+			file.type = this.getBusinessObjectType(file.path);
+			file.scriptField = this.getProperScriptField(file.type);
+			file.fieldName = this.getProperNameField(file.type);
 		}
 		const app = this._appHandler.getApp(file.simpliciteUrl);
 		const obj = await app.getBusinessObject(file.type, 'ide_' + file.type);
-		const item = await this.searchForUpdate(file.name, obj, file.properNameField!, file.type!, file.path);
-		const workingFileContent = await workspace.fs.readFile(Uri.parse(file.path));
-		const fileExtension = this.getFileExtension(file.path);
+		const item = await this.searchForUpdate(file, obj);
+		const workingFileContent = await workspace.fs.readFile(Uri.parse(file.path)); // tochange
 		
-		if (module.apiFileSystem) {
-			await this.conflictChecker(workingFileContent, file, fileExtension, item, file.scriptField!);
-		}
+		
+		
 		
 		const doc = obj.getFieldDocument(file.scriptField);
 		if (doc === undefined) {
@@ -98,81 +100,57 @@ export class SimpliciteApi {
 		}
 		
 		// get the file content for setContent
-		const find = '**/src/**/' + file.name + fileExtension;
-		const fileContentList = await workspace.findFiles(find);
-		const fileContent = this.getContentFromModuleFile(fileContentList, module);
-		const document = await workspace.openTextDocument(fileContent); // to do
-		const text = document.getText();
-		doc.setContentFromText(text);
+		
+		doc.setContentFromText(content);
 		obj.setFieldValue(file.scriptField, doc);
 		const res = await obj.update(item, { inlineDocuments: true });
 		if (!res) {
 			window.showErrorMessage('Simplicite: Cannot synchronize ' + file.path);
 			return false;
 		}
-		
+		// tochange
 		// once the object is updated, write the content in the temp files so all the files share the same state (workingFileContent, localInitialFileContent & remoteFileContent) 
-		if (module.apiFileSystem) {
-			await workspace.fs.writeFile(Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.name + fileExtension), workingFileContent);
-			const uri = Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java');
-			try {
-				await workspace.fs.delete(uri);
-			} catch (e) {
-				logger.error(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java' + ' does not exist (no conflict)');
-			}
-			this._conflictStatus = false;
-		}
 		return true;
 	}
 
-	async searchForUpdate(fileName: string, obj: any, properNameField: string, fileType: string, filePath: string): Promise<any> { // todo return, just return rowId with cache
-		if (!this._cache.isInCache(fileName)) {
-			const list = await obj.search({ [properNameField]: fileName });
+	async searchForUpdate(file: File, obj: any): Promise<any> { // todo return, just return rowId with cache
+		if (!file.rowId) {
+			const list = await this.search(file.simpliciteUrl, file.fieldName!, file.name);
 			if (list.length === 0) {
 				throw new Error('No object has been returned');
 			}
 			let objectFound = list[0];
-			if (fileType === 'Resource') {
+			if (file.type === 'Resource') {
 				for (const object of list) {
-					if (object.res_object.userkeylabel === getResourceFileName(filePath)) {
+					if (object.res_object.userkeylabel === getResourceFileName(file.path)) {
 						objectFound = object;
 					}
 				}
 			}
-			this._cache.addPair(fileName, objectFound.row_id);
+			file.rowId = objectFound.row_id;
 		}
-		const rowId = this._cache.getListFromCache(fileName);
-		const item = await obj.getForUpdate(rowId, { inlineDocuments: true });
+		const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
 		return item;
 	}
 
-	private getProperNameField(fileType: string, devInfo: any) {
-		if (!devInfo) {
-			return;
-		}
-		for (const object of devInfo.objects) {
+	private getProperNameField(fileType: string) {
+		for (const object of this.devInfo.objects) {
 			if (fileType === object.object) {
 				return object.keyfield;
 			}
 		}
 	}
 
-	private getProperScriptField(fileType: string, devInfo: any) {
-		if (!devInfo) {
-			return;
-		}
-		for (const object of devInfo.objects) {
+	private getProperScriptField(fileType: string) {
+		for (const object of this.devInfo.objects) {
 			if (fileType === object.object) {
 				return object.sourcefield;
 			}
 		}
 	}
 
-	private getBusinessObjectType(filePath: string, devInfo: any): string {
-		if (!devInfo) {
-			throw new Error('devInfo is undefined, make sure that you have the right to access this module');
-		}
-		for (const object of devInfo.objects) {
+	private getBusinessObjectType(filePath: string): string {
+		for (const object of this.devInfo.objects) {
 			if (object.package) {
 				const comparePackage = replaceAll(object.package, /\./, '/');
 				if (filePath.includes(comparePackage)) {
@@ -241,29 +219,10 @@ export class SimpliciteApi {
 		}
 	}
 
-	search (instanceUrl: string, fieldName: string, fieldContent: string): unknown {
-		const app = this._appHandler.getApp(instanceUrl);
-		const res = app.search({ [fieldName]: fieldContent });
+	async search (simpliciteUrl: string, fieldName: string, fieldContent: string | number): Promise<any> { // generic search function
+		const app = this._appHandler.getApp(simpliciteUrl);
+		const res = await app.search({ [fieldName!]: fieldContent });
 		return res;
-	}
-
-	private getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
-		if (!fileContentList) {
-			return undefined;
-		}
-		for (const file of fileContentList) {
-			if (file.path.includes('Api_') && module.apiFileSystem) {
-				return file;
-			} else if (file.path.includes(module.name) && !file.path.includes('Api_') && !module.apiFileSystem) {
-				return file;
-			}
-		}
-	}
-
-	private getFileExtension (filePath: string) {
-		const decomposed = filePath.split('.');
-		const fileExtension = '.' + decomposed[decomposed.length - 1];
-		return fileExtension;
 	}
 }
 

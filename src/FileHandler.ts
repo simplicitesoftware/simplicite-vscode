@@ -5,7 +5,6 @@ import { Memento, RelativePattern, workspace } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
 import { validFileExtension } from './utils';
-import { SUPPORTED_FILES } from './constant';
 import { FileTree } from './treeView/FileTree';
 import { getModuleFromWorkspacePath } from './utils';
 
@@ -111,5 +110,27 @@ export class FileHandler {
 			}
 		}
 		return new File('', '', '', '', false);
+	}
+
+	static async getContent(fileName: string, module: Module): Promise<string> { // todo
+		const find = '**/src/**/' + fileName;
+		const fileContentList = await workspace.findFiles(find);
+		const fileContent = FileHandler.getContentFromModuleFile(fileContentList, module); // usefull if same module is in workspace as Api file system (written on disk) AND as module
+		const document = await workspace.openTextDocument(fileContent);
+		const text = document.getText();
+		return text;
+	}
+
+	private static getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
+		if (!fileContentList) {
+			return undefined;
+		}
+		for (const file of fileContentList) {
+			if (file.path.includes('Api_') && module.apiFileSystem) {
+				return file;
+			} else if (file.path.includes(module.name) && !file.path.includes('Api_') && !module.apiFileSystem) {
+				return file;
+			}
+		}
 	}
 }

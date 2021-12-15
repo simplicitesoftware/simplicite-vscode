@@ -10,16 +10,17 @@ import { FileTree } from './treeView/FileTree';
 import { FileHandler } from './FileHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
-import { TEMPLATE } from './constant';
+import { initGlobalValues } from './constants';
 import { File } from './File';
 import { SimpliciteApiController } from './SimpliciteApiController';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
-import { ApiFileSystemController } from './apiFileSystem/ApiFileSystemController';
+import { ApiFileSystemController } from './ApiFileSystemController';
 import { commandInit } from './commands';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
+	initGlobalValues();
 	const barItem = new BarItem();
 	const moduleHandler = await ModuleHandler.build(context.globalState, barItem);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
@@ -34,11 +35,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteFile', fileTree);
 	fileHandler.fileTree = fileTree;
 
-	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApiController.devInfo, context.extensionUri.path);
+	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApi.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.moduleInfoTree = moduleInfoTree;
 
-	commandInit(context, simpliciteApiController, moduleHandler, fileHandler, moduleInfoTree, storageUri);
+	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, storageUri);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
 		try {
@@ -56,9 +57,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 						throw new Error();
 					}
 				}
-				if (module.apiFileSystem && simpliciteApiController.devInfo) {
+				if (module.apiFileSystem && simpliciteApi.devInfo) {
 					const app = simpliciteApiController.appHandler.getApp(module.instanceUrl);
-					const rfsControl = new ApiFileSystemController(app, module, simpliciteApiController.devInfo, storageUri);
+					const rfsControl = new ApiFileSystemController(app, module, simpliciteApi.devInfo, storageUri);
 					simpliciteApiController.apiFileSystemController.push(rfsControl);
 					await rfsControl.initAll(moduleHandler);	
 				}
@@ -88,7 +89,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				return;
 			}
 			if (module.apiFileSystem) { // module is api
-				await simpliciteApi.writeFile(file, simpliciteApiController.devInfo, module);
+				await simpliciteApi.writeFile(file, module);
 				// add conflict handling here not in writeFile
 			} else { // module is not api
 				await fileHandler.setTrackedStatus(file.path, true, moduleHandler.modules); // on save set the status of the file to true
@@ -129,7 +130,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		}
 		// refresh all
 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
-		moduleInfoTree.feedData(simpliciteApiController.devInfo, moduleHandler.modules);
+		moduleInfoTree.feedData(simpliciteApi.devInfo, moduleHandler.modules);
 		await initApiFileSystems();
 	});
 
@@ -138,7 +139,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const prodiverMaker = async function (): Promise<Disposable | undefined> { // see following try catch and onDidChangeActiveTextEditor
 		const connectedInstances: string[] = moduleHandler.connectedInstances;
 		if (connectedInstances.length > 0
-			&& simpliciteApiController.devInfo
+			&& simpliciteApi.devInfo
 			&& moduleHandler.modules.length
 			&& window.activeTextEditor) {
 			const filePath = window.activeTextEditor.document.uri.path;
@@ -154,7 +155,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.warn('Cannot provide completion, not connected to the module\'s instance');
 				return undefined;
 			}
-			completionProvider = completionProviderHandler(simpliciteApiController.devInfo, module.moduleDevInfo, context, file);
+			completionProvider = completionProviderHandler(simpliciteApi.devInfo, module.moduleDevInfo, context, file);
 			return completionProvider;
 		}
 		return undefined;

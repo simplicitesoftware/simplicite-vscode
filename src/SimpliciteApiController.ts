@@ -9,20 +9,20 @@ import { logger } from './Log';
 import { File } from './File';
 import { CustomMessage, Credentials } from './interfaces';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { ApiFileSystemController } from './apiFileSystem/ApiFileSystemController';
+import { ApiFileSystemController } from './ApiFileSystemController';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
 import { FileHandler } from './FileHandler';
+import { getFileExtension } from './utils';
 
 export class SimpliciteApiController {
-	devInfo: any;
+	
 	appHandler: AppHandler;
 	moduleHandler: ModuleHandler;
 	moduleInfoTree?: ModuleInfoTree;
 	apiFileSystemController: ApiFileSystemController[];
 	simpliciteApi: SimpliciteApi;
 	constructor(moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi,appHandler: AppHandler) {
-		this.devInfo = undefined; // needs to be logged in, many services depends on that
 		this.appHandler = appHandler;
 		this.moduleHandler = moduleHandler;
 		this.apiFileSystemController = [];
@@ -60,11 +60,8 @@ export class SimpliciteApiController {
 			this.moduleHandler.saveModules();
 			return;
 		}
-		if (!this.devInfo) {
-			this.devInfo = await this.simpliciteApi.fetchDevOrModuleInfo(instanceUrl, undefined);
-		}
 		await this.moduleHandler.loginModuleState(this.simpliciteApi, module, givenToken);
-		this.moduleInfoTree?.feedData(this.devInfo, this.moduleHandler.modules);
+		this.moduleInfoTree?.feedData(this.simpliciteApi.devInfo, this.moduleHandler.modules);
 	} 
 
 	private async getCredentials(module: Module): Promise<Credentials | undefined> {
@@ -106,7 +103,7 @@ export class SimpliciteApiController {
 
 	async instanceLogout(instanceUrl: string): Promise<void> { // disconnect specific instance
 		await this.simpliciteApi.logout(instanceUrl);
-		this.moduleHandler.logoutModuleState(instanceUrl, this.moduleInfoTree!, this.devInfo);
+		this.moduleHandler.logoutModuleState(instanceUrl, this.moduleInfoTree!, this.simpliciteApi.devInfo);
 		this.appHandler.appList.delete(instanceUrl);
 	}
 
@@ -115,7 +112,8 @@ export class SimpliciteApiController {
 			if (!mod.connected) continue;
 			for (const file of fileHandler.fileList) {
 				if (!file.tracked || file.parentFolderName === mod.parentFolderName) continue;
-				await this.simpliciteApi.writeFile(file, this.devInfo, mod);
+				const fileContent
+				await this.simpliciteApi.writeFile( file, mod);
 				fileHandler.setTrackedStatus(file.path, false, modules);
 			}
 		}
@@ -128,7 +126,7 @@ export class SimpliciteApiController {
 		}
 		for (const file of fileHandler.fileList) {
 			if (file.parentFolderName !== module.parentFolderName || !file.tracked) continue;
-			const res = await this.simpliciteApi.writeFile(file, this.devInfo, module);
+			const res = await this.simpliciteApi.writeFile(file, module);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.path, false, modules);
 		}
@@ -158,6 +156,22 @@ export class SimpliciteApiController {
 			}
 		}
 	}*/
+
+	async synchronizeFileApiController (file: File, module: Module): Promise<void> { // 
+		const fileExtension = getFileExtension(file.path);
+		await this.simpliciteApi.writeFile(file, module);
+		if (module.apiFileSystem) {
+			await workspace.fs.writeFile(Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/' + file.name + fileExtension), workingFileContent);
+			const uri = Uri.parse(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java');
+			try {
+				await workspace.fs.delete(uri);
+			} catch (e) {
+				logger.error(this._extensionStoragePath + '/' + file.parentFolderName + '/temp/RemoteFile.java' + ' does not exist (no conflict)');
+			}
+			this._conflictStatus = false;
+		}
+		await this.conflictChecker(workingFileContent, file, fileExtension, item, file.scriptField!);
+	}
 
 	private async triggerBackendCompilation(app: any) {
 		try {

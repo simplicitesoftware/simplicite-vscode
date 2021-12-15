@@ -3,7 +3,6 @@
 import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel } from 'vscode';
 import { FileAndModule } from '../interfaces';
 import { UntrackedItem, ModuleItem, FileItem } from '../classes';
-import { SUPPORTED_FILES } from '../constant';
 import { bindFileAndModule } from '../utils';
 import { Module } from '../Module';
 import { File } from '../File';

@@ -1,7 +1,7 @@
 'use strict';
 
 import { Module } from './Module';
-import { ModuleObject, FileAndModule } from './interfaces';
+import { FileAndModule } from './interfaces';
 import { File } from './File';
 
 export function crossPlatformPath(path: string): string {
@@ -16,11 +16,8 @@ export function replaceAll(str: string, find: string | RegExp, replace: string):
 	return str.replace(regex, replace);
 }
 
-const supportedFiles = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
-const excludedFiles = ['BUILD', 'README', 'pom', '.min.', '/Theme/', '/docs/', '/files/', '/target/'];
-
 export function validFileExtension(template: string): boolean {
-	for (const extension of supportedFiles) {
+	for (const extension of SUPPORTED_FILES) {
 		if (template.includes(extension) && checkExclude(template)) {
 			return true;
 		}
@@ -29,7 +26,7 @@ export function validFileExtension(template: string): boolean {
 }
 
 function checkExclude(template: string): boolean {
-	for (const exclude of excludedFiles) {
+	for (const exclude of EXCLUDED_FILES) {
 		if (template.includes(exclude)) {
 			return false;
 		}
@@ -39,7 +36,7 @@ function checkExclude(template: string): boolean {
 
 export function removeFileExtension(template: string): string {
 	let fileName = template;
-	for (const valid of supportedFiles) {
+	for (const valid of SUPPORTED_FILES) {
 		const beforeLegnth = fileName.length;
 		fileName = template.replace(valid, '');
 		if (beforeLegnth > fileName.length) {
@@ -71,4 +68,10 @@ export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAn
 		fileModule.push(moduleObject);
 	}
 	return fileModule;
+}
+
+export function getFileExtension (filePath: string) {
+	const decomposed = filePath.split('.');
+	const fileExtension = '.' + decomposed[decomposed.length - 1];
+	return fileExtension;
 }

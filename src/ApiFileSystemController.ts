@@ -1,11 +1,11 @@
 'use strict';
 
 import { workspace, Uri } from 'vscode';
-import { ModuleDevInfo } from '../interfaces';
-import { logger } from '../Log';
-import { Module } from '../Module';
-import { ModuleHandler } from '../ModuleHandler';
-import { replaceAll } from '../utils';
+import { ModuleDevInfo } from './interfaces';
+import { logger } from './Log';
+import { Module } from './Module';
+import { ModuleHandler } from './ModuleHandler';
+import { replaceAll } from './utils';
 import { Buffer } from 'buffer';
 
 export class ApiFileSystemController {

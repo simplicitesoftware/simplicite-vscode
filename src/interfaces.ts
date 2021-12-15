@@ -8,13 +8,6 @@ export interface CustomMessage {
 	button: string;
 }
 
-export interface ReturnValueOperationsBeforeObjectManipulation {
-	fileType: string;
-	fileName: string;
-	properNameField: string;
-	fileExtension: string;
-}
-
 export interface FieldInfo {
 	moduleName: string;
 	objectFields: Array<any>;

@@ -6,7 +6,7 @@ import { SimpliciteApiController } from './SimpliciteApiController';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { Module } from './Module';
 import { File } from './File';
-import { ApiFileSystemController } from './apiFileSystem/ApiFileSystemController';
+import { ApiFileSystemController } from './ApiFileSystemController';
 import { ModuleHandler } from './ModuleHandler';
 import { FileHandler } from './FileHandler';
 import { isHttpsUri, isHttpUri } from 'valid-url';
@@ -18,7 +18,7 @@ import { SimpliciteApi } from './SimpliciteApi';
 // ------------------------------
 // Apply commands
 
-export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, storageUri: Uri) {
+export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, storageUri: Uri) {
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
 	});
@@ -169,7 +169,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
 		moduleHandler.refreshModulesDevInfo(simpliciteApiController.simpliciteApi);
-		simpliciteApiController.moduleInfoTree?.feedData(simpliciteApiController.devInfo, moduleHandler.modules);
+		simpliciteApiController.moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
 	});
 	
 	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
@@ -239,10 +239,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			const module = new Module(moduleName, '', instanceUrl, token, true, true);
 			moduleHandler.addModule(module, true);
 			await simpliciteApiController.tokenOrCredentials(module);
-			if (!simpliciteApiController.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
+			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
-			const apiFileSystemController = new ApiFileSystemController(simpliciteApiController.appHandler.getApp(instanceUrl), module, simpliciteApiController.devInfo, storageUri);
+			const apiFileSystemController = new ApiFileSystemController(simpliciteApiController.appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo, storageUri);
 			simpliciteApiController.apiFileSystemController.push(apiFileSystemController);
 			apiFileSystemController.initAll(moduleHandler);
 		} catch (e: any) {
@@ -278,7 +278,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				}
 				for (const wk of workspace.workspaceFolders) {
 					if (wk.name === 'Api_' + moduleName) {
-						moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApiController.devInfo);
+						moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
 						workspace.updateWorkspaceFolders(index, 1);
 					}
 					index++;
@@ -292,7 +292,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		if (moduleHandler.countModulesOfInstance(module.instanceUrl) === 1) { // if the removed api module is the only module connected to the instance, disconnect
 			await simpliciteApiController.instanceLogout(module.instanceUrl);
 		} else { // else remove the module 
-			moduleHandler.removeApiModule(module.parentFolderName, moduleInfoTree, simpliciteApiController.devInfo);
+			moduleHandler.removeApiModule(module.parentFolderName, moduleInfoTree, simpliciteApi.devInfo);
 		}
 		try {
 			if (!workspace.workspaceFolders) {
