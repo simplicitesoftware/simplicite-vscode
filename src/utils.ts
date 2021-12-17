@@ -60,7 +60,7 @@ export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAn
 	const fileModule = [];
 	for (const module of modules) {
 		if (module.apiFileSystem) continue;
-		const moduleObject: FileAndModule = { parentFolderName: module.name, instanceUrl: module.instanceUrl, fileList: [] };
+		const moduleObject: FileAndModule = { parentFolderName: module.parentFolderName, instanceUrl: module.instanceUrl, fileList: [] };
 		for (const file of files) {
 			if (file.workspaceFolderPath === module.workspaceFolderPath) {
 				moduleObject.fileList.push(file);
@@ -75,6 +75,6 @@ export function extensionStoragePathMaker (path: string): Uri {
 	const decomposed = path.split('/');
 	decomposed.splice(decomposed.length - 1);
 	const newPath = decomposed.join('/');
-	const uri = Uri.parse(newPath + '/');
+	const uri = Uri.parse('file://' + newPath + '/', true);
 	return uri;
 }

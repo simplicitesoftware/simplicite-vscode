@@ -97,7 +97,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			// add a specific item to these type of files 
 			if (untrackedFlag) {
 				const orderedItems = this.orderAlphab(fileItems);
-				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.parse(''), false, label);
+				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.parse('file://' + '', true), false, label);
 				orderedItems.push(treeItem);
 				untrackedFlag = false;
 				return orderedItems;

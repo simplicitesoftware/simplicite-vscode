@@ -23,6 +23,7 @@ export class ModuleHandler {
 
 	static async build (globalState: Memento, barItem: BarItem): Promise<ModuleHandler> {
 		const moduleHandler = new ModuleHandler(globalState, barItem);
+
 		await moduleHandler.setModulesFromScratch();
 		return moduleHandler;
 	}
@@ -46,7 +47,7 @@ export class ModuleHandler {
 		}
 	}
 
-	removeModuleFromWkPath (wkPath: string): Module | false {
+	removeModuleFromWkPath(wkPath: string): Module | false {
 		const tempModules = [];
 		let module: Module | false = false;
 		for (const mod of this.modules) {

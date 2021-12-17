@@ -4,9 +4,10 @@ import { logger } from './Log';
 import { Memento, RelativePattern, workspace, Uri } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
-import { validFileExtension } from './utils';
+import { bindFileAndModule, validFileExtension } from './utils';
 import { FileTree } from './treeView/FileTree';
-import { getModuleFromWorkspacePath, replaceAll } from './utils';
+import { getModuleFromWorkspacePath } from './utils';
+import { FileAndModule } from './interfaces';
 
 export class FileHandler {
 	fileTree?: FileTree;
@@ -21,10 +22,27 @@ export class FileHandler {
 		const fileHandler = new FileHandler(globalState);
 		try {
 			fileHandler.fileList = await fileHandler.FileDetector(modules);
+			await fileHandler.initTempFolder(bindFileAndModule(modules, fileHandler.fileList));
 		} catch (e) {
 			logger.error(e);
 		}
 		return fileHandler;
+	}
+
+	async initTempFolder(fileModule: FileAndModule[]) { // create temp folder and copy files to store the initial state of a file (for conflict resolution)
+		try {
+			for (const fm of fileModule) {
+				const modulePath = STORAGE_PATH + 'simplicite.temp/' + fm.parentFolderName + '/';
+				await workspace.fs.createDirectory(Uri.parse('file://' + modulePath, true));
+				for (const file of fm.fileList) {
+					const tempFilePath = modulePath + file.name + file.extension;
+					const localFileContent = await File.getContent(file.uri);
+					await workspace.fs.writeFile(Uri.parse('file://' + tempFilePath, true), localFileContent);
+				}
+			}
+		} catch(e) {
+			logger.warn(e);
+		}
 	}
 
 	private updateFileStatus() {
@@ -92,9 +110,9 @@ export class FileHandler {
 
 	async setTrackedStatus(fileUri: Uri, status: boolean, modules: Module[]): Promise<void> { // set the status true / false, and spread value to other objects
 		for (const file of this.fileList) {
-			let loopFileLowerCase = file.uri.path;
+			const loopFileLowerCase = file.uri.path;
 			loopFileLowerCase.toLowerCase();
-			let paramFileLowerCase = fileUri.path;
+			const paramFileLowerCase = fileUri.path;
 			paramFileLowerCase.toLowerCase();
 			if (loopFileLowerCase === paramFileLowerCase) {
 				file.tracked = status;
@@ -102,50 +120,6 @@ export class FileHandler {
 		}
 		this.updateFileStatus();
 		if (this.fileTree) await this.fileTree.setFileModule(modules, this.fileList);
-	}
-
-	setApiFileInfo(file: File, devInfo: any) {
-		if (!file.type && !file.scriptField && !file.fieldName) { // set the values only once
-			file.type = this.getBusinessObjectType(file.uri.path, devInfo);
-			file.scriptField = this.getProperScriptField(file.type, devInfo);
-			file.fieldName = this.getProperNameField(file.type, devInfo);
-		}
-	}
-
-	private getProperNameField(fileType: string, devInfo: any) {
-		for (const object of devInfo.objects) {
-			if (fileType === object.object) {
-				return object.keyfield;
-			}
-		}
-	}
-
-	private getProperScriptField(fileType: string, devInfo: any) {
-		for (const object of devInfo.objects) {
-			if (fileType === object.object) {
-				return object.sourcefield;
-			}
-		}
-	}
-
-	private getBusinessObjectType(filePath: string, devInfo: any): string {
-		for (const object of devInfo.objects) {
-			if (object.package) {
-				const comparePackage = replaceAll(object.package, /\./, '/');
-				if (filePath.includes(comparePackage)) {
-					return object.object;
-				}
-			}
-		}
-		if (filePath.includes('/resources/')) { // programatically handling packages that are not in devInfo
-			return 'Resource';
-		} else if (filePath.includes('/test/src/com/simplicite/')) {
-			return 'Script';
-		} else if (filePath.includes('/scripts/')) {
-			return 'Disposition';
-		} else {
-			throw new Error('No type has been found');
-		}
 	}
 
 	getFileFromFullPath(fullPath: string): File {
@@ -160,24 +134,16 @@ export class FileHandler {
 		return new File('', '', '', '', false);
 	}
 
-	static async getContent(fileUri: Uri): Promise<Uint8Array> { // todo
-		const content = await workspace.fs.readFile(fileUri);
-		//const fileContent = FileHandler.getContentFromModuleFile(fileContentList, module); // usefull if same module is in workspace as Api file system (written on disk) AND as module
-		//const document = await workspace.openTextDocument(fileContent);
-		//const text = document.getText();
-		return content;
-	}
-
-	private static getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
-		if (!fileContentList) {
-			return undefined;
-		}
-		for (const fileContent of fileContentList) {
-			if (fileContent.path.includes('Api_') && module.apiFileSystem) { // get Api file
-				return fileContent;
-			} else if (fileContent.path.includes(module.name) && !fileContent.path.includes('Api_') && !module.apiFileSystem) { // get content 
-				return fileContent;
-			}
-		}
-	}
+	// private static getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
+	// 	if (!fileContentList) {
+	// 		return undefined;
+	// 	}
+	// 	for (const fileContent of fileContentList) {
+	// 		if (fileContent.path.includes('Api_') && module.apiFileSystem) { // get Api file
+	// 			return fileContent;
+	// 		} else if (fileContent.path.includes(module.name) && !fileContent.path.includes('Api_') && !module.apiFileSystem) { // get content 
+	// 			return fileContent;
+	// 		}
+	// 	}
+	// }
 }

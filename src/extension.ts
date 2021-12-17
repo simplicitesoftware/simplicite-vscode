@@ -36,7 +36,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApi.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
-	simpliciteApiController.moduleInfoTree = moduleInfoTree;
+	simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
 	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
 
@@ -120,7 +120,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 						logger.error('workspaceFolderPath is undefined');
 						return;
 					}
-					const uri = Uri.parse(rfs.module.workspaceFolderPath);
+					const uri = Uri.parse('file://' + rfs.module.workspaceFolderPath, true);
 					workspace.fs.delete(uri);
 					simpliciteApiController.apiFileSystemController = simpliciteApiController.apiFileSystemController.splice(index, 1);
 					logger.info('removed api module from workspace');
@@ -183,8 +183,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	//return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
 }
 
-export function deactivate(context: ExtensionContext) {
-	context.globalState.get('simplicite-modules-info', );
+export function deactivate() {
+	workspace.fs.delete(Uri.parse('file://' + STORAGE_PATH + 'simplicite.temp', true));
 }
 
 function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {

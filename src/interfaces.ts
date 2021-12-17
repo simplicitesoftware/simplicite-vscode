@@ -21,6 +21,7 @@ export interface ObjectInfo {
 	fieldIcons: { dark: string | Uri, light: string | Uri }
 }
 
+// usefull object when working with modules and files
 export interface FileAndModule {
 	parentFolderName: string,
 	instanceUrl: string,

@@ -79,8 +79,8 @@ export class SimpliciteApi {
 		}
 	}
 
-	async writeFile(file: File, module: Module): Promise<boolean> {
-		
+	async writeFile(file: File): Promise<boolean> {
+		file.setApiFileInfo(this.devInfo);
 		const app = this._appHandler.getApp(file.simpliciteUrl);
 		const obj = await app.getBusinessObject(file.type, 'ide_' + file.type);
 		const item = await this.searchForUpdate(file, obj);
@@ -88,9 +88,8 @@ export class SimpliciteApi {
 		if (doc === undefined) {
 			throw new Error('No document returned, cannot update content');
 		}
-		 
 		// get the file content for setContent
-		const content = await FileHandler.getContent(file.uri);
+		const content = await File.getContent(file.uri);
 		doc.setContentFromText(content);
 		obj.setFieldValue(file.scriptField, doc);
 		const res = await obj.update(item, { inlineDocuments: true });
@@ -98,8 +97,6 @@ export class SimpliciteApi {
 			window.showErrorMessage('Simplicite: Cannot synchronize ' + file.uri.path);
 			return false;
 		}
-		// tochange
-		// once the object is updated, write the content in the temp files so all the files share the same state (workingFileContent, localInitialFileContent & remoteFileContent) 
 		return true;
 	}
 

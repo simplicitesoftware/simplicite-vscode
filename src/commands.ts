@@ -170,7 +170,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
 		moduleHandler.refreshModulesDevInfo(simpliciteApiController.simpliciteApi);
-		simpliciteApiController.moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
+		moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
 	});
 	
 	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
@@ -285,7 +285,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 					index++;
 				}
 			} catch (e) {
-				return;
+				moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
 			}
 			return;
 		}
@@ -310,7 +310,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.parse can resolve to the root of the main disk and delete every file
 				throw 'No module workspaceFolderPath';
 			}
-			const uri = Uri.parse(module.workspaceFolderPath);
+			const uri = Uri.parse('file://' + module.workspaceFolderPath, true);
 			await workspace.fs.delete(uri , { recursive: true });
 		} catch (e) {
 			logger.error(e);
