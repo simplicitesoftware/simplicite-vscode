@@ -1,12 +1,12 @@
 'use strict';
 
 import { logger } from './Log';
-import { Memento, RelativePattern, workspace } from 'vscode';
+import { Memento, RelativePattern, workspace, Uri } from 'vscode';
 import { File } from './File';
 import { Module } from './Module';
 import { validFileExtension } from './utils';
 import { FileTree } from './treeView/FileTree';
-import { getModuleFromWorkspacePath } from './utils';
+import { getModuleFromWorkspacePath, replaceAll } from './utils';
 
 export class FileHandler {
 	fileTree?: FileTree;
@@ -31,7 +31,7 @@ export class FileHandler {
 		const jsonContent = [];
 		for (const file of this.fileList) {
 			if (file.tracked) {
-				jsonContent.push({ path: file.path, tracked: file.tracked });
+				jsonContent.push({ path: file.uri.path, tracked: file.tracked });
 			}
 		}
 		this._globalState.update('simplicite-files-info', jsonContent);
@@ -50,7 +50,7 @@ export class FileHandler {
 				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
 				const files = await workspace.findFiles(relativePattern);
 				for (const file of files) {
-					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/temp/')) {
+					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/.temp/')) {
 						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
 						const wk = workspaceFolder.uri.path.toLowerCase();
 						let filePath = file.path;
@@ -78,7 +78,7 @@ export class FileHandler {
 			const jsonContent: File[] = this._globalState.get('simplicite-files-info') || [];
 			for (const file of fileList) {
 				for (const content of jsonContent) {
-					if (file.path === content.path) {
+					if (file.uri.path === content.uri.path) {
 						file.tracked = content.tracked;
 						break;
 					}
@@ -90,9 +90,13 @@ export class FileHandler {
 		return fileList;
 	}
 
-	async setTrackedStatus(filePath: string, status: boolean, modules: Module[]): Promise<void> { // set the status true / false, and spread value to other objects
+	async setTrackedStatus(fileUri: Uri, status: boolean, modules: Module[]): Promise<void> { // set the status true / false, and spread value to other objects
 		for (const file of this.fileList) {
-			if (file.path.toLowerCase() === filePath.toLowerCase()) {
+			let loopFileLowerCase = file.uri.path;
+			loopFileLowerCase.toLowerCase();
+			let paramFileLowerCase = fileUri.path;
+			paramFileLowerCase.toLowerCase();
+			if (loopFileLowerCase === paramFileLowerCase) {
 				file.tracked = status;
 			}
 		}
@@ -100,9 +104,53 @@ export class FileHandler {
 		if (this.fileTree) await this.fileTree.setFileModule(modules, this.fileList);
 	}
 
+	setApiFileInfo(file: File, devInfo: any) {
+		if (!file.type && !file.scriptField && !file.fieldName) { // set the values only once
+			file.type = this.getBusinessObjectType(file.uri.path, devInfo);
+			file.scriptField = this.getProperScriptField(file.type, devInfo);
+			file.fieldName = this.getProperNameField(file.type, devInfo);
+		}
+	}
+
+	private getProperNameField(fileType: string, devInfo: any) {
+		for (const object of devInfo.objects) {
+			if (fileType === object.object) {
+				return object.keyfield;
+			}
+		}
+	}
+
+	private getProperScriptField(fileType: string, devInfo: any) {
+		for (const object of devInfo.objects) {
+			if (fileType === object.object) {
+				return object.sourcefield;
+			}
+		}
+	}
+
+	private getBusinessObjectType(filePath: string, devInfo: any): string {
+		for (const object of devInfo.objects) {
+			if (object.package) {
+				const comparePackage = replaceAll(object.package, /\./, '/');
+				if (filePath.includes(comparePackage)) {
+					return object.object;
+				}
+			}
+		}
+		if (filePath.includes('/resources/')) { // programatically handling packages that are not in devInfo
+			return 'Resource';
+		} else if (filePath.includes('/test/src/com/simplicite/')) {
+			return 'Script';
+		} else if (filePath.includes('/scripts/')) {
+			return 'Disposition';
+		} else {
+			throw new Error('No type has been found');
+		}
+	}
+
 	getFileFromFullPath(fullPath: string): File {
 		for (const file of this.fileList) {
-			let lowercasePath = file.path;
+			let lowercasePath = file.uri.path;
 			lowercasePath = lowercasePath.toLowerCase();
 			fullPath = fullPath.toLowerCase();
 			if (lowercasePath === fullPath) {
@@ -112,24 +160,23 @@ export class FileHandler {
 		return new File('', '', '', '', false);
 	}
 
-	static async getContent(fileName: string, module: Module): Promise<string> { // todo
-		const find = '**/src/**/' + fileName;
-		const fileContentList = await workspace.findFiles(find);
-		const fileContent = FileHandler.getContentFromModuleFile(fileContentList, module); // usefull if same module is in workspace as Api file system (written on disk) AND as module
-		const document = await workspace.openTextDocument(fileContent);
-		const text = document.getText();
-		return text;
+	static async getContent(fileUri: Uri): Promise<Uint8Array> { // todo
+		const content = await workspace.fs.readFile(fileUri);
+		//const fileContent = FileHandler.getContentFromModuleFile(fileContentList, module); // usefull if same module is in workspace as Api file system (written on disk) AND as module
+		//const document = await workspace.openTextDocument(fileContent);
+		//const text = document.getText();
+		return content;
 	}
 
 	private static getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
 		if (!fileContentList) {
 			return undefined;
 		}
-		for (const file of fileContentList) {
-			if (file.path.includes('Api_') && module.apiFileSystem) {
-				return file;
-			} else if (file.path.includes(module.name) && !file.path.includes('Api_') && !module.apiFileSystem) {
-				return file;
+		for (const fileContent of fileContentList) {
+			if (fileContent.path.includes('Api_') && module.apiFileSystem) { // get Api file
+				return fileContent;
+			} else if (fileContent.path.includes(module.name) && !fileContent.path.includes('Api_') && !module.apiFileSystem) { // get content 
+				return fileContent;
 			}
 		}
 	}

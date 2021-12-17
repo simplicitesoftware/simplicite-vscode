@@ -1,7 +1,6 @@
 'use strict';
 
 import { commands, Command, extensions, window, Disposable } from 'vscode';
-import { EXTENSION_ID, SHOW_SIMPLICITE_COMMAND_ID } from './constant';
 import { logger } from './Log';
 import { SimpliciteApiController } from './SimpliciteApiController';
 

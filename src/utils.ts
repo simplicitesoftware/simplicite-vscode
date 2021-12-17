@@ -1,5 +1,6 @@
 'use strict';
 
+import { Uri } from 'vscode';
 import { Module } from './Module';
 import { FileAndModule } from './interfaces';
 import { File } from './File';
@@ -70,8 +71,10 @@ export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAn
 	return fileModule;
 }
 
-export function getFileExtension (filePath: string) {
-	const decomposed = filePath.split('.');
-	const fileExtension = '.' + decomposed[decomposed.length - 1];
-	return fileExtension;
+export function extensionStoragePathMaker (path: string): Uri {
+	const decomposed = path.split('/');
+	decomposed.splice(decomposed.length - 1);
+	const newPath = decomposed.join('/');
+	const uri = Uri.parse(newPath + '/');
+	return uri;
 }

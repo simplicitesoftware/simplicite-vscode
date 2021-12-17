@@ -1,6 +1,6 @@
 'use strict';
 
-import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel } from 'vscode';
+import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, Uri } from 'vscode';
 import { FileAndModule } from '../interfaces';
 import { UntrackedItem, ModuleItem, FileItem } from '../classes';
 import { bindFileAndModule } from '../utils';
@@ -85,8 +85,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			if (fm.fileList.length > 0 && fm.parentFolderName === label) {
 				for (const file of fm.fileList) {
 					if (file.tracked) {
-						const legibleFileName = this.legibleFileName(file.path);
-						const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.path, true, label);
+						const legibleFileName = this.legibleFileName(file.uri.path);
+						const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, true, label);
 						fileItems.push(treeItem);
 					} else {
 						untrackedFlag = true;
@@ -97,7 +97,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			// add a specific item to these type of files 
 			if (untrackedFlag) {
 				const orderedItems = this.orderAlphab(fileItems);
-				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, '', false, label);
+				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.parse(''), false, label);
 				orderedItems.push(treeItem);
 				untrackedFlag = false;
 				return orderedItems;
@@ -116,8 +116,8 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 				if (fm.fileList.length > 0 && fm.parentFolderName === moduleName) {
 					for (const file of fm.fileList) {
 						if (!file.tracked) {
-							const legibleFileName = this.legibleFileName(file.path);
-							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.path, false, moduleName);
+							const legibleFileName = this.legibleFileName(file.uri.path);
+							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, false, moduleName);
 							untrackedFiles.push(treeItem);
 						}
 					}
@@ -135,7 +135,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		}
 		for (const item of fileItems) {
 			for (const extensionObject of extensionItemArray) {
-				if (this.getPathExtension(item.fullPath) === extensionObject.extension) {
+				if (this.getPathExtension(item.uri.path) === extensionObject.extension) {
 					extensionObject.itemsPath.push(item.label.toLowerCase());
 				}
 			}
@@ -145,7 +145,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			extensionObject.itemsPath.sort();
 			for (const itemPath of extensionObject.itemsPath) {
 				for (const item of fileItems) {
-					const lowerCaseValue = item.fullPath;
+					const lowerCaseValue = item.uri.path;
 					if (lowerCaseValue.toLowerCase().includes(itemPath)) {
 						orderedFileItems.push(item);
 					}

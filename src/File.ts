@@ -1,7 +1,9 @@
 'use strict';
 
+import { Uri } from 'vscode';
+
 export class File {
-	path: string;
+	uri: Uri;
 	simpliciteUrl: string;
 	workspaceFolderPath: string;
 	parentFolderName: string;
@@ -11,18 +13,34 @@ export class File {
 	scriptField: string | undefined;
 	fieldName: string | undefined;
 	rowId: number | undefined;
+	extension: string | undefined;
 	constructor(path: string, simpliciteUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
-		this.path = path;
+		this.uri = Uri.parse(path);
 		this.simpliciteUrl = simpliciteUrl;
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.parentFolderName = parentFolderName;
 		this.tracked = tracked;
-		this.name = this.fileNameFromPath(path);
+		this.name = File.computeFileNameFromPath(path);
+		this.extension = File.computeFileExtensionFromPath(path);
 	}
 
-	private fileNameFromPath(filePath: string): string {
+	private setFileName(filePath: string): void {
+		this.name = File.computeFileNameFromPath(filePath);
+	}
+
+	static computeFileNameFromPath(filePath: string): string {
 		const decomposed = filePath.split('/');
 		const decomposeDot = decomposed[decomposed.length - 1].split('.'); // remove extension
 		return decomposeDot[decomposeDot.length - 2];
+	}
+
+	private setFileExtension(filePath: string) {
+		this.extension = File.computeFileExtensionFromPath(filePath);
+	}
+
+	static computeFileExtensionFromPath(filePath: string) {
+		const decomposed = filePath.split('.');
+		const fileExtension = '.' + decomposed[decomposed.length - 1];
+		return fileExtension;
 	}
 }

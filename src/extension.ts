@@ -20,14 +20,13 @@ import { commandInit } from './commands';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
-	initGlobalValues();
+	initGlobalValues(context.globalStorageUri.path);
 	const barItem = new BarItem();
 	const moduleHandler = await ModuleHandler.build(context.globalState, barItem);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
 	const appHandler = new AppHandler();
-	const storageUri = extensionStoragePathMaker(context.globalStorageUri.path);
 
-	const simpliciteApi = new SimpliciteApi(appHandler, storageUri);
+	const simpliciteApi = new SimpliciteApi(appHandler);
 	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler);
 	new QuickPick(context.subscriptions, simpliciteApiController);
 
@@ -39,7 +38,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.moduleInfoTree = moduleInfoTree;
 
-	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, storageUri);
+	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
 		try {
@@ -58,8 +57,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 					}
 				}
 				if (module.apiFileSystem && simpliciteApi.devInfo) {
-					const app = simpliciteApiController.appHandler.getApp(module.instanceUrl);
-					const rfsControl = new ApiFileSystemController(app, module, simpliciteApi.devInfo, storageUri);
+					const app = appHandler.getApp(module.instanceUrl);
+					const rfsControl = new ApiFileSystemController(app, module, simpliciteApi.devInfo);
 					simpliciteApiController.apiFileSystemController.push(rfsControl);
 					await rfsControl.initAll(moduleHandler);	
 				}
@@ -76,11 +75,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event
 			// Ignore the second event using the isConflict variable as the first thrown event is the file that has been saved
 			// meaning that the content of the file has to synchronize with the instance
-			if (event.uri.path.includes('RemoteFile.java') || event.uri.path.includes('workspace.json')) {
+			if (event.uri.path.includes('workspace.json')) {
 				return;
 			}
 			const file = fileHandler.getFileFromFullPath(event.uri.path); // get the file from event path
-			if (file.path === '') { // file not found
+			if (file.uri.path === '') { // file not found
 				window.showErrorMessage('Simplicite: ' + event.uri.path + ' cannot be found.');
 			}
 			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
@@ -88,11 +87,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
 				return;
 			}
+			await simpliciteApiController.conflictChecker(file);
 			if (module.apiFileSystem) { // module is api
-				await simpliciteApi.writeFile(file, module);
+				await simpliciteApiController.synchronizeFileApiController(file, module);
 				// add conflict handling here not in writeFile
 			} else { // module is not api
-				await fileHandler.setTrackedStatus(file.path, true, moduleHandler.modules); // on save set the status of the file to true
+				await fileHandler.setTrackedStatus(file.uri, true, moduleHandler.modules); // on save set the status of the file to true
 			}
 		}
 	});
@@ -195,10 +195,3 @@ function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: Ex
 	return completionProvider;
 }
 
-function extensionStoragePathMaker (path: string) {
-	const decomposed = path.split('/');
-	decomposed.splice(decomposed.length - 1);
-	const newPath = decomposed.join('/');
-	const uri = Uri.parse(newPath);
-	return uri;
-}

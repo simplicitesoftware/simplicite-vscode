@@ -11,6 +11,7 @@ import { ModuleHandler } from './ModuleHandler';
 import { FileHandler } from './FileHandler';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
+import { AppHandler } from './AppHandler';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -18,7 +19,7 @@ import { SimpliciteApi } from './SimpliciteApi';
 // ------------------------------
 // Apply commands
 
-export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, storageUri: Uri) {
+export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler) {
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
 	});
@@ -242,7 +243,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
-			const apiFileSystemController = new ApiFileSystemController(simpliciteApiController.appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo, storageUri);
+			const apiFileSystemController = new ApiFileSystemController(appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo);
 			simpliciteApiController.apiFileSystemController.push(apiFileSystemController);
 			apiFileSystemController.initAll(moduleHandler);
 		} catch (e: any) {
@@ -335,8 +336,8 @@ function doubleClickTrigger(): boolean {
 }
 
 async function trackAction(fileHandler: FileHandler, modules: Module[], element: any, trackedValue: boolean) {
-	const inputFile = await getInputFile(fileHandler, element);
-	await fileHandler.setTrackedStatus(inputFile.path, trackedValue, modules);
+	const file = await getInputFile(fileHandler, element);
+	await fileHandler.setTrackedStatus(file.uri, trackedValue, modules);
 }
 
 async function getInputFile(fileHandler: FileHandler, element: any): Promise<File> {

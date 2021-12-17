@@ -30,7 +30,7 @@ export class CompletionProvider implements CompletionItemProvider {
 			for (const objectType in this._moduleDevInfo) {
 				if (objectType === this._fileInfo.object) {
 					for (const object of this._moduleDevInfo[objectType]) {
-						const fileName = CompletionProvider.getFileNameFromPath(this._file.path);
+						const fileName = CompletionProvider.getFileNameFromPath(this._file.uri.path);
 						if (object.name === fileName) {
 							for (const completionAttribute in this._fileInfo.completion) {
 								// eslint-disable-next-line no-prototype-builtins
@@ -105,7 +105,7 @@ export class CompletionProvider implements CompletionItemProvider {
 
 	private doesFilePathContainsObjectPackage(objectPackage: string): boolean {
 		const packagePathFormat = objectPackage.replace(/\./g, '/');
-		if (this._file.path.includes(packagePathFormat)) {
+		if (this._file.uri.path.includes(packagePathFormat)) {
 			return true;
 		}
 		return false;
