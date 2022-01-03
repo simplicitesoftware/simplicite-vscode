@@ -163,13 +163,12 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		} catch (e) {
 			logger.error(e);
 		}
-		
 	});
 	
 	// ------------------------------
 	
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
-		moduleHandler.refreshModulesDevInfo(simpliciteApiController.simpliciteApi);
+		moduleHandler.refreshModulesDevInfo(simpliciteApi);
 		moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
 	});
 	
@@ -307,10 +306,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				index++;
 			}
 			// need to delete after workspace change, otherwise resource is busy
-			if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.parse can resolve to the root of the main disk and delete every file
+			if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file
 				throw 'No module workspaceFolderPath';
 			}
-			const uri = Uri.parse('file://' + module.workspaceFolderPath, true);
+			const uri = Uri.file(module.workspaceFolderPath);
 			await workspace.fs.delete(uri , { recursive: true });
 		} catch (e) {
 			logger.error(e);

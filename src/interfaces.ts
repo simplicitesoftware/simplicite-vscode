@@ -2,6 +2,7 @@
 
 import { Uri } from 'vscode';
 import { File } from './File';
+import { Module } from './Module';
 
 export interface CustomMessage {
 	message: string;
@@ -23,8 +24,7 @@ export interface ObjectInfo {
 
 // usefull object when working with modules and files
 export interface FileAndModule {
-	parentFolderName: string,
-	instanceUrl: string,
+	module: Module,
 	fileList: File[],
 }
 

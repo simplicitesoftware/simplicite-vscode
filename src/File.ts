@@ -14,9 +14,9 @@ export class File {
 	scriptField: string | undefined;
 	fieldName: string | undefined;
 	rowId: number | undefined;
-	extension: string | undefined;
+	extension: string;
 	constructor(path: string, simpliciteUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
-		this.uri = Uri.parse('file://' + path, true);
+		this.uri = Uri.file(path);
 		this.simpliciteUrl = simpliciteUrl;
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.parentFolderName = parentFolderName;
@@ -75,7 +75,7 @@ export class File {
 
 	private getProperNameField(devInfo: any) {
 		for (const object of devInfo.objects) {
-			if (this.uri.path === object.object) {
+			if (this.type === object.object) {
 				return object.keyfield;
 			}
 		}
@@ -83,9 +83,10 @@ export class File {
 
 	static async getContent(fileUri: Uri): Promise<Uint8Array> { // todo
 		const content = await workspace.fs.readFile(fileUri);
-		//const fileContent = FileHandler.getContentFromModuleFile(fileContentList, module); // usefull if same module is in workspace as Api file system (written on disk) AND as module
-		//const document = await workspace.openTextDocument(fileContent);
-		//const text = document.getText();
 		return content;
+	}
+
+	static tempPathMaker(file: File) {
+		return STORAGE_PATH + 'temp/' + file.parentFolderName + '/' + file.name + file.extension;
 	}
 }

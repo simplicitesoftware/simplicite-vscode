@@ -65,7 +65,10 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			return [];
 		}
 		for (const fm of this.fileModule) {
-			const treeItem = new ModuleItem(fm.parentFolderName, TreeItemCollapsibleState.Collapsed, fm.instanceUrl);
+			if (fm.module.apiFileSystem) { // dont display api file system in this tree view
+				continue;
+			}
+			const treeItem = new ModuleItem(fm.module.parentFolderName, TreeItemCollapsibleState.Collapsed, fm.module.instanceUrl);
 			treeItem.iconPath = {
 				light: path.join(this.runPath, 'resources/light/module.svg'),
 				dark: path.join(this.runPath, 'resources/dark/module.svg')
@@ -82,7 +85,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		}
 		for (const fm of this.fileModule) {
 			let untrackedFlag = false;
-			if (fm.fileList.length > 0 && fm.parentFolderName === label) {
+			if (fm.fileList.length > 0 && fm.module.parentFolderName === label) {
 				for (const file of fm.fileList) {
 					if (file.tracked) {
 						const legibleFileName = this.legibleFileName(file.uri.path);
@@ -97,7 +100,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			// add a specific item to these type of files 
 			if (untrackedFlag) {
 				const orderedItems = this.orderAlphab(fileItems);
-				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.parse('file://' + '', true), false, label);
+				const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.file(''), false, label);
 				orderedItems.push(treeItem);
 				untrackedFlag = false;
 				return orderedItems;
@@ -113,7 +116,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		const untrackedFiles = [];
 		if (this.fileModule) {
 			for (const fm of this.fileModule) {
-				if (fm.fileList.length > 0 && fm.parentFolderName === moduleName) {
+				if (fm.fileList.length > 0 && fm.module.parentFolderName === moduleName) {
 					for (const file of fm.fileList) {
 						if (!file.tracked) {
 							const legibleFileName = this.legibleFileName(file.uri.path);

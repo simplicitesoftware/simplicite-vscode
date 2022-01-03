@@ -6,11 +6,8 @@ import { AppHandler } from './AppHandler';
 import { File } from './File';
 import { Credentials } from './interfaces';
 import { logger } from './Log';
-import { replaceAll } from './utils';
-import { Module } from './Module';
 import { Cache } from './Cache';
 import { Buffer } from 'buffer';
-import { FileHandler } from './FileHandler';
 
 export class SimpliciteApi {
 	_appHandler: AppHandler;
@@ -89,12 +86,17 @@ export class SimpliciteApi {
 			throw new Error('No document returned, cannot update content');
 		}
 		// get the file content for setContent
-		const content = await File.getContent(file.uri);
-		doc.setContentFromText(content);
-		obj.setFieldValue(file.scriptField, doc);
-		const res = await obj.update(item, { inlineDocuments: true });
-		if (!res) {
-			window.showErrorMessage('Simplicite: Cannot synchronize ' + file.uri.path);
+		try {
+			const content = await File.getContent(file.uri);
+			doc.setContentFromText(content);
+			obj.setFieldValue(file.scriptField, doc);
+			const res = await obj.update(item, { inlineDocuments: true });
+			if (!res) {
+				window.showErrorMessage('Simplicite: Cannot synchronize ' + file.uri.path);
+				return false;
+			}
+		} catch(e) {
+			logger.error(e);
 			return false;
 		}
 		return true;
@@ -102,7 +104,7 @@ export class SimpliciteApi {
 
 	async searchForUpdate(file: File, obj: any): Promise<any> { // todo return, just return rowId with cache
 		if (!file.rowId) {
-			const list = await this.search(file.simpliciteUrl, file.fieldName!, file.name);
+			const list = await obj.search({ [file.fieldName!]: file.name });
 			if (list.length === 0) {
 				throw new Error('No object has been returned');
 			}
@@ -120,16 +122,21 @@ export class SimpliciteApi {
 		return item;
 	}
 
-	getRemoteFileContent () { // todo
-
+	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> { // todo
+		const obj = this.appAndBusinnessObject(file);
+		const res = await obj.search({ [file.fieldName!]: file.name }, { inlineDocuments: [ true ] });
+		const content = res[0][file.scriptField!].content;
+		if (!content) {
+			return undefined;
+		}
+		const buff = Buffer.from(content, 'base64');
+		return buff;
 	}
 
-	
-
-	async search (simpliciteUrl: string, fieldName: string, fieldContent: string | number): Promise<any> { // generic search function
-		const app = this._appHandler.getApp(simpliciteUrl);
-		const res = await app.search({ [fieldName!]: fieldContent });
-		return res;
+	appAndBusinnessObject(file: File): any {
+		const app = this._appHandler.getApp(file.simpliciteUrl);
+		const obj = app.getBusinessObject(file.type, 'ide_' + file.type);
+		return obj
 	}
 }
 

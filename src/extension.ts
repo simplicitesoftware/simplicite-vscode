@@ -47,6 +47,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			logger.error(e);
 		}
 	}
+
+	// this should be a static method of apiFileSystemController
 	// init potentials api file systems
 	const initApiFileSystems = async () => {
 		for (const module of moduleHandler.modules) {
@@ -67,33 +69,39 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			}
 		}
 	};
+
 	await initApiFileSystems();
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
-		if (validFileExtension(event.uri.path)) {
-			// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event
-			// Ignore the second event using the isConflict variable as the first thrown event is the file that has been saved
-			// meaning that the content of the file has to synchronize with the instance
-			if (event.uri.path.includes('workspace.json')) {
-				return;
-			}
-			const file = fileHandler.getFileFromFullPath(event.uri.path); // get the file from event path
-			if (file.uri.path === '') { // file not found
-				window.showErrorMessage('Simplicite: ' + event.uri.path + ' cannot be found.');
-			}
-			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
-			if (!module) {
-				logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
-				return;
-			}
-			await simpliciteApiController.conflictChecker(file);
+		// check for file extension validity && ignore workspace.json && ignore RemoteFileContent.java
+		// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event
+		// if the uri is from RemoteFileContent.java ignore as the changes are expected to be on the working file
+		if (!validFileExtension(event.uri.path) || event.uri.path.includes('workspace.json') || event.uri.path.includes('RemoteFileContent.java')) {
+			return;
+		}
+		const file = fileHandler.getFileFromFullPath(event.uri.path); // get the file from event path
+		if (file.uri.path === '') { // file not found
+			window.showErrorMessage('Simplicite: ' + event.uri.path + ' cannot be found.');
+		}
+		file.setApiFileInfo(simpliciteApi.devInfo);
+		if (simpliciteApiController.conflictStatus) {
+			await simpliciteApiController.resolveConflict(file);
+			return;
+		}
+		const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
+		if (!module) {
+			logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
+			return;
+		}
+		try {
 			if (module.apiFileSystem) { // module is api
-				await simpliciteApiController.synchronizeFileApiController(file, module);
-				// add conflict handling here not in writeFile
-			} else { // module is not api
+				await simpliciteApiController.writeFileController(file, module);
+			} else { // module is not api, add option to apply changes classic on save (vscode options)
 				await fileHandler.setTrackedStatus(file.uri, true, moduleHandler.modules); // on save set the status of the file to true
 			}
+		} catch (e: any) {
+			window.showErrorMessage('Simplicite: ' + e.message);
 		}
 	});
 
@@ -116,11 +124,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			for (const rfs of simpliciteApiController.apiFileSystemController) {
 				index++;
 				if (rfs.module.name === module.name) {
-					if (rfs.module.workspaceFolderPath === '') { // important condition, if empty string => Uri.parse can resolve to the root of the main disk and delete every file
+					if (rfs.module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file (not fun)
 						logger.error('workspaceFolderPath is undefined');
 						return;
 					}
-					const uri = Uri.parse('file://' + rfs.module.workspaceFolderPath, true);
+					const uri = Uri.file(rfs.module.workspaceFolderPath);
 					workspace.fs.delete(uri);
 					simpliciteApiController.apiFileSystemController = simpliciteApiController.apiFileSystemController.splice(index, 1);
 					logger.info('removed api module from workspace');
@@ -183,8 +191,14 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	//return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
 }
 
-export function deactivate() {
-	workspace.fs.delete(Uri.parse('file://' + STORAGE_PATH + 'simplicite.temp', true));
+// deactivate is inconstant ???
+export async function deactivate() {
+	const uri = Uri.parse(STORAGE_PATH, true);
+	try {
+		await workspace.fs.delete(uri, { recursive: true });
+	} catch (e) {
+		logger.error(e);
+	}
 }
 
 function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {

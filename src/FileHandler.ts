@@ -29,18 +29,23 @@ export class FileHandler {
 		return fileHandler;
 	}
 
-	async initTempFolder(fileModule: FileAndModule[]) { // create temp folder and copy files to store the initial state of a file (for conflict resolution)
+	// create temp folder and copy files to store the initial state of a file (for conflict resolution)
+	async initTempFolder(fileModule: FileAndModule[]) {
 		try {
 			for (const fm of fileModule) {
-				const modulePath = STORAGE_PATH + 'simplicite.temp/' + fm.parentFolderName + '/';
-				await workspace.fs.createDirectory(Uri.parse('file://' + modulePath, true));
+				const modulePath = STORAGE_PATH + 'temp/' + fm.module.parentFolderName + '/';
+				await workspace.fs.createDirectory(Uri.parse(modulePath));
 				for (const file of fm.fileList) {
-					const tempFilePath = modulePath + file.name + file.extension;
+					const tempFilePath = File.tempPathMaker(file);
 					const localFileContent = await File.getContent(file.uri);
-					await workspace.fs.writeFile(Uri.parse('file://' + tempFilePath, true), localFileContent);
+					if (!localFileContent) {
+						throw new Error('Cannot get content from ' + file.uri.path);
+					}
+					await workspace.fs.writeFile(Uri.file(tempFilePath), localFileContent);
 				}
 			}
 		} catch(e) {
+			console.log('allo');
 			logger.warn(e);
 		}
 	}
@@ -133,17 +138,4 @@ export class FileHandler {
 		}
 		return new File('', '', '', '', false);
 	}
-
-	// private static getContentFromModuleFile (fileContentList: any, module: Module): any { // to do
-	// 	if (!fileContentList) {
-	// 		return undefined;
-	// 	}
-	// 	for (const fileContent of fileContentList) {
-	// 		if (fileContent.path.includes('Api_') && module.apiFileSystem) { // get Api file
-	// 			return fileContent;
-	// 		} else if (fileContent.path.includes(module.name) && !fileContent.path.includes('Api_') && !module.apiFileSystem) { // get content 
-	// 			return fileContent;
-	// 		}
-	// 	}
-	// }
 }

@@ -9,15 +9,15 @@ import { replaceAll } from './utils';
 import { Buffer } from 'buffer';
 
 export class ApiFileSystemController {
-	_app: any;
-	baseUrl: string;
+	private _app: any;
+	private _baseUrl: string;
 	module: Module;
 	devInfo: any;
 	constructor (app: any, module: Module, devInfo: ModuleDevInfo) {
 		this._app = app;
 		this.module = module;
 		this.devInfo = devInfo;
-		this.baseUrl = STORAGE_PATH + module.parentFolderName;
+		this._baseUrl = STORAGE_PATH + module.parentFolderName;
 	}
 
 	async initAll(moduleHandler: ModuleHandler) {
@@ -27,7 +27,7 @@ export class ApiFileSystemController {
 			moduleHandler.addModule(this.module, false);
 		}
 		try {
-			const uri = Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name, true);
+			const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name);
 			try { // if directory does not exist or is empty then initFiles
 				const res = await workspace.fs.readDirectory(uri);
 				if (res.length === 0) throw new Error();
@@ -38,14 +38,14 @@ export class ApiFileSystemController {
 			let flag = false;
 			if (wks) {
 				for (const wk of wks) {
-					if (wk.name === this.baseUrl) {
+					if (wk.name === this._baseUrl) {
 						flag = true;
 					}
 				}
 			}
 			if (!flag) {
 			// create the workspace only once, extension will reload
-				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name, true), name: 'Api_' + this.module.name });
+				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(STORAGE_PATH + 'Api_' + this.module.name), name: 'Api_' + this.module.name });
 			}
 		} catch (e) {
 			logger.error(e);
@@ -57,14 +57,16 @@ export class ApiFileSystemController {
 			return false;
 		}
 		try {
-			const uri = Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name, true);
-			const res = workspace.fs.createDirectory(uri);
+			const uri = Uri.parse(STORAGE_PATH + 'Api_' + this.module.name);
+			await workspace.fs.createDirectory(uri);
 			const mdl = await this._app.getBusinessObject('Module');
+			// look for module row_id
 			const ms = await mdl.search({ mdl_name: this.module.name} );
 			const m = ms[0];
 			await this.getAllFiles(m.row_id);
+			// pom.xml
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
-			workspace.fs.writeFile(Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name + '/pom.xml', true), Buffer.from(pom.content, 'base64'));
+			await workspace.fs.writeFile(Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/pom.xml'), Buffer.from(pom.content, 'base64'));
 			return true;
 		} catch (e) {
 			logger.error(e);
@@ -79,16 +81,14 @@ export class ApiFileSystemController {
 		for (const devObj of this.devInfo.objects) {
 			if (!devObj.package) continue;
 			const obj = this._app.getBusinessObject(devObj.object, 'ide_' + devObj.object);
+			// get every object from module row_id
 			const res = await obj.search({ row_module_id: mdl_id }, { inlineDocuments: [ true ] });
 			if (!res || res.length === 0) continue;
-			const replace = 'src/' + replaceAll(devObj.package, /\./, '/');
+			const replace = 'src/' + replaceAll(devObj.package, /\./, '/'); // convert package into path and prefix with src
 			this.createFolderTree(replace);
-			
 			for (const object of res) {
-				if (!object[devObj.sourcefield]) continue;
-				let uri = Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name + '/.temp/' + object[devObj.sourcefield].name, true);
-				workspace.fs.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'));
-				uri = Uri.parse('file://' + STORAGE_PATH + 'Api_' + this.module.name + '/' + replace + '/' + this.module.name + '/' + object[devObj.sourcefield].name, true);
+				if (!object[devObj.sourcefield]) continue; // -> no script
+				const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/' + replace + '/' + this.module.name + '/' + object[devObj.sourcefield].name);
 				workspace.fs.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'));
 			}
 		}
@@ -98,14 +98,14 @@ export class ApiFileSystemController {
 		const split = folderPath.split('/');
 		if (split[split.length - 1] === 'dispositions') {
 			let path = STORAGE_PATH + 'Api_' + this.module.name + '/scripts';
-			workspace.fs.createDirectory(Uri.parse('file://' + path, true));
+			workspace.fs.createDirectory(Uri.file(path));
 			path += '/Disposition';
-			workspace.fs.createDirectory(Uri.parse('file://' + path, true));
+			workspace.fs.createDirectory(Uri.file(path));
 		} else {
 			let path = STORAGE_PATH + 'Api_' + this.module.name + '/src/com/simplicite/' + split[split.length - 1];
-			workspace.fs.createDirectory(Uri.parse('file://' + path, true));
+			workspace.fs.createDirectory(Uri.file(path));
 			path += '/' + this.module.name;
-			workspace.fs.createDirectory(Uri.parse('file://' + path, true));
+			workspace.fs.createDirectory(Uri.file(path));
 		}
 	}
 }
