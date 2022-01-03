@@ -8,20 +8,12 @@
 			"script": "vscode:watch",
 			"group": "build",
 			"isBackground": true,
-			"problemMatcher": [
-				"$ts-webpack-watch",
-				"$tslint-webpack-watch"
-			],
 		},
 		{
 			"type": "npm",
 			"script": "theia:watch",
 			"group": "build",
 			"isBackground": true,
-			"problemMatcher": [
-				"$ts-webpack-watch",
-				"$tslint-webpack-watch"
-			]
 		}
 	]
 }
