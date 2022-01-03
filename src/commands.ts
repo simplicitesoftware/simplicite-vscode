@@ -40,6 +40,17 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		}
 		await simpliciteApiController.applyModuleFiles(fileHandler, module, moduleHandler.modules);
 	});
+
+	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
+		const instanceUrl = await window.showInputBox({
+			placeHolder: 'module name / url',
+			title: 'Simplicite: Type in the instance url'
+		});
+		if (!instanceUrl) {
+			throw new Error();
+		}
+		await simpliciteApiController.applyInstanceFiles(fileHandler, moduleHandler.modules, instanceUrl, moduleHandler.connectedInstances);
+	});
 	
 	// ------------------------------
 	// Compiling commands
@@ -318,7 +329,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 
-	context.subscriptions.push(applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
+	context.subscriptions.push(applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
 };
 
 let firstClickTime = new Date().getTime();

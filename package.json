@@ -118,6 +118,10 @@
 				"title": "Simplicite: Apply changes"
 			},
 			{
+				"command": "simplicite-vscode-tools.applySpecificInstance",
+				"title": "Simplicite: Apply specific instance changes"
+			},
+			{
 				"command": "simplicite-vscode-tools.applySpecificModule",
 				"title": "Simplicite: Apply specific module changes",
 				"icon": {

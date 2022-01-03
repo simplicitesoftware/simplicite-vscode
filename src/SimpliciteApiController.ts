@@ -127,38 +127,29 @@ export class SimpliciteApiController {
 			window.showWarningMessage('Simplicite: ' + module.name + ' is not connected');
 			return;
 		}
+		await this.applyFiles(fileHandler, module, modules);
+	}
+
+	async applyInstanceFiles(fileHandler: FileHandler, modules: Module[], instanceUrl: string, connectedInstances: string[]) {
+		if (!connectedInstances.includes(instanceUrl)) {
+			window.showWarningMessage('Simplicite: ' + instanceUrl + ' is not connected');
+			return;
+		}
+		for (const mod of modules) {
+			if (mod.instanceUrl === instanceUrl && mod.connected) {
+				await this.applyFiles(fileHandler, mod, modules);
+			}
+		}
+	}
+
+	async applyFiles (fileHandler: FileHandler, mod: Module, modules: Module[]) {
 		for (const file of fileHandler.fileList) {
-			if (file.parentFolderName !== module.parentFolderName || !file.tracked) continue;
+			if (file.parentFolderName !== mod.parentFolderName || !file.tracked) continue;
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.uri, false, modules);
 		}
 	}
-
-	/*async applyInstanceFiles() { // Apply the changes of a specific instance
-		const fileModule = this.bindFileWithModule(this.fileHandler.fileList);
-		let success = 0;
-		for (const instanceUrl of this._moduleHandler.connectedInstances) {
-			const app = this._appHandler.getApp(instanceUrl);
-			if (!fileModule.get(instanceUrl)) {
-				continue;
-			}
-			for (const file of fileModule.get(instanceUrl)!) {
-				if (file.tracked) {
-					success = await this.sendFileMessageWrapper(file, app);
-				}
-			}
-			if (success > 0) {
-				try {
-					await this.triggerBackendCompilation(app);
-					logger.info('Backend compilation succeeded');
-				} catch (e: any) {
-					window.showErrorMessage(e.message);
-					logger.error(e.message);
-				}
-			}
-		}
-	}*/
 
 	// returns the content of the remote file if there is a conflict
 	async isConflict(file: File, parentFolderName: string): Promise<Uint8Array | false> {  
