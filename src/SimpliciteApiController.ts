@@ -263,7 +263,7 @@ export class SimpliciteApiController {
 	}
 
 	private async localCompilation(fileList: Array<File>, moduleName: string | undefined): Promise<boolean> { // pass undefined as moduleName to check every module
-		if (!workspace.getConfiguration('simplicite-vscode-tools').get('compilation.enabled')) {
+		if (!workspace.getConfiguration('simplicite-vscode-tools').get('compilation')) {
 			const res = await this.compileJava(
 				{
 					message: 'Cannot apply changes with compilation errors (you can disable the compilation step in the settings).',

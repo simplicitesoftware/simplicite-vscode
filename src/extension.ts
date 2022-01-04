@@ -1,7 +1,7 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri, commands } from 'vscode';
 import { CompletionProvider } from './CompletionProvider';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
@@ -30,9 +30,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler);
 	new QuickPick(context.subscriptions, simpliciteApiController);
 
-	const fileTree = new FileTree(context.extensionUri.path, moduleHandler.modules, fileHandler.fileList);
-	window.registerTreeDataProvider('simpliciteFile', fileTree);
-	fileHandler.fileTree = fileTree;
+	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
+		const fileTree = new FileTree(context.extensionUri.path, moduleHandler.modules, fileHandler.fileList);
+		window.registerTreeDataProvider('simpliciteFile', fileTree);
+		fileHandler.fileTree = fileTree;
+	}
 
 	const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApi.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
@@ -40,7 +42,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
 
-	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.autoConnect')) { // settings are set in the package.json
+	if (workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')) { // settings are set in the package.json
 		try {
 			await simpliciteApiController.loginAll();
 		} catch (e) {
@@ -48,7 +50,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		}
 	}
 
-	// this should be a static method of apiFileSystemController
 	// init potentials api file systems
 	const initApiFileSystems = async () => {
 		for (const module of moduleHandler.modules) {
@@ -74,9 +75,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
-		// check for file extension validity && ignore workspace.json && ignore RemoteFileContent.java
-		// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event
+		// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event (one event for each file)
 		// if the uri is from RemoteFileContent.java ignore as the changes are expected to be on the working file
+
+		// check for file extension validity && ignore workspace.json && ignore RemoteFileContent.java
 		if (!validFileExtension(event.uri.path) || event.uri.path.includes('workspace.json') || event.uri.path.includes('RemoteFileContent.java')) {
 			return;
 		}
@@ -95,7 +97,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			return;
 		}
 		try {
-			if (module.apiFileSystem) { // module is api
+			if (module.apiFileSystem || workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) { // module is api || sendFileOnSave is true
 				await simpliciteApiController.writeFileController(file, module);
 			} else { // module is not api, add option to apply changes classic on save (vscode options)
 				await fileHandler.setTrackedStatus(file.uri, true, moduleHandler.modules); // on save set the status of the file to true
