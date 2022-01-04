@@ -37,7 +37,8 @@
 				},
 				{
 					"id": "simpliciteFile",
-					"name": "Simplicite modified file handler"
+					"name": "Simplicite modified file handler",
+					"when": "config.simplicite-vscode-tools.api.sendFileOnSave == false"
 				}
 			]
 		},
@@ -208,15 +209,20 @@
 		],
 		"configuration": {
 			"properties": {
-				"simplicite-vscode-tools.compilation.enabled": {
+				"simplicite-vscode-tools.compilation": {
 					"type": "boolean",
-					"default": false,
-					"description": "Disable local compilation before applying changes."
+					"default": true,
+					"description": "Enable local compilation before applying changes."
 				},
-				"simplicite-vscode-tools.api.autoConnect": {
+				"simplicite-vscode-tools.api.autoAuthentication": {
 					"type": "boolean",
-					"default": false,
-					"description": "Disable the automatic authentication when starting vscode. Note that you have to be authenticated in order to take profit of the extension features."
+					"default": true,
+					"description": "Enable the automatic authentication on the simplicite extension launch. Note that you have to be authenticated in order to take profit of most of the extension features."
+				},
+				"simplicite-vscode-tools.api.sendFileOnSave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable sending modified file on save. This setting only affects on disk modules as api modules are already working this way."
 				}
 			}
 		},
