@@ -2,7 +2,7 @@
 
 import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, Uri } from 'vscode';
 import { FileAndModule } from '../interfaces';
-import { UntrackedItem, ModuleItem, FileItem } from '../classes';
+import { UntrackedItem, ModuleItem, FileItem } from './treeViewClasses';
 import { bindFileAndModule } from '../utils';
 import { Module } from '../Module';
 import { File } from '../File';
@@ -10,9 +10,9 @@ import * as path from 'path';
 
 // File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
-	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // these 2 attributes are mandatory to refresh the component
+	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // this attribute and the below one are mandatory to refresh the component
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
-	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus())
+	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus()) // todo
 	runPath: string;
 	constructor(runPath: string, modules: Module[], files: File[]) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();

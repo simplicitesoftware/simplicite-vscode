@@ -54,7 +54,7 @@ export class File {
 				}
 			}
 		}
-		if (this.uri.path.includes('/resources/')) { // programatically handling packages that are not in devInfo
+		if (this.uri.path.includes('/resources/')) { // handling manually packages that are not in devInfo
 			return 'Resource';
 		} else if (this.uri.path.includes('/test/src/com/simplicite/')) {
 			return 'Script';
@@ -81,7 +81,7 @@ export class File {
 		}
 	}
 
-	static async getContent(fileUri: Uri): Promise<Uint8Array> { // todo
+	static async getContent(fileUri: Uri): Promise<Uint8Array> {
 		const content = await workspace.fs.readFile(fileUri);
 		return content;
 	}

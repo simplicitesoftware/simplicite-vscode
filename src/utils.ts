@@ -1,6 +1,5 @@
 'use strict';
 
-import { Uri } from 'vscode';
 import { Module } from './Module';
 import { FileAndModule } from './interfaces';
 import { File } from './File';

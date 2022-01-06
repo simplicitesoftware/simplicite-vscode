@@ -12,11 +12,9 @@ import { Buffer } from 'buffer';
 export class SimpliciteApi {
 	_appHandler: AppHandler;
 	_cache: Cache;	
-	_conflictStatus: boolean;
 	devInfo: any;
 	constructor(appHandler: AppHandler) {
 		this._appHandler = appHandler;
-		this._conflictStatus = false;
 		this._cache = new Cache(); 
 	}
 
@@ -78,8 +76,7 @@ export class SimpliciteApi {
 
 	async writeFile(file: File): Promise<boolean> {
 		file.setApiFileInfo(this.devInfo);
-		const app = this._appHandler.getApp(file.simpliciteUrl);
-		const obj = await app.getBusinessObject(file.type, 'ide_' + file.type);
+		const obj = this.appAndBusinnessObject(file);
 		const item = await this.searchForUpdate(file, obj);
 		const doc = obj.getFieldDocument(file.scriptField);
 		if (doc === undefined) {
@@ -102,7 +99,7 @@ export class SimpliciteApi {
 		return true;
 	}
 
-	async searchForUpdate(file: File, obj: any): Promise<any> { // todo return, just return rowId with cache
+	private async searchForUpdate(file: File, obj: any): Promise<any> {
 		if (!file.rowId) {
 			const list = await obj.search({ [file.fieldName!]: file.name });
 			if (list.length === 0) {
@@ -122,7 +119,7 @@ export class SimpliciteApi {
 		return item;
 	}
 
-	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> { // todo
+	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> {
 		const obj = this.appAndBusinnessObject(file);
 		const res = await obj.search({ [file.fieldName!]: file.name }, { inlineDocuments: [ true ] });
 		const content = res[0][file.scriptField!].content;

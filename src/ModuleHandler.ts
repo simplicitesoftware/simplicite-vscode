@@ -127,14 +127,6 @@ export class ModuleHandler {
 		}
 	}
 
-	/*spreadAllToken() {
-		for (const module of this.modules) {
-			if (module.token !== '' && module.token !== null) {
-				this.spreadToken(module.instanceUrl, module.token);
-			}
-		}
-	}*/
-
 	getModuleFromName(moduleName: string): Module | undefined {
 		for (const module of this.modules) {
 			if (module.name === moduleName) {
@@ -162,11 +154,6 @@ export class ModuleHandler {
 		return undefined;
 	}
 
-	// removeConnectedInstancesUrl(instanceUrl: string): void {
-	// 	const index = this.connectedInstancesUrl.indexOf(instanceUrl);
-	// 	this.connectedInstancesUrl.splice(index, 1);
-	// }
-
 	async setSimpliciteModulesFromDisk(): Promise<void> { // returns array of module objects
 		if (workspace.workspaceFolders === undefined) {
 			return;
@@ -187,15 +174,6 @@ export class ModuleHandler {
 				logger.warn(e);
 			}
 		}
-	}
-
-	getSimpliciteRFSModules (): Module | undefined {
-		for (const module of this.modules) {
-			if (module.apiFileSystem) {
-				return module;
-			}
-		}
-		return undefined;
 	}
 
 	private async getModuleInstanceUrlAndNameFromDisk(workspaceFolder: WorkspaceFolder): Promise<PomXMLData> { // searches into pom.xml and returns the simplicite's instance url

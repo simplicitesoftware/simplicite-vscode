@@ -112,8 +112,6 @@ export class CompletionProvider implements CompletionItemProvider {
 	}
 }
 
-
-
 class CustomCompletionItem extends CompletionItem {
 	attributeName: string;
 	constructor(label: string, kind: CompletionItemKind, attributeName: string) {

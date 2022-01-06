@@ -11,16 +11,16 @@ import { Buffer } from 'buffer';
 export class ApiFileSystemController {
 	private _app: any;
 	private _baseUrl: string;
-	module: Module;
-	devInfo: any;
+	private _devInfo: any;
+	module: Module; // not private because need to access in extension.ts
 	constructor (app: any, module: Module, devInfo: ModuleDevInfo) {
 		this._app = app;
 		this.module = module;
-		this.devInfo = devInfo;
+		this._devInfo = devInfo;
 		this._baseUrl = STORAGE_PATH + module.parentFolderName;
 	}
 
-	async initAll(moduleHandler: ModuleHandler) {
+	async initApiFileSystemModule(moduleHandler: ModuleHandler) {
 		if (this.module.instanceJump) {
 			// need to save the module => updating the first workspace folder implies that all extensions are restarted by VS Code
 			this.module.instanceJump = false;
@@ -75,10 +75,10 @@ export class ApiFileSystemController {
 	}
 
 	async getAllFiles (mdl_id: string): Promise<any> {
-		if (!this.devInfo) {
+		if (!this._devInfo) {
 			return false;
 		}
-		for (const devObj of this.devInfo.objects) {
+		for (const devObj of this._devInfo.objects) {
 			if (!devObj.package) continue;
 			const obj = this._app.getBusinessObject(devObj.object, 'ide_' + devObj.object);
 			// get every object from module row_id

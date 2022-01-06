@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 'use strict';
 
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, window } from 'vscode';
@@ -210,8 +209,6 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 			}
 		}
 	}
-
-
 }
 
 class CustomTreeItem extends TreeItem {

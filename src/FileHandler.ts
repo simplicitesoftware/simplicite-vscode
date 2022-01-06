@@ -45,7 +45,6 @@ export class FileHandler {
 				}
 			}
 		} catch(e) {
-			console.log('allo');
 			logger.warn(e);
 		}
 	}
