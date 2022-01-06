@@ -9,7 +9,6 @@ import { logger } from './Log';
 import { File } from './File';
 import { CustomMessage, Credentials } from './interfaces';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { ApiFileSystem } from './ApiFileSystem';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
 import { FileHandler } from './FileHandler';
@@ -21,14 +20,12 @@ export class SimpliciteApiController {
 	private _moduleInfoTree?: ModuleInfoTree; // has its own setter 
 	private _simpliciteApi: SimpliciteApi;
 	backendCompiling: boolean; // to prevent applying changes when backend compilation is not done
-	apiFileSystemController: ApiFileSystem[];
 	conflictStatus: boolean;
 	constructor(_moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, _appHandler: AppHandler) {
 		this._appHandler = _appHandler;
 		this._moduleHandler = _moduleHandler;
 		this.backendCompiling = false;
 		this._simpliciteApi = simpliciteApi;
-		this.apiFileSystemController = []; // todo, move this into a new file, and lighten up extension.ts
 		this.conflictStatus = false;
 	}
 
@@ -225,22 +222,24 @@ export class SimpliciteApiController {
 		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 		window.showWarningMessage('Simplicite: Conflict detected with remote file, edit the file on the left panel and save to apply the modifications. If you do not want to merge the two versions, you can overwrite the content of the file of your choice by clicking on the following button and choose between these two actions: \'Remote\' to overwrite the local content with the remote content & \'Local\' to overwrite the remote content with the local content. Note that the modifications on the overwritten file will be lost', 'Choose action').then(async (click) => {
 			if (click === 'Choose action') {
-				const choice = await window.showQuickPick([{ label: 'Remote' }, { label: 'Local' }]);
+				const choice = await window.showQuickPick([{ label: 'Override remote content' }, { label: 'Local' }]);
 				if (!choice) {
 					const msg = 'No file has been chosen';
 					window.showInformationMessage('Simplicite: ' + msg);
 					throw new Error(msg);
-				} else if (choice.label === 'Remote') { // write remote content on local
+				} else if (choice.label === 'Override local content') { // write remote content on local
 					await workspace.fs.writeFile(Uri.file(file.uri.path), remoteContent);
 					await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), remoteContent);
 					await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 					this.conflictStatus = false;
-				} else if (choice.label === 'Local') { // write local content on remote
+				} else if (choice.label === 'Override remote content') { // write local content on remote
 					await this._simpliciteApi.writeFile(file);
 					await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri));
 					await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 					this.conflictStatus = false;
 				}
+				// check for current open editor
+				return commands.executeCommand('workbench.action.closeActiveEditor'); // close the diff editor
 			}
 		});
 	}
