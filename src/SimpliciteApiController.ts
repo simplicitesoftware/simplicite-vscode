@@ -16,17 +16,16 @@ import { FileHandler } from './FileHandler';
 import { Buffer } from 'buffer';
 
 export class SimpliciteApiController {
-	
 	private _appHandler: AppHandler;
 	private _moduleHandler: ModuleHandler;
 	private _moduleInfoTree?: ModuleInfoTree; // has its own setter 
 	private _simpliciteApi: SimpliciteApi;
 	apiFileSystemController: ApiFileSystemController[];
-	conflictStatus: boolean; // 
+	conflictStatus: boolean;
 	constructor(_moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, _appHandler: AppHandler) {
 		this._appHandler = _appHandler;
 		this._moduleHandler = _moduleHandler;
-		this.apiFileSystemController = [];
+		this.apiFileSystemController = []; // todo, move this into a new file, and lighten up extension.ts
 		this._simpliciteApi = simpliciteApi;
 		this.conflictStatus = false;
 	}
@@ -148,6 +147,7 @@ export class SimpliciteApiController {
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.uri, false, modules);
+			this.triggerBackendCompilation(mod.instanceUrl);
 		}
 	}
 
@@ -215,6 +215,7 @@ export class SimpliciteApiController {
 		} else {
 			await this._simpliciteApi.writeFile(file);
 			await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri)); // set temp file with current content
+			await this.triggerBackendCompilation(module.instanceUrl);
 		}
 	}
 
@@ -247,14 +248,14 @@ export class SimpliciteApiController {
 		await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri));
 		await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 		this.conflictStatus = false;
-		console.log('Conflict resolve');
 	}
 
-	private async triggerBackendCompilation(app: any) {
+	private async triggerBackendCompilation(instanceUrl: string): Promise<any> {
 		try {
+			const app = this._appHandler.getApp(instanceUrl);
 			const obj = app.getBusinessObject('Script', 'ide_Script');
 			const res = await obj.action('CodeCompile', 0);
-			window.showInformationMessage(`Simplicite: ${res}`); // differentiate error and info
+			window.showInformationMessage(`Simplicite: Compilation ${res}`); // differentiate error and info
 			logger.info('compilation succeeded');
 		} catch (e) {
 			logger.error(e);
@@ -334,6 +335,7 @@ export class SimpliciteApiController {
 	}
 }
 
+// open the VSCode settings view
 function openSettings() {
 	try {
 		commands.executeCommand('workbench.action.openSettings', '@ext:simpliciteSoftware.simplicite-vscode-tools');
