@@ -40,7 +40,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
-	commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
+	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
 
 	if (workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')) { // settings are set in the package.json
 		try {
@@ -63,7 +63,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 					const app = appHandler.getApp(module.instanceUrl);
 					const rfsControl = new ApiFileSystemController(app, module, simpliciteApi.devInfo);
 					simpliciteApiController.apiFileSystemController.push(rfsControl);
-					await rfsControl.initAll(moduleHandler);	
+					await rfsControl.initApiFileSystemModule(moduleHandler);	
 				}
 			} catch (e) {
 				continue;
@@ -190,17 +190,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		}
 	});
 
-	//return { applyChanges, applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile };
-}
-
-// deactivate is inconstant ???
-export async function deactivate() {
-	const uri = Uri.parse(STORAGE_PATH, true);
-	try {
-		await workspace.fs.delete(uri, { recursive: true });
-	} catch (e) {
-		logger.error(e);
-	}
+	return publicCommand;
 }
 
 function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {

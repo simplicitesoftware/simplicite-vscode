@@ -18,7 +18,6 @@ import { AppHandler } from './AppHandler';
 
 // ------------------------------
 // Apply commands
-
 export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler) {
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
@@ -177,7 +176,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 	
 	// ------------------------------
-	
+	// Refresh Tree views commands
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
 		moduleHandler.refreshModulesDevInfo(simpliciteApi);
 		moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
@@ -255,7 +254,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			}
 			const apiFileSystemController = new ApiFileSystemController(appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo);
 			simpliciteApiController.apiFileSystemController.push(apiFileSystemController);
-			apiFileSystemController.initAll(moduleHandler);
+			apiFileSystemController.initApiFileSystemModule(moduleHandler);
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -329,7 +328,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 
-	context.subscriptions.push(applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger, connectToRemoteFileSystem, disconnectRemoteFileSystem);
+	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, connectToRemoteFileSystem, disconnectRemoteFileSystem];
+	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger];
+	context.subscriptions.concat(publicCommand, privateCommand);
+	return publicCommand;
 };
 
 let firstClickTime = new Date().getTime();
