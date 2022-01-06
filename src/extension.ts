@@ -15,7 +15,7 @@ import { File } from './File';
 import { SimpliciteApiController } from './SimpliciteApiController';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
-import { ApiFileSystemController } from './ApiFileSystemController';
+import { ApiFileSystem } from './ApiFileSystem';
 import { commandInit } from './commands';
 
 export async function activate(context: ExtensionContext): Promise<any> {
@@ -61,7 +61,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				}
 				if (module.apiFileSystem && simpliciteApi.devInfo) {
 					const app = appHandler.getApp(module.instanceUrl);
-					const rfsControl = new ApiFileSystemController(app, module, simpliciteApi.devInfo);
+					const rfsControl = new ApiFileSystem(app, module, simpliciteApi.devInfo);
 					simpliciteApiController.apiFileSystemController.push(rfsControl);
 					await rfsControl.initApiFileSystemModule(moduleHandler);	
 				}
@@ -80,6 +80,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 		// check for file extension validity && ignore workspace.json && ignore RemoteFileContent.java
 		if (!validFileExtension(event.uri.path) || event.uri.path.includes('workspace.json') || event.uri.path.includes('RemoteFileContent.java')) {
+			return;
+		}
+		if (simpliciteApiController.backendCompiling) {
+			window.showErrorMessage('Simplicite: Cannot apply changes as backend is still processing compilation');
 			return;
 		}
 		const file = fileHandler.getFileFromFullPath(event.uri.path); // get the file from event path

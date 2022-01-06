@@ -9,7 +9,7 @@ import { logger } from './Log';
 import { File } from './File';
 import { CustomMessage, Credentials } from './interfaces';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { ApiFileSystemController } from './ApiFileSystemController';
+import { ApiFileSystem } from './ApiFileSystem';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
 import { FileHandler } from './FileHandler';
@@ -20,13 +20,15 @@ export class SimpliciteApiController {
 	private _moduleHandler: ModuleHandler;
 	private _moduleInfoTree?: ModuleInfoTree; // has its own setter 
 	private _simpliciteApi: SimpliciteApi;
-	apiFileSystemController: ApiFileSystemController[];
+	backendCompiling: boolean; // to prevent applying changes when backend compilation is not done
+	apiFileSystemController: ApiFileSystem[];
 	conflictStatus: boolean;
 	constructor(_moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, _appHandler: AppHandler) {
 		this._appHandler = _appHandler;
 		this._moduleHandler = _moduleHandler;
-		this.apiFileSystemController = []; // todo, move this into a new file, and lighten up extension.ts
+		this.backendCompiling = false;
 		this._simpliciteApi = simpliciteApi;
+		this.apiFileSystemController = []; // todo, move this into a new file, and lighten up extension.ts
 		this.conflictStatus = false;
 	}
 
@@ -147,7 +149,7 @@ export class SimpliciteApiController {
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.uri, false, modules);
-			this.triggerBackendCompilation(mod.instanceUrl);
+			await this.triggerBackendCompilation(mod.instanceUrl);
 		}
 	}
 
@@ -252,6 +254,7 @@ export class SimpliciteApiController {
 
 	private async triggerBackendCompilation(instanceUrl: string): Promise<any> {
 		try {
+			this.backendCompiling = true;
 			const app = this._appHandler.getApp(instanceUrl);
 			const obj = app.getBusinessObject('Script', 'ide_Script');
 			const res = await obj.action('CodeCompile', 0);
@@ -261,6 +264,7 @@ export class SimpliciteApiController {
 			logger.error(e);
 			window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');
 		}
+		this.backendCompiling = false;
 	}
 
 	private async localCompilation(fileList: Array<File>, moduleName: string | undefined): Promise<boolean> { // pass undefined as moduleName to check every module
