@@ -15,8 +15,8 @@ import { File } from './File';
 import { SimpliciteApiController } from './SimpliciteApiController';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
-import { ApiFileSystem } from './ApiFileSystem';
 import { commandInit } from './commands';
+import { ApiFileSystemController } from './ApiFileSystemController';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
@@ -40,7 +40,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
-	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler);
+	const apiFileSystemController = new ApiFileSystemController();
+
+	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler, apiFileSystemController);
 
 	if (workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')) { // settings are set in the package.json
 		try {
@@ -51,27 +53,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	}
 
 	// init potentials api file systems
-	const initApiFileSystems = async () => {
-		for (const module of moduleHandler.modules) {
-			try {
-				for (const rfs of simpliciteApiController.apiFileSystemController) {
-					if (rfs.module.name === module.name) {
-						throw new Error();
-					}
-				}
-				if (module.apiFileSystem && simpliciteApi.devInfo) {
-					const app = appHandler.getApp(module.instanceUrl);
-					const rfsControl = new ApiFileSystem(app, module, simpliciteApi.devInfo);
-					simpliciteApiController.apiFileSystemController.push(rfsControl);
-					await rfsControl.initApiFileSystemModule(moduleHandler);	
-				}
-			} catch (e) {
-				continue;
-			}
-		}
-	};
-
-	await initApiFileSystems();
+	await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi.devInfo, appHandler);
 
 	// On save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -127,7 +109,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			const module = moduleHandler.removeModuleFromWkPath(event.removed[0].uri.path);
 			let index = 0;
 			if (!module) return;
-			for (const rfs of simpliciteApiController.apiFileSystemController) {
+			for (const rfs of apiFileSystemController.apiFileSystemList) {
 				index++;
 				if (rfs.module.name === module.name) {
 					if (rfs.module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file (not fun)
@@ -136,7 +118,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 					}
 					const uri = Uri.file(rfs.module.workspaceFolderPath);
 					workspace.fs.delete(uri);
-					simpliciteApiController.apiFileSystemController = simpliciteApiController.apiFileSystemController.splice(index, 1);
+					apiFileSystemController.apiFileSystemList = apiFileSystemController.apiFileSystemList.splice(index, 1);
 					logger.info('removed api module from workspace');
 					break;
 				}
@@ -145,7 +127,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		// refresh all
 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
 		moduleInfoTree.feedData(simpliciteApi.devInfo, moduleHandler.modules);
-		await initApiFileSystems();
+		await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi.devInfo, appHandler);
 	});
 
 	// Completion

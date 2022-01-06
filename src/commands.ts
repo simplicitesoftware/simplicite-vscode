@@ -6,19 +6,20 @@ import { SimpliciteApiController } from './SimpliciteApiController';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { Module } from './Module';
 import { File } from './File';
-import { ApiFileSystemController } from './ApiFileSystemController';
+import { ApiFileSystem } from './ApiFileSystem';
 import { ModuleHandler } from './ModuleHandler';
 import { FileHandler } from './FileHandler';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
+import { ApiFileSystemController } from './ApiFileSystemController';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands
-export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler) {
+export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler, apiFileSystemController: ApiFileSystemController) {
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
 	});
@@ -252,9 +253,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
-			const apiFileSystemController = new ApiFileSystemController(appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo);
-			simpliciteApiController.apiFileSystemController.push(apiFileSystemController);
-			apiFileSystemController.initApiFileSystemModule(moduleHandler);
+			const apiFileSystem = new ApiFileSystem(appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo);
+			apiFileSystemController.apiFileSystemList.push(apiFileSystem);
+			apiFileSystem.initApiFileSystemModule(moduleHandler);
 		} catch (e: any) {
 			logger.error(e);
 			window.showInformationMessage(e.message ? e.message : e);
@@ -262,7 +263,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 	
 	const disconnectRemoteFileSystem = commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
-		if (!simpliciteApiController.apiFileSystemController) {
+		if (apiFileSystemController.apiFileSystemList.length === 0) {
 			return;
 		}
 		const moduleName = await window.showInputBox({
@@ -274,7 +275,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		}
 		let module: undefined | Module;
 		let objIndex = 0;
-		for (const rfs of simpliciteApiController.apiFileSystemController) {
+		for (const rfs of apiFileSystemController.apiFileSystemList) {
 			objIndex++;
 			if (rfs.module.name === moduleName) {
 				module = rfs.module;
@@ -298,7 +299,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			}
 			return;
 		}
-		simpliciteApiController.apiFileSystemController.splice(objIndex - 1, 1); // remove apiFileSystemController
+		apiFileSystemController.apiFileSystemList.splice(objIndex - 1, 1); // remove apiFileSystem
 		if (moduleHandler.countModulesOfInstance(module.instanceUrl) === 1) { // if the removed api module is the only module connected to the instance, disconnect
 			await simpliciteApiController.instanceLogout(module.instanceUrl);
 		} else { // else remove the module 
