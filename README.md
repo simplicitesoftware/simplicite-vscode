@@ -48,5 +48,5 @@ Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will displa
 
 ## Extension settings
 
-- `simplicite-vscode-tools.compilation.enabled`: Enable/disable local compilation before applying changes.
+- `simplicite-vscode-tools.compilation`: Enable/disable local compilation before applying changes.
 - `simplicite-vscode-tools.api.autoConnect`: Enable/disable automatic connexion features.
