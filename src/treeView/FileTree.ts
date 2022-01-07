@@ -135,7 +135,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		}
 		for (const item of fileItems) {
 			for (const extensionObject of extensionItemArray) {
-				if (this.getPathExtension(item.uri.path) === extensionObject.extension) {
+				if (this.getPathExtension(item.resourceUri.path) === extensionObject.extension) {
 					extensionObject.itemsPath.push(item.label.toLowerCase());
 				}
 			}
@@ -145,7 +145,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			extensionObject.itemsPath.sort();
 			for (const itemPath of extensionObject.itemsPath) {
 				for (const item of fileItems) {
-					const lowerCaseValue = item.uri.path;
+					const lowerCaseValue = item.resourceUri.path;
 					if (lowerCaseValue.toLowerCase().includes(itemPath)) {
 						orderedFileItems.push(item);
 					}

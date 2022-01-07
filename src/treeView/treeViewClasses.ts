@@ -15,12 +15,12 @@ export class FileItem extends TreeItem {
 	constructor(
 		public readonly label: string,
 		public readonly collapsibleState: TreeItemCollapsibleState,
-		public readonly uri: Uri,
+		public readonly resourceUri: Uri,
 		public readonly tracked: boolean,
 		public readonly moduleName: string | TreeItemLabel
 	) {
 		super(label, collapsibleState);
-		this.uri = uri;
+		this.resourceUri = resourceUri;
 		this.moduleName = moduleName;
 		this.iconPath = ThemeIcon.File;
 	}
