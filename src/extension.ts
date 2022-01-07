@@ -20,7 +20,9 @@ import { ApiFileSystemController } from './ApiFileSystemController';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	initGlobalValues(context.globalStorageUri.path);
+	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
 	logger.info('Starting extension on ' + env.appName);
+
 	const barItem = new BarItem();
 	const moduleHandler = await ModuleHandler.build(context.globalState, barItem);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);
@@ -55,9 +57,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	// init potentials api file systems
 	await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi.devInfo, appHandler);
 
-	// On save file detection
+	// Save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
-		// when the diff editor (to resolve conflict) is saved by user, vscode will trigger two times the onDidSaveTextDocument event (one event for each file)
+		// when the diff editor (to resolve conflict) is saved by user, vscode will trigger twice the onDidSaveTextDocument event (one event for each file)
 		// if the uri is from RemoteFileContent.java ignore as the changes are expected to be on the working file
 
 		// check for file extension validity && ignore workspace.json && ignore RemoteFileContent.java

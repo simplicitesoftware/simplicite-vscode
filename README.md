@@ -50,3 +50,5 @@ Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will displa
 
 - `simplicite-vscode-tools.compilation`: Enable/disable local compilation before applying changes.
 - `simplicite-vscode-tools.api.autoConnect`: Enable/disable automatic connexion features.
+
+keybindings : can be edited in File > Preferences > Keyboard shortcuts

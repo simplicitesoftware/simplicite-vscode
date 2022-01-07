@@ -7,10 +7,9 @@ Les attributs "browser" et "main" sont les points d'entrées de l'extension lors
 Paramètres de l'extension :
 Définis dans le package.json, ils sont accessibles directement les paramètres VSCode. Exemple pour accéder à la valeur d'un paramètre : ***workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')***
 PI : 
-- sendFileOnSave --> permet d'appliquer les changements lors de la sauvegarde. La tree view des fichiers n'est plus affichées dans ce cas.
-- localCompilation --> désactivé car pas sûr de la pertinence de cette action. Lourde opération qui est déjà faite en backend.
+- sendFileOnSave --> permet d'appliquer les changements lors de la sauvegarde. La tree view des fichiers n'est plus affichée dans ce cas car plus pertinente.
 
-**extension.ts** est le point d'entrée de l'extension. La fonction ***activate*** est appelée lorsque VSCode a fini de charger (voir l'attribut activationEvents dans le package.json). On y retrouve l'initialisation des objets, l'initialisation des éventuels api file systems, la détection de la sauvegarde des fichiers, la gestion du workspace, la détection de l'éditeur ouvert pour le service de complétion.
+**extension.ts** est le point d'entrée de l'extension. La fonction ***activate*** est appelée lorsque VSCode a fini de charger (voir l'attribut activationEvents dans le package.json). On y retrouve l'initialisation des objets, la détection de la sauvegarde des fichiers, la gestion du workspace, la détection de l'éditeur ouvert pour le service de complétion.
 
 **SimpliciteApi.ts** regroupe les méthodes responsables uniquement d'un appel à l'api d'une instance simplicité.
 
@@ -49,14 +48,16 @@ Les attributs relatifs aux tree views (package.json) sont les suivants : "viewsW
 Les boutons / interactions possibles avec les tree views se font grâce aux commandes.
 
 Points d'améliorations :
-Message + pertinent pour les erreurs de compilation en backend.
 Enrichir le devInfo avec les infos des ressources (voir méthode getBusinessObjectType dans File.ts).
 Enrichir le moduleDevInfo avec les chemins des fichiers pour faciliter la construction d'un module via l'api file system (ApiFileSystemController.ts : les méthodes createFolderTree et getAllFiles peuvent être simplifiées).
+json pour traduction français / anglais
+Ecrire les logs dans un fichier quand le contexte l'autorise.
 
-//
+Note diverses :
+Impossible pour le moment d'ajouter des icones autres que les product icons (https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) dans la barre de status.
+A ce jour, les extensions java (redhat et microsoft) ne sont pas compatibles avec VS Code web.
 
-quickPick shortcut
-barItem: Icon .svg ?
-FileTree fix icons
-
-//
+// todo
+open file on double click tree view file
+expand tree view on single click (only the left portion expands on one click)
+gérer le cas d'un conflit avec tree view, résolution doit changer état du fichier en untracked

@@ -1,16 +1,16 @@
 'use strict';
 
-import { ApiFileSystem } from "./ApiFileSystem";
-import { AppHandler } from "./AppHandler";
-import { ModuleHandler } from "./ModuleHandler";
+import { ApiFileSystem } from './ApiFileSystem';
+import { AppHandler } from './AppHandler';
+import { ModuleHandler } from './ModuleHandler';
 
 export class ApiFileSystemController {
-  apiFileSystemList: ApiFileSystem[];
-  constructor() {
-    this.apiFileSystemList = [];
-  }
+	apiFileSystemList: ApiFileSystem[];
+	constructor() {
+		this.apiFileSystemList = [];
+	}
 
-  async initApiFileSystems (moduleHandler: ModuleHandler, devInfo: any, appHandler: AppHandler) {
+	async initApiFileSystems (moduleHandler: ModuleHandler, devInfo: any, appHandler: AppHandler) {
 		for (const module of moduleHandler.modules) {
 			try {
 				for (const rfs of this.apiFileSystemList) {
@@ -28,6 +28,6 @@ export class ApiFileSystemController {
 				continue;
 			}
 		}
-	};
+	}
 }
 

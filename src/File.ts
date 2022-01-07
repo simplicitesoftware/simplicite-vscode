@@ -37,6 +37,7 @@ export class File {
 		return fileExtension;
 	}
 
+	// set mandatory values to send files on instance
 	setApiFileInfo(devInfo: any): void {
 		if (!this.type && !this.scriptField && !this.fieldName) { // set the values only once
 			this.type = this.getBusinessObjectType(devInfo);
