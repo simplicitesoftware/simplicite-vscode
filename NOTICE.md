@@ -57,6 +57,6 @@ Enrichir le moduleDevInfo avec les chemins des fichiers pour faciliter la constr
 
 quickPick shortcut
 barItem: Icon .svg ?
-condition on logs to write log file when desktop
+FileTree fix icons
 
 //
