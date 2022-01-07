@@ -55,10 +55,8 @@ Enrichir le moduleDevInfo avec les chemins des fichiers pour faciliter la constr
 
 //
 
-move apiFileSystemApi[] from simpliciteApiController AND check for open editor (in case the open editor changed)
-dependency injection of fs
-change shorcut and test on mac and linux
-barItem: Icon .vsg ?
+quickPick shortcut
+barItem: Icon .svg ?
 condition on logs to write log file when desktop
 
 //

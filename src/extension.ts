@@ -19,8 +19,8 @@ import { commandInit } from './commands';
 import { ApiFileSystemController } from './ApiFileSystemController';
 
 export async function activate(context: ExtensionContext): Promise<any> {
-	logger.info('Starting extension on ' + env.appName);
 	initGlobalValues(context.globalStorageUri.path);
+	logger.info('Starting extension on ' + env.appName);
 	const barItem = new BarItem();
 	const moduleHandler = await ModuleHandler.build(context.globalState, barItem);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler.modules);

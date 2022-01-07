@@ -222,7 +222,7 @@ export class SimpliciteApiController {
 		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 		window.showWarningMessage('Simplicite: Conflict detected with remote file, edit the file on the left panel and save to apply the modifications. If you do not want to merge the two versions, you can overwrite the content of the file of your choice by clicking on the following button and choose between these two actions: \'Remote\' to overwrite the local content with the remote content & \'Local\' to overwrite the remote content with the local content. Note that the modifications on the overwritten file will be lost', 'Choose action').then(async (click) => {
 			if (click === 'Choose action') {
-				const choice = await window.showQuickPick([{ label: 'Override remote content' }, { label: 'Local' }]);
+				const choice = await window.showQuickPick([{ label: 'Override remote content' }, { label: 'Override local content' }]);
 				if (!choice) {
 					const msg = 'No file has been chosen';
 					window.showInformationMessage('Simplicite: ' + msg);
@@ -238,8 +238,6 @@ export class SimpliciteApiController {
 					await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
 					this.conflictStatus = false;
 				}
-				// check for current open editor
-				return commands.executeCommand('workbench.action.closeActiveEditor'); // close the diff editor
 			}
 		});
 	}
