@@ -354,8 +354,8 @@ async function trackAction(fileHandler: FileHandler, modules: Module[], element:
 }
 
 async function getInputFile(fileHandler: FileHandler, element: any): Promise<File> {
-	if (element.fullPath) {
-		return fileHandler.getFileFromFullPath(element.fullPath);
+	if (element.uri.path) {
+		return fileHandler.getFileFromFullPath(element.uri.path);
 	} else {
 		const input = await inputFilePath('Simplicite: Type in the file\'s absolute path', 'path');
 		return fileHandler.getFileFromFullPath(input);

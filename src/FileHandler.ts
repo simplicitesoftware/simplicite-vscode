@@ -97,10 +97,10 @@ export class FileHandler {
 
 	private setTrackedStatusPersistence(fileList: File[]): File[] {
 		try {
-			const jsonContent: File[] = this._globalState.get('simplicite-files-info') || [];
+			const jsonContent: any[] = this._globalState.get('simplicite-files-info') || [];
 			for (const file of fileList) {
 				for (const content of jsonContent) {
-					if (file.uri.path === content.uri.path) {
+					if (file.uri.path === content.path) {
 						file.tracked = content.tracked;
 						break;
 					}

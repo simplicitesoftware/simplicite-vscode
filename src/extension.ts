@@ -83,7 +83,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			return;
 		}
 		try {
-			if (module.apiFileSystem || workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) { // module is api || sendFileOnSave is true
+			if (workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) { // sendFileOnSave is true
 				await simpliciteApiController.writeFileController(file, module);
 			} else { // module is not api, add option to apply changes classic on save (vscode options)
 				await fileHandler.setTrackedStatus(file.uri, true, moduleHandler.modules); // on save set the status of the file to true

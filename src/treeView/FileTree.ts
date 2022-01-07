@@ -65,9 +65,6 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			return [];
 		}
 		for (const fm of this.fileModule) {
-			if (fm.module.apiFileSystem) { // dont display api file system in this tree view
-				continue;
-			}
 			const treeItem = new ModuleItem(fm.module.parentFolderName, TreeItemCollapsibleState.Collapsed, fm.module.instanceUrl);
 			treeItem.iconPath = {
 				light: path.join(this.runPath, 'resources/light/module.svg'),
