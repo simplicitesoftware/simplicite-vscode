@@ -112,11 +112,7 @@ export class SimpliciteApiController {
 	async applyAll(fileHandler: FileHandler, modules: Module[]): Promise<void> { // Apply all files
 		for (const mod of modules) {
 			if (!mod.connected) continue;
-			for (const file of fileHandler.fileList) {
-				if (!file.tracked || file.parentFolderName === mod.parentFolderName) continue;
-				await this._simpliciteApi.writeFile(file);
-				fileHandler.setTrackedStatus(file.uri, false, modules);
-			}
+			await this.applyFiles(fileHandler, mod, modules);
 		}
 	}
 
@@ -143,6 +139,14 @@ export class SimpliciteApiController {
 	async applyFiles (fileHandler: FileHandler, mod: Module, modules: Module[]) {
 		for (const file of fileHandler.fileList) {
 			if (file.parentFolderName !== mod.parentFolderName || !file.tracked) continue;
+			file.setApiFileInfo(this._simpliciteApi.devInfo);
+			const remoteContent = await this.isConflict(file, mod.parentFolderName);
+			// if a conflict occurs, dont send following files and start resolution
+			if (remoteContent) {
+				this.conflictStatus = true;
+				await this.notifyAndSetConflict(file, remoteContent);
+				return;
+			}
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.uri, false, modules);
@@ -220,10 +224,13 @@ export class SimpliciteApiController {
 
 	async notifyAndSetConflict(file: File, remoteContent: Uint8Array) {
 		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
-		window.showWarningMessage('Simplicite: Conflict detected with remote file, edit the file on the left panel and save to apply the modifications. If you do not want to merge the two versions, you can overwrite the content of the file of your choice by clicking on the following button and choose between these two actions: \'Remote\' to overwrite the local content with the remote content & \'Local\' to overwrite the remote content with the local content. Note that the modifications on the overwritten file will be lost', 'Choose action').then(async (click) => {
+		window.showWarningMessage('Simplicite: Conflict detected, you can either modify the left file on the diff editor and save to apply the changes or click the following button to choose which file to override.', 'Choose action').then(async (click) => {
 			if (click === 'Choose action') {
 				const choice = await window.showQuickPick([{ label: 'Override remote content' }, { label: 'Override local content' }]);
-				if (!choice) {
+				// prevent the case where user already resolved conflict and still choose an action to resolve
+				if (!this.conflictStatus) {
+					window.showWarningMessage('Simplicite: there is no conflict to resolve');
+				}else if (!choice) { 
 					const msg = 'No file has been chosen';
 					window.showInformationMessage('Simplicite: ' + msg);
 					throw new Error(msg);

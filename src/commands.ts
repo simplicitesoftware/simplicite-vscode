@@ -13,6 +13,7 @@ import { isHttpsUri, isHttpUri } from 'valid-url';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
 import { ApiFileSystemController } from './ApiFileSystemController';
+import { FileItem } from './treeView/treeViewClasses';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -160,7 +161,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 	// File handling commands
-	const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: any) {
+	const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: FileItem | any) {
 		try {
 			await trackAction(fileHandler, moduleHandler.modules, element, true);
 		} catch (e) {
@@ -168,7 +169,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		}
 	});
 	
-	const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: any) {
+	const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: FileItem | any) {
 		try {
 			await trackAction(fileHandler, moduleHandler.modules, element, false);
 		} catch (e) {
@@ -348,14 +349,14 @@ function doubleClickTrigger(): boolean {
 	}
 }
 
-async function trackAction(fileHandler: FileHandler, modules: Module[], element: any, trackedValue: boolean) {
+async function trackAction(fileHandler: FileHandler, modules: Module[], element: FileItem, trackedValue: boolean) {
 	const file = await getInputFile(fileHandler, element);
 	await fileHandler.setTrackedStatus(file.uri, trackedValue, modules);
 }
 
-async function getInputFile(fileHandler: FileHandler, element: any): Promise<File> {
-	if (element.uri.path) {
-		return fileHandler.getFileFromFullPath(element.uri.path);
+async function getInputFile(fileHandler: FileHandler, element: FileItem): Promise<File> {
+	if (element.resourceUri.path) {
+		return fileHandler.getFileFromFullPath(element.resourceUri.path);
 	} else {
 		const input = await inputFilePath('Simplicite: Type in the file\'s absolute path', 'path');
 		return fileHandler.getFileFromFullPath(input);

@@ -75,7 +75,6 @@ export class SimpliciteApi {
 	}
 
 	async writeFile(file: File): Promise<boolean> {
-		file.setApiFileInfo(this.devInfo);
 		const obj = this.appAndBusinnessObject(file);
 		const item = await this.searchForUpdate(file, obj);
 		const doc = obj.getFieldDocument(file.scriptField);
@@ -133,7 +132,7 @@ export class SimpliciteApi {
 	appAndBusinnessObject(file: File): any {
 		const app = this._appHandler.getApp(file.simpliciteUrl);
 		const obj = app.getBusinessObject(file.type, 'ide_' + file.type);
-		return obj
+		return obj;
 	}
 }
 
