@@ -3,15 +3,15 @@
 import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvider, window } from 'vscode';
 import { Module } from '../Module';
 import * as path from 'path';
-import { ModuleDevInfo } from '../interfaces';
+import { DevInfo, DevInfoObject,  } from '../DevInfo';
 
 export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
 	private _modules: Array<Module> | undefined;
-	private _devInfo: any;
+	private _devInfo?: DevInfo;
 	private _runPath: string;
-	constructor(modules: Module[] | undefined, devInfo: any, runPath: string) {
+	constructor(modules: Module[] | undefined, devInfo: DevInfo | undefined, runPath: string) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 		this._modules = modules;
@@ -115,7 +115,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		return objectTypesItems;
 	}
 
-	private getObjectItems(objects: any, devInfoObject: ModuleDevInfo | void): TreeItem[] {
+	private getObjectItems(objects: any, devInfoObject: DevInfoObject | void): TreeItem[] {
 		if (!objects || !devInfoObject) {
 			return [];
 		}
@@ -202,7 +202,8 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 	}
 
-	getObjectDevInfo(objectType: string): ModuleDevInfo | void {
+	getObjectDevInfo(objectType: string): DevInfoObject | void {
+		if (!this._devInfo) return;
 		for (const object of this._devInfo.objects) {
 			if (objectType === object.object) {
 				return object;

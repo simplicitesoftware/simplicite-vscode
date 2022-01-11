@@ -4,10 +4,11 @@ import { logger } from './Log';
 import { Module } from './Module';
 import { workspace, RelativePattern, WorkspaceFolder, Memento } from 'vscode';
 import { parseStringPromise } from 'xml2js';
-import { PomXMLData } from './interfaces';
 import { BarItem } from './BarItem';
 import { SimpliciteApi } from './SimpliciteApi';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
+import { PomXMLData } from './interfaces';
+import { DevInfo } from './DevInfo';
 
 export class ModuleHandler {
 	modules: Array<Module>;
@@ -207,7 +208,7 @@ export class ModuleHandler {
 		this._moduleHasBeenModified();
 	}
 
-	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: any): void {
+	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: DevInfo | undefined): void {
 		this.removeConnectedInstance(instanceUrl);
 		for (const mod of this.modules) {
 			if (mod.apiFileSystem) {
@@ -215,7 +216,7 @@ export class ModuleHandler {
 			}
 			if (mod.instanceUrl === instanceUrl) {
 				mod.connected = false;
-				mod.moduleDevInfo = null;
+				mod.moduleDevInfo = undefined;
 				mod.token = '';
 			}
 		}
@@ -269,7 +270,7 @@ export class ModuleHandler {
 
 	async refreshModulesDevInfo (simpliciteApi: SimpliciteApi): Promise<void> {
 		for (const mod of this.modules) {
-			if (mod.connected) mod.moduleDevInfo = await simpliciteApi.fetchDevOrModuleInfo(mod.instanceUrl, mod.name);	
+			if (mod.connected) mod.moduleDevInfo = await simpliciteApi.fetchModuleInfo(mod.instanceUrl, mod.name);	
 			else mod.moduleDevInfo = undefined;
 		}
 	}

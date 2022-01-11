@@ -17,6 +17,7 @@ import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
 import { commandInit } from './commands';
 import { ApiFileSystemController } from './ApiFileSystemController';
+import { DevInfo } from './DevInfo';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	initGlobalValues(context.globalStorageUri.path);
@@ -145,8 +146,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 				return undefined;
 			}
 			const file = fileHandler.getFileFromFullPath(filePath);
+			// set the api file info onDidChangeActiveTextEditor
+			file.setApiFileInfo(simpliciteApi.devInfo);
 			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
-			if (!module) {
+			if (!module || !module.moduleDevInfo) {
 				return undefined;
 			}
 			if (!connectedInstances.includes(file.simpliciteUrl)) {
@@ -181,7 +184,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	return publicCommand;
 }
 
-function completionProviderHandler(devInfo: any, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {
+function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {
 	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, file);
 	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);

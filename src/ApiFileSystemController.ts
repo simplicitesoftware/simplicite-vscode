@@ -2,6 +2,7 @@
 
 import { ApiFileSystem } from './ApiFileSystem';
 import { AppHandler } from './AppHandler';
+import { DevInfo } from './DevInfo';
 import { ModuleHandler } from './ModuleHandler';
 
 export class ApiFileSystemController {
@@ -10,7 +11,7 @@ export class ApiFileSystemController {
 		this.apiFileSystemList = [];
 	}
 
-	async initApiFileSystems (moduleHandler: ModuleHandler, devInfo: any, appHandler: AppHandler) {
+	async initApiFileSystems (moduleHandler: ModuleHandler, devInfo: DevInfo | undefined, appHandler: AppHandler) {
 		for (const module of moduleHandler.modules) {
 			try {
 				for (const rfs of this.apiFileSystemList) {

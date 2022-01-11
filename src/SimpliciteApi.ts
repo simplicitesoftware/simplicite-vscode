@@ -4,15 +4,16 @@
 import { window } from 'vscode';
 import { AppHandler } from './AppHandler';
 import { File } from './File';
-import { Credentials } from './interfaces';
 import { logger } from './Log';
 import { Cache } from './Cache';
 import { Buffer } from 'buffer';
+import { DevInfo } from './DevInfo';
+import { Credentials } from './interfaces';
 
 export class SimpliciteApi {
 	_appHandler: AppHandler;
 	_cache: Cache;	
-	devInfo: any;
+	devInfo?: DevInfo;
 	constructor(appHandler: AppHandler) {
 		this._appHandler = appHandler;
 		this._cache = new Cache(); 
@@ -31,7 +32,7 @@ export class SimpliciteApi {
 		try {
 			const res = await app.login();
 			if (!this.devInfo) {
-				this.devInfo = await this.fetchDevOrModuleInfo(instanceUrl, undefined);
+				this.devInfo = await this.fetchDevInfo(instanceUrl);
 			}
 			const message = 'Logged in as ' + res.login + ' at: ' + app.parameters.url;
 			window.showInformationMessage('Simplicite: ' + message);
@@ -57,21 +58,16 @@ export class SimpliciteApi {
 		}
 	}
 
-	async fetchDevOrModuleInfo (instanceUrl: string, moduleName: string | undefined): Promise<any> {
+	async fetchDevInfo(instanceUrl: string) {
 		const app = this._appHandler.getApp(instanceUrl);
-		try {
-			if (moduleName) {
-				const moduleDevInfo = await app.getDevInfo(moduleName);
-				return moduleDevInfo;
-			} else {
-				const devInfo = await app.getDevInfo();
-				return devInfo;
-			}
-			
-		} catch (e) {
-			logger.error(e);
-			return undefined;
-		}
+		const devInfo = await app.getDevInfo();
+		return devInfo;
+	}
+
+	async fetchModuleInfo(instanceUrl: string, moduleName: string): Promise<any> {
+		const app = this._appHandler.getApp(instanceUrl);
+		const moduleDevInfo = await app.getDevInfo(moduleName);
+		return moduleDevInfo;
 	}
 
 	async writeFile(file: File): Promise<boolean> {

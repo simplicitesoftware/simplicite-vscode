@@ -1,7 +1,7 @@
 'use strict';
 
 import { workspace, Uri } from 'vscode';
-import { ModuleDevInfo } from './interfaces';
+import { DevInfo } from './DevInfo';
 import { logger } from './Log';
 import { Module } from './Module';
 import { ModuleHandler } from './ModuleHandler';
@@ -11,9 +11,9 @@ import { Buffer } from 'buffer';
 export class ApiFileSystem {
 	private _app: any;
 	private _baseUrl: string;
-	private _devInfo: any;
+	private _devInfo: DevInfo;
 	module: Module; // not private because need to access in extension.ts
-	constructor (app: any, module: Module, devInfo: ModuleDevInfo) {
+	constructor (app: any, module: Module, devInfo: DevInfo) {
 		this._app = app;
 		this.module = module;
 		this._devInfo = devInfo;

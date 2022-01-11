@@ -1,6 +1,7 @@
 'use strict';
 
 import { Uri, workspace } from 'vscode';
+import { DevInfo } from './DevInfo';
 import { replaceAll } from './utils';
 
 export class File {
@@ -38,15 +39,15 @@ export class File {
 	}
 
 	// set mandatory values to send files on instance
-	setApiFileInfo(devInfo: any): void {
-		if (!this.type && !this.scriptField && !this.fieldName) { // set the values only once
+	setApiFileInfo(devInfo: DevInfo | undefined): void {
+		if (!this.type && !this.scriptField && !this.fieldName && devInfo) { // set the values only once
 			this.type = this.getBusinessObjectType(devInfo);
 			this.scriptField = this.getProperScriptField(devInfo);
 			this.fieldName = this.getProperNameField(devInfo);
 		}
 	}
 
-	private getBusinessObjectType(devInfo: any): string {
+	private getBusinessObjectType(devInfo: DevInfo): string {
 		for (const object of devInfo.objects) {
 			if (object.package) {
 				const comparePackage = replaceAll(object.package, /\./, '/');
@@ -66,7 +67,7 @@ export class File {
 		}
 	}
 
-	private getProperScriptField(devInfo: any) {
+	private getProperScriptField(devInfo: DevInfo) {
 		for (const object of devInfo.objects) {
 			if (this.type === object.object) {
 				return object.sourcefield;
@@ -74,7 +75,7 @@ export class File {
 		}
 	}
 
-	private getProperNameField(devInfo: any) {
+	private getProperNameField(devInfo: DevInfo) {
 		for (const object of devInfo.objects) {
 			if (this.type === object.object) {
 				return object.keyfield;
