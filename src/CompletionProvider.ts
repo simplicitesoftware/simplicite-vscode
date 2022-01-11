@@ -3,65 +3,59 @@
 
 import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
 import { logger } from './Log';
-import { ModuleDevInfo } from './interfaces';
+import { Completion, DevInfo, DevInfoObject } from './DevInfo';
 import { removeFileExtension } from './utils';
 import { File } from './File';
 
 export class CompletionProvider implements CompletionItemProvider {
-	private _devInfo: any;
-	private _moduleDevInfo: any;
-	private _file: File;
-	private _fileInfo: ModuleDevInfo | undefined;
 	private _completionItems: CustomCompletionItem[];
-	constructor(devInfo: any, moduleDevInfo: any, file: File,) {
-		this._devInfo = devInfo;
-		this._moduleDevInfo = moduleDevInfo;
+	private _currentObjectInfo: any;
+	private _genericObjectDevInfo?: DevInfoObject;
+	private _file: File;
+	constructor(devInfo: DevInfo, moduleDevInfo: any, file: File,) {
+		this._currentObjectInfo = moduleDevInfo[file.type!];
+		this._genericObjectDevInfo = this._getDevInfoGenericObjectInfo(file.type, devInfo);
 		this._file = file;
-		this._fileInfo = this.getFileObject();
 		this._completionItems = this.computeCompletionItems();
 	}
 
+	private _getDevInfoGenericObjectInfo (currentObjectType: string | undefined, devInfo: DevInfo): DevInfoObject | undefined {
+		for (const devObject of devInfo.objects) {
+			if (devObject.object === currentObjectType)	return devObject;
+		}
+	}
+
 	private computeCompletionItems(): CustomCompletionItem[] {
-		try {
-			if (!this._fileInfo || !this._fileInfo.completion) {
-				return [];
-			}
-			const completionItems: CustomCompletionItem[] = [];
-			for (const objectType in this._moduleDevInfo) {
-				if (objectType === this._fileInfo.object) {
-					for (const object of this._moduleDevInfo[objectType]) {
-						const fileName = CompletionProvider.getFileNameFromPath(this._file.uri.path);
-						if (object.name === fileName) {
-							for (const completionAttribute in this._fileInfo.completion) {
-								// eslint-disable-next-line no-prototype-builtins
-								if (object.hasOwnProperty(completionAttribute)) {
-									for (const item of object[completionAttribute]) {
-										completionItems.push(new CustomCompletionItem(item.name, CompletionItemKind.Text, completionAttribute));
-									}
-								}
-							}
+		if (!this._currentObjectInfo || !this._genericObjectDevInfo || !this._genericObjectDevInfo.completion ) {
+			return [];	
+		}
+		const completionItems = [];
+		const fileName = CompletionProvider.getFileNameFromPath(this._file.uri.path);
+		for (const object of this._currentObjectInfo) {
+			if (object.name === fileName) {
+				for (const completionAttribute in this._genericObjectDevInfo.completion) {
+					if (object.hasOwnProperty(completionAttribute)) {
+						for (const item of object[completionAttribute]) {
+							completionItems.push(new CustomCompletionItem(item.name, CompletionItemKind.Text, completionAttribute));
 						}
 					}
 				}
 			}
-			return completionItems;
-		} catch (e) {
-			logger.error(e);
 		}
-		return [];
+		return completionItems;
 	}
 
 	provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): ProviderResult<CompletionItem[] | CompletionList<CompletionItem>> {
 		if (context.triggerKind === 1) {
 			try {
 				const linePrefix = document.lineAt(position).text.substr(0, position.character);
-				if (!this._fileInfo || !this._fileInfo.completion) {
+				if (!this._genericObjectDevInfo || !this._genericObjectDevInfo.completion) {
 					return [];
 				}
-				for (const completionItem in this._fileInfo.completion) {
+				for (const completionItem in this._genericObjectDevInfo.completion) {
 					// eslint-disable-next-line no-prototype-builtins
-					if (this._fileInfo.completion.hasOwnProperty(completionItem)) {
-						for (const func of this._fileInfo.completion[completionItem]) {
+					if (this._genericObjectDevInfo.completion.hasOwnProperty(completionItem)) {
+						for (const func of this._genericObjectDevInfo.completion[completionItem as keyof Completion]) {
 							if (linePrefix.endsWith(func + '("')) {
 								const specificProperty = this.getSpecificPropertyItems(completionItem);
 								return specificProperty;
@@ -89,26 +83,6 @@ export class CompletionProvider implements CompletionItemProvider {
 	static getFileNameFromPath(filePath: string): string {
 		const decomposedPath = filePath.split('/');
 		return removeFileExtension(decomposedPath[decomposedPath.length - 1]);
-	}
-
-	private getFileObject(): ModuleDevInfo | undefined {
-		let fileObject: ModuleDevInfo | undefined = undefined;
-		for (const object of this._devInfo.objects) {
-			if (!object.package) continue;
-
-			if (this.doesFilePathContainsObjectPackage(object.package)) {
-				fileObject = object;
-			}
-		}
-		return fileObject;
-	}
-
-	private doesFilePathContainsObjectPackage(objectPackage: string): boolean {
-		const packagePathFormat = objectPackage.replace(/\./g, '/');
-		if (this._file.uri.path.includes(packagePathFormat)) {
-			return true;
-		}
-		return false;
 	}
 }
 
