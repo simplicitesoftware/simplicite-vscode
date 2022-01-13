@@ -5,18 +5,15 @@ import { window } from 'vscode';
 import { AppHandler } from './AppHandler';
 import { File } from './File';
 import { logger } from './Log';
-import { Cache } from './Cache';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
 import { Credentials } from './interfaces';
 
 export class SimpliciteApi {
 	_appHandler: AppHandler;
-	_cache: Cache;	
 	devInfo?: DevInfo;
 	constructor(appHandler: AppHandler) {
 		this._appHandler = appHandler;
-		this._cache = new Cache(); 
 	}
 
 	async login(instanceUrl: string, credentials: Credentials | undefined, token: string): Promise<string | false> {
@@ -58,9 +55,9 @@ export class SimpliciteApi {
 		}
 	}
 
-	async fetchDevInfo(instanceUrl: string) {
+	async fetchDevInfo(instanceUrl: string): Promise<DevInfo> {
 		const app = this._appHandler.getApp(instanceUrl);
-		const devInfo = await app.getDevInfo();
+		const devInfo = new DevInfo(await app.getDevInfo());
 		return devInfo;
 	}
 

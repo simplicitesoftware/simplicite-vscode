@@ -254,7 +254,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
-			const apiFileSystem = new ApiFileSystem(appHandler.getApp(instanceUrl), module, simpliciteApi.devInfo);
+			const apiFileSystem = new ApiFileSystem(appHandler.getApp(instanceUrl), module, simpliciteApi);
 			apiFileSystemController.apiFileSystemList.push(apiFileSystem);
 			apiFileSystem.initApiFileSystemModule(moduleHandler);
 		} catch (e: any) {

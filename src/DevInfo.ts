@@ -13,6 +13,13 @@ export class DevInfo {
     this.objects = devInfo.objects;
     this.version = devInfo.version;
   }
+
+	getSourceField(type: string) {
+		for (const obj of this.objects) {
+			if (obj.object === type) return obj.sourcefield;
+		}
+		return '';
+	}
 }
 
 export interface DevInfoObject {

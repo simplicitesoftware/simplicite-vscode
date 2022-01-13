@@ -47,7 +47,7 @@ export class File {
 		}
 	}
 
-	private getBusinessObjectType(devInfo: DevInfo): string {
+	private getBusinessObjectType(devInfo: DevInfo): string | undefined {
 		for (const object of devInfo.objects) {
 			if (object.package) {
 				const comparePackage = replaceAll(object.package, /\./, '/');
@@ -55,15 +55,6 @@ export class File {
 					return object.object;
 				}
 			}
-		}
-		if (this.uri.path.includes('/resources/')) { // handling manually packages that are not in devInfo
-			return 'Resource';
-		} else if (this.uri.path.includes('/test/src/com/simplicite/')) {
-			return 'Script';
-		} else if (this.uri.path.includes('/scripts/')) {
-			return 'Disposition';
-		} else {
-			throw new Error('No type has been found');
 		}
 	}
 

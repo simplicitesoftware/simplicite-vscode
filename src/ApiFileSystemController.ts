@@ -2,8 +2,8 @@
 
 import { ApiFileSystem } from './ApiFileSystem';
 import { AppHandler } from './AppHandler';
-import { DevInfo } from './DevInfo';
 import { ModuleHandler } from './ModuleHandler';
+import { SimpliciteApi } from './SimpliciteApi';
 
 export class ApiFileSystemController {
 	apiFileSystemList: ApiFileSystem[];
@@ -11,7 +11,7 @@ export class ApiFileSystemController {
 		this.apiFileSystemList = [];
 	}
 
-	async initApiFileSystems (moduleHandler: ModuleHandler, devInfo: DevInfo | undefined, appHandler: AppHandler) {
+	async initApiFileSystems (moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, appHandler: AppHandler) {
 		for (const module of moduleHandler.modules) {
 			try {
 				for (const rfs of this.apiFileSystemList) {
@@ -19,9 +19,9 @@ export class ApiFileSystemController {
 						throw new Error();
 					}
 				}
-				if (module.apiFileSystem && devInfo) {
+				if (module.apiFileSystem && simpliciteApi.devInfo) {
 					const app = appHandler.getApp(module.instanceUrl);
-					const rfsControl = new ApiFileSystem(app, module, devInfo);
+					const rfsControl = new ApiFileSystem(app, module, simpliciteApi);
 					this.apiFileSystemList.push(rfsControl);
 					await rfsControl.initApiFileSystemModule(moduleHandler);	
 				}

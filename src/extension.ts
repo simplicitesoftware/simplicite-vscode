@@ -56,7 +56,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	}
 
 	// init potentials api file systems
-	await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi.devInfo, appHandler);
+	await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi, appHandler);
 
 	// Save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -130,7 +130,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		// refresh all
 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler.modules);
 		moduleInfoTree.feedData(simpliciteApi.devInfo, moduleHandler.modules);
-		await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi.devInfo, appHandler);
+		await apiFileSystemController.initApiFileSystems(moduleHandler, simpliciteApi, appHandler);
 	});
 
 	// Completion

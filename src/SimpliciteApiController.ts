@@ -150,8 +150,8 @@ export class SimpliciteApiController {
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
 			fileHandler.setTrackedStatus(file.uri, false, modules);
-			await this.triggerBackendCompilation(mod.instanceUrl);
 		}
+		await this.triggerBackendCompilation(mod.instanceUrl);
 	}
 
 	// returns the content of the remote file if there is a conflict

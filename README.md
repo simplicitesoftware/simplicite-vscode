@@ -3,7 +3,7 @@
 
 # Simplicite VSCode
 
-Simplicite low code platform tools to make life easier for designers in an IDE environment
+Simplicite low code platform tools to make life easier for designers in an IDE environment.
 
 ---
 
@@ -14,14 +14,15 @@ Simplicite low code platform tools to make life easier for designers in an IDE e
 - Tree view gathering informations on modules objects.
 - Tree view to manage your modified files.
 
-<!-- ![login-apply](resources/images/login-apply.gif) -->
-
 ---
 
 ## How does it work ?
 
-Simply add your modules into the vscode workspace then authenticate yourself using the credentials of **each simplicite instance** you need to log in.
-Opening the same workspace later will **automatically connect you**.
+Add Simplicité module(s) in your workspace :
+- using the `"Add Folder to Workspace..."` VS Code feature to add modules from your local storage.
+- using the api file system command `"simplicite-vscode-tools.connectToRemoteFileSystem"`.
+
+If not already done, you'll have to authenticate yourself to the Simplicité instance(s).
 
 From now on, you can edit your files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).
 

@@ -1,23 +1,22 @@
 'use strict';
 
 import { workspace, Uri } from 'vscode';
-import { DevInfo } from './DevInfo';
 import { logger } from './Log';
 import { Module } from './Module';
 import { ModuleHandler } from './ModuleHandler';
-import { replaceAll } from './utils';
 import { Buffer } from 'buffer';
+import { SimpliciteApi } from './SimpliciteApi';
 
 export class ApiFileSystem {
 	private _app: any;
 	private _baseUrl: string;
-	private _devInfo: DevInfo;
+	private _simpliciteApi: SimpliciteApi;
 	module: Module; // not private because need to access in extension.ts
-	constructor (app: any, module: Module, devInfo: DevInfo) {
+	constructor (app: any, module: Module, simpliciteApi: SimpliciteApi) {
 		this._app = app;
-		this.module = module;
-		this._devInfo = devInfo;
 		this._baseUrl = STORAGE_PATH + module.parentFolderName;
+		this.module = module;
+		this._simpliciteApi = simpliciteApi;
 	}
 
 	async initApiFileSystemModule(moduleHandler: ModuleHandler) {
@@ -32,7 +31,7 @@ export class ApiFileSystem {
 				const res = await workspace.fs.readDirectory(uri);
 				if (res.length === 0) throw new Error();
 			} catch (e) {
-				await this.initFiles();
+				await this.createProject();
 			}
 			const wks = workspace.workspaceFolders;
 			let flag = false;
@@ -52,19 +51,18 @@ export class ApiFileSystem {
 		}
 	}
 
-	async initFiles(): Promise<boolean> {
+	async createProject(): Promise<boolean> {
 		if (!this.module) {
 			return false;
 		}
 		try {
-			const uri = Uri.parse(STORAGE_PATH + 'Api_' + this.module.name);
-			await workspace.fs.createDirectory(uri);
+			// const uri = Uri.parse(STORAGE_PATH + 'Api_' + this.module.name);
+			// await workspace.fs.createDirectory(uri);
 			const mdl = await this._app.getBusinessObject('Module');
 			// look for module row_id
 			const ms = await mdl.search({ mdl_name: this.module.name} );
 			const m = ms[0];
-			await this.getAllFiles(m.row_id);
-			// pom.xml
+			await this.createFiles();
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
 			await workspace.fs.writeFile(Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/pom.xml'), Buffer.from(pom.content, 'base64'));
 			return true;
@@ -74,38 +72,30 @@ export class ApiFileSystem {
 		}
 	}
 
-	async getAllFiles (mdl_id: string): Promise<any> {
-		if (!this._devInfo) {
+	async createFiles (): Promise<any> {
+		if (!this._simpliciteApi.devInfo) {
 			return false;
 		}
-		for (const devObj of this._devInfo.objects) {
-			if (!devObj.package) continue;
-			const obj = this._app.getBusinessObject(devObj.object, 'ide_' + devObj.object);
-			// get every object from module row_id
-			const res = await obj.search({ row_module_id: mdl_id }, { inlineDocuments: [ true ] });
-			if (!res || res.length === 0) continue;
-			const replace = 'src/' + replaceAll(devObj.package, /\./, '/'); // convert package into path and prefix with src
-			this.createFolderTree(replace);
-			for (const object of res) {
-				if (!object[devObj.sourcefield]) continue; // -> no script
-				const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/' + replace + '/' + this.module.name + '/' + object[devObj.sourcefield].name);
-				workspace.fs.writeFile(uri, Buffer.from(object[devObj.sourcefield].content, 'base64'));
+		for (const type in this.module.moduleDevInfo) {
+			const businessObj = this._app.getBusinessObject(type, 'ide_' + type);
+			for (const moduleObj of this.module.moduleDevInfo[type]) {
+				if (!moduleObj.sourcepath) continue;
+				const res = await businessObj.search({ row_id: moduleObj.id }, { inlineDocuments: [ true ] });
+				if (!res || res.length === 0) continue;		
+				const content = this.readContent(res[0], type);
+				if (!content) continue;	
+				const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/' + moduleObj.sourcepath);
+				workspace.fs.writeFile(uri, Buffer.from(res[0][this._simpliciteApi.devInfo.getSourceField(type)].content, 'base64'));
 			}
 		}
 	}
 
-	createFolderTree (folderPath: string) {
-		const split = folderPath.split('/');
-		if (split[split.length - 1] === 'dispositions') {
-			let path = STORAGE_PATH + 'Api_' + this.module.name + '/scripts';
-			workspace.fs.createDirectory(Uri.file(path));
-			path += '/Disposition';
-			workspace.fs.createDirectory(Uri.file(path));
-		} else {
-			let path = STORAGE_PATH + 'Api_' + this.module.name + '/src/com/simplicite/' + split[split.length - 1];
-			workspace.fs.createDirectory(Uri.file(path));
-			path += '/' + this.module.name;
-			workspace.fs.createDirectory(Uri.file(path));
+	private readContent (resObj: any, type: string): string | undefined {
+		try {
+			const content = resObj[this._simpliciteApi.devInfo!.getSourceField(type)].content;
+			return content;
+		} catch (e) {
+			return undefined;
 		}
 	}
 }

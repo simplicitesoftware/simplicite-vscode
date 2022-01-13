@@ -39,6 +39,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		}
 	}
 
+	// this is hell, sorry
 	getTreeItem(element: CustomTreeItem | TreeItem): CustomTreeItem | TreeItem {
 		if (element instanceof CustomTreeItem) {
 			if (element.objectType === ItemType.module) {
