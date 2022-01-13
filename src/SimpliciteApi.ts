@@ -92,21 +92,6 @@ export class SimpliciteApi {
 	}
 
 	private async searchForUpdate(file: File, obj: any): Promise<any> {
-		if (!file.rowId) {
-			const list = await obj.search({ [file.fieldName!]: file.name });
-			if (list.length === 0) {
-				throw new Error('No object has been returned');
-			}
-			let objectFound = list[0];
-			if (file.type === 'Resource') {
-				for (const object of list) {
-					if (object.res_object.userkeylabel === getResourceFileName(file.uri.path)) {
-						objectFound = object;
-					}
-				}
-			}
-			file.rowId = objectFound.row_id;
-		}
 		const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
 		return item;
 	}
@@ -122,15 +107,10 @@ export class SimpliciteApi {
 		return buff;
 	}
 
-	appAndBusinnessObject(file: File): any {
+	private appAndBusinnessObject(file: File): any {
 		const app = this._appHandler.getApp(file.simpliciteUrl);
 		const obj = app.getBusinessObject(file.type, 'ide_' + file.type);
 		return obj;
 	}
-}
-
-function getResourceFileName(filePath: string): string {
-	const decomposed = filePath.split('/');
-	return decomposed[decomposed.length - 2];
 }
 

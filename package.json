@@ -37,7 +37,7 @@
 				},
 				{
 					"id": "simpliciteFile",
-					"name": "Simplicite modified file handler",
+					"name": "Simplicite file handler",
 					"when": "config.simplicite-vscode-tools.api.sendFileOnSave == false"
 				}
 			]
@@ -131,10 +131,6 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode-tools.compileWorkspace",
-				"title": "Simplicite: Compile java code in workspace"
-			},
-			{
 				"command": "simplicite-vscode-tools.logIn",
 				"title": "Simplicite: Log into detected instances"
 			},
@@ -199,12 +195,12 @@
 				"title": "double click trigger command"
 			},
 			{
-				"command": "simplicite-vscode-tools.connectToRemoteFileSystem",
-				"title": "Simplicite: Connect to module remote file system"
+				"command": "simplicite-vscode-tools.initApiFileSystem",
+				"title": "Simplicite: Initialize api file system"
 			},
 			{
 				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
-				"title": "Simplicite: Disconnect from the module remote file system"
+				"title": "Simplicite: Remove api file system"
 			}
 		],
 		"configuration": {

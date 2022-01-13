@@ -6,7 +6,7 @@ import * as path from 'path';
 import { DevInfo, DevInfoObject,  } from '../DevInfo';
 
 export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
-	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>;
+	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // see comment on FileTree.ts for these 2 attributes
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
 	private _modules: Array<Module> | undefined;
 	private _devInfo?: DevInfo;
@@ -69,6 +69,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		return element;
 	}
 
+	// hell the second
 	async getChildren(element: CustomTreeItem): Promise<TreeItem[]> {
 		if (element === undefined) {
 			return Promise.resolve(this.getModulesItems());

@@ -7,7 +7,7 @@ export class Module {
 	token: string;
 	moduleDevInfo: any;
 	apiFileSystem: boolean;
-	instanceJump: boolean;
+	instanceJump: boolean; // usefull to get api module in construction
 	connected: boolean;
 	parentFolderName: string;
 	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, apiFileSystem: boolean, instanceJump: boolean) {
@@ -27,5 +27,4 @@ export class Module {
 		const index = decomposedPath.length - 1;
 		return decomposedPath[index];
 	}
-	
 }

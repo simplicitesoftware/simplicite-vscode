@@ -4,18 +4,6 @@ import { Module } from './Module';
 import { FileAndModule } from './interfaces';
 import { File } from './File';
 
-export function crossPlatformPath(path: string): string {
-	if (path[0] === '/' || path[0] === '\\') {
-		path = path.slice(1);
-	}
-	return replaceAll(path, '\\\\', '/');
-}
-
-export function replaceAll(str: string, find: string | RegExp, replace: string): string {
-	const regex = new RegExp(find, 'g');
-	return str.replace(regex, replace);
-}
-
 export function validFileExtension(template: string): boolean {
 	for (const extension of SUPPORTED_FILES) {
 		if (template.includes(extension) && checkExclude(template)) {

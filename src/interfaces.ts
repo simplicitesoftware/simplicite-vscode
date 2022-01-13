@@ -9,20 +9,7 @@ export interface CustomMessage {
 	button: string;
 }
 
-export interface FieldInfo {
-	moduleName: string;
-	objectFields: Array<any>;
-	instanceUrl: string;
-}
-
-export interface ObjectInfo {
-	objectType: string,
-	field: string,
-	icons: { dark: string | Uri, light: string | Uri },
-	fieldIcons: { dark: string | Uri, light: string | Uri }
-}
-
-// usefull object when working with modules and files
+// usefull object to bind files with their corresponding module
 export interface FileAndModule {
 	module: Module,
 	fileList: File[],

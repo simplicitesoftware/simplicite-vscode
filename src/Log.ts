@@ -14,6 +14,7 @@ export const logger = createLogger({
 	]
 });
 
+// not working, try another implementation
 export const addFileTransportOnDesktop = (tempPath: string) => {
 	if (env.appHost === 'desktop') {
 		logger.add(new transports.File({ filename: tempPath + 'simplicite.log' }));

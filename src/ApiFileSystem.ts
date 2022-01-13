@@ -43,7 +43,7 @@ export class ApiFileSystem {
 				}
 			}
 			if (!flag) {
-			// create the workspace only once, extension will reload
+				// create the workspace only once, extension will reload
 				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(STORAGE_PATH + 'Api_' + this.module.name), name: 'Api_' + this.module.name });
 			}
 		} catch (e) {
@@ -56,8 +56,6 @@ export class ApiFileSystem {
 			return false;
 		}
 		try {
-			// const uri = Uri.parse(STORAGE_PATH + 'Api_' + this.module.name);
-			// await workspace.fs.createDirectory(uri);
 			const mdl = await this._app.getBusinessObject('Module');
 			// look for module row_id
 			const ms = await mdl.search({ mdl_name: this.module.name} );
@@ -92,6 +90,7 @@ export class ApiFileSystem {
 
 	private readContent (resObj: any, type: string): string | undefined {
 		try {
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const content = resObj[this._simpliciteApi.devInfo!.getSourceField(type)].content;
 			return content;
 		} catch (e) {

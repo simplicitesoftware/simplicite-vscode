@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 'use strict';
 
-import { CompletionItem, Uri, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, workspace, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
+import { CompletionItem, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, CancellationToken, CompletionContext, CompletionItemKind } from 'vscode';
 import { logger } from './Log';
 import { Completion, DevInfo, DevInfoObject } from './DevInfo';
 import { removeFileExtension } from './utils';
@@ -13,6 +13,7 @@ export class CompletionProvider implements CompletionItemProvider {
 	private _genericObjectDevInfo?: DevInfoObject;
 	private _file: File;
 	constructor(devInfo: DevInfo, moduleDevInfo: any, file: File,) {
+		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		this._currentObjectInfo = moduleDevInfo[file.type!];
 		this._genericObjectDevInfo = this._getDevInfoGenericObjectInfo(file.type, devInfo);
 		this._file = file;
@@ -34,6 +35,7 @@ export class CompletionProvider implements CompletionItemProvider {
 		for (const object of this._currentObjectInfo) {
 			if (object.name === fileName) {
 				for (const completionAttribute in this._genericObjectDevInfo.completion) {
+					// eslint-disable-next-line no-prototype-builtins
 					if (object.hasOwnProperty(completionAttribute)) {
 						for (const item of object[completionAttribute]) {
 							completionItems.push(new CustomCompletionItem(item.name, CompletionItemKind.Text, completionAttribute));

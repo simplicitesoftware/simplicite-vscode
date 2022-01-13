@@ -5,6 +5,7 @@ import { AppHandler } from './AppHandler';
 import { ModuleHandler } from './ModuleHandler';
 import { SimpliciteApi } from './SimpliciteApi';
 
+// gets called in extension.ts to init the already existants api file systems
 export class ApiFileSystemController {
 	apiFileSystemList: ApiFileSystem[];
 	constructor() {
