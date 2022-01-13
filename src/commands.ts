@@ -67,7 +67,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	// ------------------------------
 	// Authentication commands
 	const loginIntoDetectedInstances = commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
-		await simpliciteApiController.loginAll();
+		await simpliciteApiController.loginAll(fileHandler);
 	});
 	
 	const logIntoSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
@@ -100,7 +100,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				}
 			}
 			if (module && !moduleHandler.connectedInstances.includes(module.instanceUrl)) {
-				await simpliciteApiController.tokenOrCredentials(module);
+				await simpliciteApiController.tokenOrCredentials(module, fileHandler);
 			}
 			if (!flag) {
 				throw new Error(`Simplicite: Cannot find module or url ${moduleName}`);
@@ -180,7 +180,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	// ------------------------------
 	// Refresh Tree views commands
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
-		moduleHandler.refreshModulesDevInfo(simpliciteApi);
+		moduleHandler.refreshModulesDevInfo(simpliciteApi, fileHandler);
 		moduleInfoTree?.feedData(simpliciteApi.devInfo, moduleHandler.modules);
 	});
 	
@@ -229,7 +229,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 	
-	const connectToRemoteFileSystem = commands.registerCommand('simplicite-vscode-tools.connectToRemoteFileSystem', async () => {
+	const initApiFileSystem = commands.registerCommand('simplicite-vscode-tools.initApiFileSystem', async () => {
 		try {
 			const instanceUrl = await window.showInputBox({
 				placeHolder: 'instance url',
@@ -250,7 +250,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
 			const module = new Module(moduleName, '', instanceUrl, token, true, true);
 			moduleHandler.addModule(module, true);
-			await simpliciteApiController.tokenOrCredentials(module);
+			await simpliciteApiController.tokenOrCredentials(module, fileHandler);
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
@@ -330,7 +330,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 
-	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, connectToRemoteFileSystem, disconnectRemoteFileSystem];
+	// public command can be used by other dev if needed
+	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, initApiFileSystem, disconnectRemoteFileSystem];
+	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger];
 	context.subscriptions.concat(publicCommand, privateCommand);
 	return publicCommand;

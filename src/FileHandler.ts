@@ -8,6 +8,7 @@ import { bindFileAndModule, validFileExtension } from './utils';
 import { FileTree } from './treeView/FileTree';
 import { getModuleFromWorkspacePath } from './utils';
 import { FileAndModule } from './interfaces';
+import { DevInfo } from './DevInfo';
 
 export class FileHandler {
 	fileTree?: FileTree;
@@ -124,6 +125,13 @@ export class FileHandler {
 		}
 		this.updateFileStatus();
 		if (this.fileTree) await this.fileTree.setFileModule(modules, this.fileList);
+	}
+
+	setFilesModuleDevInfo(mod: Module, devInfo: DevInfo) {
+		for (const file of this.fileList) {
+			if (file.simpliciteUrl !== mod.instanceUrl) continue;
+			file.setModuleDevInfo(mod.moduleDevInfo, devInfo);
+		}
 	}
 
 	getFileFromFullPath(fullPath: string): File {
