@@ -25,26 +25,53 @@ Check syntax and rules:
 npm run lint
 ```
 
-Package into a vsix file
+Package into a vsix file:
+
 ```bash
 vsce package
 ```
 
 Publish
 =====
-### To the *vscode marketplace*:
-Connect to the vsce API, you'll need an access token
+
+To the **vscode marketplace** registry
+--------------------------------------
+
+Install or update the `vsce` CLI:
+
+```bash
+npm <install|update> -g vsce
+```
+
+Connect to the vsce API (you need an access token):
+
 ```bash
 vsce login SimpliciteSoftware
 ```
 
-Publish vsix to the marketplace
+Build the vsix file:
+
+```bash
+vsce package
+```
+
+Publish the vsix file to the registry:
+
 ```bash
 vsce publish
 ```
-### To *open vsx*
 
-Publish vxis to open vsx
+To the *open vsx* registry
+--------------------------
+
+Install or update the `ovsx` CLI:
+
+```bash
+npm <install|update> -g ovsx
+```
+
+Publish the vsix file to the registry (you need an access token):
+
 ```bash
 ovsx publish simplicite-vscode-tools-<x.y.z>.vsix -p <token>
 ```
