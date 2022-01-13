@@ -49,12 +49,6 @@ Connect to the vsce API (you need an access token):
 vsce login SimpliciteSoftware
 ```
 
-Build the vsix file:
-
-```bash
-vsce package
-```
-
 Publish the vsix file to the registry:
 
 ```bash
@@ -68,6 +62,12 @@ Install or update the `ovsx` CLI:
 
 ```bash
 npm <install|update> -g ovsx
+```
+
+Build the vsix file:
+
+```bash
+vsce package
 ```
 
 Publish the vsix file to the registry (you need an access token):
