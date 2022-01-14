@@ -75,14 +75,17 @@ Available Commands
 - `Simplicite: Log out from specific instance` : Log out from a given instance.
 
 ### Refresh Tree Views
+
 - `Simplicite: Refresh the Module Info tree view`.
 - `Simplicite: Refresh the File Handler tree view`.
 
 ### File status
+
 - `Simplicite: Track file` : Marks the file as tracked. The input field expects the file's absolute path.
 - `Simplicite: Untrack file` : Marks the file as untracked. The input field expects the file's absolute path.
 
 ### Api File System
+
 - `Simplicite: Initialize Api File System` : Initialize a new module in the workspace using the Api of a given Simplicité instance.
 - `Simplicite: Remove Api File System` : Remove a module previously added with the command above.
 
