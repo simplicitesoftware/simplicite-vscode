@@ -28,6 +28,8 @@ export class SimpliciteApi {
 		}
 		try {
 			const res = await app.login();
+			app.setPassword(undefined);
+			app.setUsername(undefined);
 			if (!this.devInfo) {
 				this.devInfo = await this.fetchDevInfo(instanceUrl);
 			}
