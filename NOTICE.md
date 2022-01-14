@@ -46,7 +46,7 @@ Le type, le row_id et d'autres attributs necessaires à l'envoi des fichiers via
 Affiche des logs dans la console et écrit un fichier dans le contexte desktop (le chemin est créé à partir de context.globalStorageUri.path).
 
 ## Module.ts :
-Contient une classe représentant la présence d'un module dans le workspace
+Contient une classe représentant la présence d'un module dans le workspace.
 
 ## ModuleHandler.ts :
 Détecte les modules du workspace et applique les valeurs de persistance.
@@ -75,5 +75,3 @@ Ne pas afficher les commandes inutiles lorsque le parametre sendFileOnSave est t
 Impossible pour le moment d'ajouter des icones autres que les product icons (https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) dans la barre de status.
 
 A ce jour, les extensions java (redhat et microsoft) ne sont pas compatibles avec VS Code web.
-
-// TO DO : changelog
