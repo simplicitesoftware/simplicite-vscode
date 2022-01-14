@@ -30,7 +30,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const appHandler = new AppHandler();
 
 	const simpliciteApi = new SimpliciteApi(appHandler);
-	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler);
+	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
 	new QuickPick(context.subscriptions, simpliciteApiController);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
@@ -49,7 +49,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	if (workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')) { // settings are set in the package.json
 		try {
-			await simpliciteApiController.loginAll(fileHandler);
+			await simpliciteApiController.loginAll();
 		} catch (e) {
 			logger.error(e);
 		}
@@ -76,7 +76,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			window.showErrorMessage('Simplicite: ' + event.uri.path + ' cannot be found.');
 		}
 		if (simpliciteApiController.conflictStatus) {
-			await simpliciteApiController.resolveConflict(file, fileHandler);
+			await simpliciteApiController.resolveConflict(file);
 			return;
 		}
 		const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
@@ -86,7 +86,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		}
 		try {
 			if (workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) { // sendFileOnSave is true
-				await simpliciteApiController.writeFileController(file, module, fileHandler);
+				await simpliciteApiController.writeFileController(file, module);
 			} else { // module is not api, add option to apply changes classic on save (vscode options)
 				await fileHandler.setTrackedStatus(file.uri, true, moduleHandler.modules); // on save set the status of the file to true
 			}
@@ -103,7 +103,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			if (!currentModule) {
 				throw new Error('No known module name matches with the root folder of the project. Root folder = ' + event.added[0].name);
 			}
-			await simpliciteApiController.tokenOrCredentials(currentModule, fileHandler); // connect with the module informations
+			await simpliciteApiController.tokenOrCredentials(currentModule); // connect with the module informations
 			logger.info('successfully added module to workspace');
 		} else if (event.removed.length > 0) {
 			// refresh for potential api file systems
