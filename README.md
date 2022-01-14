@@ -9,7 +9,7 @@ Simplicite low code platform tools to make life easier for designers in an IDE e
 
 ## Features
 
-- Simplified workflow for designers who prefer to edit Simplicite code in their favorite IDE.
+- Simplified workflows for designers who prefer to edit Simplicite code in their favorite IDE.
 - Object field completion.
 - Tree view gathering informations on modules objects.
 - Tree view to manage your modified files.
@@ -20,36 +20,67 @@ Simplicite low code platform tools to make life easier for designers in an IDE e
 
 Add Simplicité module(s) in your workspace :
 - using the `"Add Folder to Workspace..."` VS Code feature to add modules from your local storage.
-- using the api file system command `"simplicite-vscode-tools.connectToRemoteFileSystem"`.
+- using the api file system command `"Simplicite: Initialize api file system"`.
 
-If not already done, you'll have to authenticate yourself to the Simplicité instance(s).
+**Authenticating is mandatory** to use the features of the extension.
 
-From now on, you can edit your files and run the command: `Simplicite: Apply change(s)` to load the files on your simplicite instance(s).
 
-Your files will get marked as modified on save.
-You can manage them in the *SIMPLICITE FILE HANDLER* tree view.
+### Editing files :
+The main feature of the extension is the ability to edit your files in your IDE and applying the changes without having to commit/push. 
+You can go in the settings (*File > Preferences > Settings > Extensions > Simplicite VSCode tools > Api: Send File On Save*) and change the behavior of this feature :
+- Mark the setting as true to apply your file changes on save. 
+- Mark it as false to display the File Handler tree view and manage your changes from there (see the *Applying Files* section below).
 
-Right clicking on any item in the *SIMPLICITE OBJECT INFO* tree view will display a contextual menu giving you the ability to copy the item logical name, physical name and json name.
+### Applying Files :
+*Note : this section is relevant only if the `"simplicite-vscode-tools.api.sendFileOnSave"` setting is set to false.*
+
+The File Handler tree view is a usefull tool to handle your modifications.
+
+Each time you save a file, its state will change as *"tracked"*. You can manually set a file as tracked by clicking on the "+" icon or set as untracked by clicking on the "-" icon.
+
+To apply your changes, simply click on the highlighted button shown below.
+
+
+![login-apply](resources/filetree.png)
+
+Good to know : **every action available in the tree views** (File Handler and Module Info) **is in fact a command.**
+
+### Completion :
+The completion service is triggered by functions such as `"getField()"` and is able to display the list of the current object attributes.
+
+If you want to access to the various attributes of any object, you can use the *Module Info* tree view. Right clicking on an item displays a menu that let you choose which attribute you want to copy in your clipboard. Also double clicking will copy the label of the item to the location of your cursor.
 
 ---
 
-## Available commands
+## Available Commands
 
-- `Simplicite: Apply changes`: loads the files into their modules. Requires to be logged in. Running this command will trigger local compilation, you can disable this step in the settings. Once all your files are applied, your Simplicite instance(s) will run another compilation.
-- `Simplicite: Apply specific module changes`: same as the above command but you'll be asked to type in the module name.
-- `Simplicite: Compile java code in workspace`: executes the compilation command of the [vscode-java extension](https://github.com/redhat-developer/vscode-java#available-commands).
-- `Simplicite: Log into detected instances`: logs into the instances that have been detected in the modules contained in the workspace.
-- `Simplicite: Log into specific instance`: logs into a specific instance. Both module name and instance url are accepted.
-- `Simplicite: Log out from all instances`: logs out all the instances.
-- `Simplicite: Log out from specific instance`: logs out a specific instance. Both module name and instance url are accepted.
-*-`Simplicite: Track file`: marks the file as modified. The input field expects the file's absolute path.
-- `Simplicite: Untrack file`: marks the file as unmodified. The input field expects the file's absolute path.
+### Applying Changes :
+- `Simplicite: Apply changes` : apply all the changes.
+- `Simplicite: Apply specific instance changes` : apply the changes of a given instance.
+- `Simplicite: Apply specific module changes` : apply the changes of a given module.
+
+### Authentication :
+- `Simplicite: Log into detected instances` : log into the instances that have been detected in the modules contained in the workspace.
+- `Simplicite: Log into specific instance` : log into every module of a given instance.
+- `Simplicite: Log out from all instances` : log out from all instances.
+- `Simplicite: Log out from specific instance` : log out from a given instance.
+### Refresh Tree Views :
+- `Simplicite: Refresh the Module Info tree view`.
+
+- `Simplicite: Refresh the File Handler tree view`.
+### File status : 
+- `Simplicite: Track file` : marks the file as tracked. The input field expects the file's absolute path.
+- `Simplicite: Untrack file` : marks the file as untracked. The input field expects the file's absolute path.
+### Api File System :
+- `Simplicite: Initialize Api File System` : initialize a new module in the workspace using the Api of a given Simplicité instance.
+- `Simplicite: Remove Api File System` : remove a module previously added with the command above.
 
 ---
 
-## Extension settings
+## Extension Settings
 
-- `simplicite-vscode-tools.compilation`: Enable/disable local compilation before applying changes.
-- `simplicite-vscode-tools.api.autoConnect`: Enable/disable automatic connexion features.
+- `simplicite-vscode-tools.api.autoAuthentication` : Enable the automatic authentication on the simplicite extension launch. Note that you have to be authenticated in order to take profit of most of the extension features.
+- `simplicite-vscode-tools.api.sendFileOnSave` : Enable sending modified file on save. When this setting is enabled, the *File Handler* tree view won't be displayed.
 
-keybindings : can be edited in File > Preferences > Keyboard shortcuts
+## Keybindings :
+`simplicite-vscode-tools.showSimpliciteCommands` : Open a Quick Pick menu displaying every command of the extension. The shortcut can be edited in *File > Preferences > Keyboard shortcuts > simplicite-vscode-tools.showSimpliciteCommands*.
