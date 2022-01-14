@@ -43,7 +43,7 @@ Install or update the `vsce` CLI:
 npm <install|update> -g vsce
 ```
 
-Connect to the vsce API (you need an access token):
+Connect to the vsce API (you need an access token that you can create [here](https://dev.azure.com/simplicite/_usersSettings/tokens)):
 
 ```bash
 vsce login SimpliciteSoftware
