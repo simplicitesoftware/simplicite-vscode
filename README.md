@@ -55,25 +55,25 @@ If you want to access to the various attributes of any object, you can use the *
 ## Available Commands
 
 ### Applying Changes :
-- `Simplicite: Apply changes` : apply all the changes.
-- `Simplicite: Apply specific instance changes` : apply the changes of a given instance.
-- `Simplicite: Apply specific module changes` : apply the changes of a given module.
+- `Simplicite: Apply changes` : Apply all the changes.
+- `Simplicite: Apply specific instance changes` : Apply the changes of a given instance.
+- `Simplicite: Apply specific module changes` : Apply the changes of a given module.
 
 ### Authentication :
-- `Simplicite: Log into detected instances` : log into the instances that have been detected in the modules contained in the workspace.
-- `Simplicite: Log into specific instance` : log into every module of a given instance.
-- `Simplicite: Log out from all instances` : log out from all instances.
-- `Simplicite: Log out from specific instance` : log out from a given instance.
+- `Simplicite: Log into detected instances` : Log into the instances that have been detected in the modules contained in the workspace.
+- `Simplicite: Log into specific instance` : Log into every module of a given instance.
+- `Simplicite: Log out from all instances` : Log out from all instances.
+- `Simplicite: Log out from specific instance` : Log out from a given instance.
 ### Refresh Tree Views :
 - `Simplicite: Refresh the Module Info tree view`.
 
 - `Simplicite: Refresh the File Handler tree view`.
 ### File status : 
-- `Simplicite: Track file` : marks the file as tracked. The input field expects the file's absolute path.
-- `Simplicite: Untrack file` : marks the file as untracked. The input field expects the file's absolute path.
+- `Simplicite: Track file` : Marks the file as tracked. The input field expects the file's absolute path.
+- `Simplicite: Untrack file` : Marks the file as untracked. The input field expects the file's absolute path.
 ### Api File System :
-- `Simplicite: Initialize Api File System` : initialize a new module in the workspace using the Api of a given Simplicité instance.
-- `Simplicite: Remove Api File System` : remove a module previously added with the command above.
+- `Simplicite: Initialize Api File System` : Initialize a new module in the workspace using the Api of a given Simplicité instance.
+- `Simplicite: Remove Api File System` : Remove a module previously added with the command above.
 
 ---
 
