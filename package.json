@@ -160,7 +160,7 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.refreshModuleTree",
-				"title": "Simplicite: Refresh the module info tree view",
+				"title": "Simplicite: Refresh the Module Info tree view",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -168,7 +168,7 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.refreshFileHandler",
-				"title": "Simplicite: Refresh the modified file handler",
+				"title": "Simplicite: Refresh the File Handler tree view",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -196,11 +196,11 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.initApiFileSystem",
-				"title": "Simplicite: Initialize api file system"
+				"title": "Simplicite: Initialize Api File System"
 			},
 			{
 				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
-				"title": "Simplicite: Remove api file system"
+				"title": "Simplicite: Remove Api File System"
 			}
 		],
 		"configuration": {
@@ -212,8 +212,8 @@
 				},
 				"simplicite-vscode-tools.api.sendFileOnSave": {
 					"type": "boolean",
-					"default": false,
-					"description": "Enable sending modified file on save. This setting only affects on disk modules as api modules are already working this way."
+					"default": true,
+					"description": "Enable sending modified file on save."
 				}
 			}
 		},
