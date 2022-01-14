@@ -44,7 +44,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
 		const instanceUrl = await window.showInputBox({
-			placeHolder: 'module name / url',
+			placeHolder: 'instance url',
 			title: 'Simplicite: Type in the instance url'
 		});
 		if (!instanceUrl) {
@@ -73,31 +73,22 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	const logIntoSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
 		try {
 			const moduleName = await window.showInputBox({
-				placeHolder: 'module name / url',
-				title: 'Simplicite: Type the name of the module'
+				placeHolder: 'instance url',
+				title: 'Simplicite: Type the url of the Simplicité instance'
 			});
 			if (!moduleName) {
 				throw new Error();
 			}
 			let flag = false;
 			let module;
-			try {
-				for (const moduleLoop of moduleHandler.modules) {
-					if (moduleLoop.instanceUrl === moduleName) {
-						module = moduleLoop;
-						flag = true;
-					}
+			for (const moduleLoop of moduleHandler.modules) {
+				if (moduleLoop.instanceUrl === moduleName) {
+					module = moduleLoop;
+					flag = true;
 				}
-				if (module === undefined) {
-					throw new Error('error no module found in LogInInstanceCommand');
-				}
-			} catch (e) {
-				for (const moduleLoop of moduleHandler.modules) {
-					if (moduleLoop.name === moduleName) {
-						module = moduleLoop;
-						flag = true;
-					}
-				}
+			}
+			if (module === undefined) {
+				throw new Error('error no module found in LogInInstanceCommand');
 			}
 			if (module && !moduleHandler.connectedInstances.includes(module.instanceUrl)) {
 				await simpliciteApiController.tokenOrCredentials(module, fileHandler);
@@ -119,37 +110,29 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	const logoutFromSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logOutFromInstance', async function () {
 		try {
 			const input = await window.showInputBox({
-				placeHolder: 'module name / url',
-				title: 'Simplicite: Type the name of the module'
+				placeHolder: 'instance url',
+				title: 'Simplicite: Type the url of the Simplicité instance'
 			});
 			if (!input) {
 				throw new Error();
 			}
 			let flag = false;
 			let module;
-			try {
-				for (const moduleLoop of moduleHandler.modules) {
-					if (moduleLoop.instanceUrl === input) {
-						module = moduleLoop;
-						flag = true;
-					}
+			
+			for (const moduleLoop of moduleHandler.modules) {
+				if (moduleLoop.instanceUrl === input) {
+					module = moduleLoop;
+					flag = true;
 				}
-				if (module === undefined) {
-					throw new Error('error no module found in logoutFromSpecificInstanceCommand');
-				}
-			} catch (e) {
-				for (const moduleLoop of moduleHandler.modules) {
-					if (moduleLoop.name === input) {
-						module = moduleLoop;
-						flag = true;
-					}
-				}
+			}
+			if (module === undefined) {
+				throw new Error('error no module found in logoutFromSpecificInstanceCommand');
 			}
 			if (module) {
 				await simpliciteApiController.instanceLogout(module.instanceUrl);
 			}
 			if (!flag) {
-				throw new Error(`Simplicite: Cannot find module or url ${input}`);
+				throw new Error(`Simplicite: Cannot find url ${input}`);
 			}
 
 		} catch (e: any) {
@@ -161,7 +144,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	// ------------------------------
 	// File handling commands
-	const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: FileItem | any) {
+	const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: FileItem) {
 		try {
 			await trackAction(fileHandler, moduleHandler.modules, element, true);
 		} catch (e) {
@@ -169,7 +152,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		}
 	});
 	
-	const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: FileItem | any) {
+	const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: FileItem) {
 		try {
 			await trackAction(fileHandler, moduleHandler.modules, element, false);
 		} catch (e) {
@@ -357,11 +340,11 @@ async function trackAction(fileHandler: FileHandler, modules: Module[], element:
 }
 
 async function getInputFile(fileHandler: FileHandler, element: FileItem): Promise<File> {
-	if (element.resourceUri.path) {
-		return fileHandler.getFileFromFullPath(element.resourceUri.path);
-	} else {
+	if (!element.resourceUri) {
 		const input = await inputFilePath('Simplicite: Type in the file\'s absolute path', 'path');
 		return fileHandler.getFileFromFullPath(input);
+	} else {
+		return fileHandler.getFileFromFullPath(element.resourceUri.path);		
 	}
 }
 
