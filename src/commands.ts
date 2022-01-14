@@ -22,7 +22,7 @@ import { FileItem } from './treeView/treeViewClasses';
 // Apply commands
 export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler, apiFileSystemController: ApiFileSystemController) {
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
-		await simpliciteApiController.applyAll(fileHandler, moduleHandler.modules);
+		await simpliciteApiController.applyAll(moduleHandler.modules);
 	});
 	
 	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteApiController | any) {
@@ -39,7 +39,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			window.showErrorMessage('Simplicite: ' + element + ' is not a module');
 			return;
 		}
-		await simpliciteApiController.applyModuleFiles(fileHandler, module, moduleHandler.modules);
+		await simpliciteApiController.applyModuleFiles(module, moduleHandler.modules);
 	});
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
@@ -50,7 +50,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		if (!instanceUrl) {
 			throw new Error();
 		}
-		await simpliciteApiController.applyInstanceFiles(fileHandler, moduleHandler.modules, instanceUrl, moduleHandler.connectedInstances);
+		await simpliciteApiController.applyInstanceFiles(moduleHandler.modules, instanceUrl, moduleHandler.connectedInstances);
 	});
 	
 	// ------------------------------
@@ -67,7 +67,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	// ------------------------------
 	// Authentication commands
 	const loginIntoDetectedInstances = commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
-		await simpliciteApiController.loginAll(fileHandler);
+		await simpliciteApiController.loginAll();
 	});
 	
 	const logIntoSpecificInstance = commands.registerCommand('simplicite-vscode-tools.logIntoSpecificInstance', async function () {
@@ -91,7 +91,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				throw new Error('error no module found in LogInInstanceCommand');
 			}
 			if (module && !moduleHandler.connectedInstances.includes(module.instanceUrl)) {
-				await simpliciteApiController.tokenOrCredentials(module, fileHandler);
+				await simpliciteApiController.tokenOrCredentials(module);
 			}
 			if (!flag) {
 				throw new Error(`Simplicite: Cannot find module or url ${moduleName}`);
@@ -233,7 +233,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
 			const module = new Module(moduleName, '', instanceUrl, token, true, true);
 			moduleHandler.addModule(module, true);
-			await simpliciteApiController.tokenOrCredentials(module, fileHandler);
+			await simpliciteApiController.tokenOrCredentials(module);
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
 				throw new Error();
 			}
