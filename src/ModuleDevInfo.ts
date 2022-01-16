@@ -55,7 +55,8 @@ export interface Resource extends ModuleDevInfoObject {
 	type: string
 }
 
-export interface Script extends ModuleDevInfoObject {}
+export interface Script extends ModuleDevInfoObject {
+}
 
 export interface Publication {
 	method: string,
