@@ -25,10 +25,10 @@ Check syntax and rules:
 npm run lint
 ```
 
-Package into a vsix file:
+Build and package :
 
 ```bash
-vsce package
+npm run package
 ```
 
 Publish
@@ -49,7 +49,13 @@ Connect to the vsce API (you need an access token that you can create [here](htt
 vsce login SimpliciteSoftware
 ```
 
-Publish the vsix file to the registry:
+Built the vsix file:
+
+```bash
+vsce package
+```
+
+or buins **and** ublish the vsix file to the registry:
 
 ```bash
 vsce publish

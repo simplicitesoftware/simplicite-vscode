@@ -31,17 +31,22 @@ export interface ModuleDevInfoObject {
 	sourcepath?: string
 }
 
+/* eslint-disable @typescript-eslint/no-empty-interface */
 export interface Adapter extends ModuleDevInfoObject {
 }
+/* eslint-enable @typescript-eslint/no-empty-interface */
 
 export interface BPMProcess extends ModuleDevInfoObject {
 	activities: Activity[]
 }
 
+/* eslint-disable @typescript-eslint/no-empty-interface */
 export interface Disposition extends ModuleDevInfoObject {
 }
+/* eslint-enable @typescript-eslint/no-empty-interface */
 
 export interface ObjectExternal extends ModuleDevInfoObject {
+	actions: Action[]
 }
 
 export interface ObjectInternal extends ModuleDevInfoObject {
@@ -55,8 +60,10 @@ export interface Resource extends ModuleDevInfoObject {
 	type: string
 }
 
+/* eslint-disable @typescript-eslint/no-empty-interface */
 export interface Script extends ModuleDevInfoObject {
 }
+/* eslint-enable @typescript-eslint/no-empty-interface */
 
 export interface Publication {
 	method: string,
