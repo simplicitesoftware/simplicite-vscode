@@ -11,11 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
+[1.0.19]
+--------
+
+### Fixed
+- Using get on row ID instead of search on name/code
+
+### Updated
+- Updated dependencies
+
+* * *
+
 [1.0.18]
 --------
 
 ### Changed
 - Simplicite lib
+
+* * *
 
 [1.0.17]
 --------
@@ -33,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [1.0.15]
 --------
+
 ### Added
 - Refresh modified file handler button and command
 
@@ -43,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [1.0.14]
 --------
+
 ### Added
 - Refresh tree view button and command
 
