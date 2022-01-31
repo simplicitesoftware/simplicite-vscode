@@ -70,7 +70,7 @@ export class SimpliciteApi {
 	}
 
 	async writeFile(file: File): Promise<boolean> {
-		const obj = this.appAndBusinnessObject(file);
+		const obj = this.appAndBusinessObject(file);
 		const item = await this.searchForUpdate(file, obj);
 		const doc = obj.getFieldDocument(file.scriptField);
 		if (doc === undefined) {
@@ -99,7 +99,7 @@ export class SimpliciteApi {
 	}
 
 	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> {
-		const obj = this.appAndBusinnessObject(file);
+		const obj = this.appAndBusinessObject(file);
 		const res = await obj.get(file.rowId, { inlineDocuments: [ true ] });
 		const content = res[0][file.scriptField!].content;
 		if (!content) {
@@ -109,7 +109,7 @@ export class SimpliciteApi {
 		return buff;
 	}
 
-	private appAndBusinnessObject(file: File): any {
+	private appAndBusinessObject(file: File): any {
 		const app = this._appHandler.getApp(file.simpliciteUrl);
 		const obj = app.getBusinessObject(file.type, 'ide_' + file.type);
 		return obj;
