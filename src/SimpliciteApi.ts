@@ -44,7 +44,7 @@ export class SimpliciteApi {
 		}
 	}
 
-	async logout (instanceUrl: string): Promise<boolean> {
+	async logout(instanceUrl: string): Promise<boolean> {
 		const app = this._appHandler.getApp(instanceUrl);
 		try {
 			await app.logout();
@@ -101,7 +101,7 @@ export class SimpliciteApi {
 	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> {
 		const obj = this.appAndBusinessObject(file);
 		const res = await obj.get(file.rowId, { inlineDocuments: [ true ] });
-		const content = res[0][file.scriptField!].content;
+		const content = res[file.scriptField!].content;
 		if (!content) {
 			return undefined;
 		}
