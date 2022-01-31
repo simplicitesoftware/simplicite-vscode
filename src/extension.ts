@@ -1,7 +1,7 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri, commands } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri } from 'vscode';
 import { CompletionProvider } from './CompletionProvider';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
@@ -30,7 +30,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const appHandler = new AppHandler();
 
 	const simpliciteApi = new SimpliciteApi(appHandler);
-	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler);
+	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
 	new QuickPick(context.subscriptions, simpliciteApiController);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
@@ -75,7 +75,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		if (file.uri.path === '') { // file not found
 			window.showErrorMessage('Simplicite: ' + event.uri.path + ' cannot be found.');
 		}
-		file.setApiFileInfo(simpliciteApi.devInfo);
 		if (simpliciteApiController.conflictStatus) {
 			await simpliciteApiController.resolveConflict(file);
 			return;
@@ -147,7 +146,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			}
 			const file = fileHandler.getFileFromFullPath(filePath);
 			// set the api file info onDidChangeActiveTextEditor
-			file.setApiFileInfo(simpliciteApi.devInfo);
 			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
 			if (!module || !module.moduleDevInfo) {
 				return undefined;

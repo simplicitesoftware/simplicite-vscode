@@ -17,13 +17,15 @@ import { Buffer } from 'buffer';
 export class SimpliciteApiController {
 	private _appHandler: AppHandler;
 	private _moduleHandler: ModuleHandler;
+	private _fileHandler: FileHandler;
 	private _moduleInfoTree?: ModuleInfoTree; // has its own setter 
 	private _simpliciteApi: SimpliciteApi;
 	backendCompiling: boolean; // to prevent applying changes when backend compilation is not done
 	conflictStatus: boolean;
-	constructor(_moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, _appHandler: AppHandler) {
+	constructor(_moduleHandler: ModuleHandler, simpliciteApi: SimpliciteApi, _appHandler: AppHandler, fileHandler: FileHandler) {
 		this._appHandler = _appHandler;
 		this._moduleHandler = _moduleHandler;
+		this._fileHandler = fileHandler;
 		this.backendCompiling = false;
 		this._simpliciteApi = simpliciteApi;
 		this.conflictStatus = false;
@@ -62,7 +64,7 @@ export class SimpliciteApiController {
 			this._moduleHandler.saveModules();
 			return;
 		}
-		await this._moduleHandler.loginModuleState(this._simpliciteApi, module, givenToken);
+		await this._moduleHandler.loginModuleState(this._simpliciteApi, module, givenToken, this._fileHandler);
 		this._moduleInfoTree?.feedData(this._simpliciteApi.devInfo, this._moduleHandler.modules);
 	} 
 
@@ -109,37 +111,37 @@ export class SimpliciteApiController {
 		this._appHandler.appList.delete(instanceUrl);
 	}
 
-	async applyAll(fileHandler: FileHandler, modules: Module[]): Promise<void> { // Apply all files
+	async applyAll(modules: Module[]): Promise<void> { // Apply all files
 		for (const mod of modules) {
 			if (!mod.connected) continue;
-			await this.applyFiles(fileHandler, mod, modules);
+			await this.applyFiles(mod, modules);
 		}
 	}
 
-	async applyModuleFiles(fileHandler: FileHandler, module: Module, modules: Module[]): Promise<void> { // Apply the changes of a specific module
+	async applyModuleFiles(module: Module, modules: Module[]): Promise<void> { // Apply the changes of a specific module
 		if (!module.connected) {
 			window.showWarningMessage('Simplicite: ' + module.name + ' is not connected');
 			return;
 		}
-		await this.applyFiles(fileHandler, module, modules);
+		await this.applyFiles(module, modules);
 	}
 
-	async applyInstanceFiles(fileHandler: FileHandler, modules: Module[], instanceUrl: string, connectedInstances: string[]) {
+	async applyInstanceFiles(modules: Module[], instanceUrl: string, connectedInstances: string[]) {
 		if (!connectedInstances.includes(instanceUrl)) {
 			window.showWarningMessage('Simplicite: ' + instanceUrl + ' is not connected');
 			return;
 		}
 		for (const mod of modules) {
 			if (mod.instanceUrl === instanceUrl && mod.connected) {
-				await this.applyFiles(fileHandler, mod, modules);
+				await this.applyFiles(mod, modules);
 			}
 		}
 	}
 
-	async applyFiles (fileHandler: FileHandler, mod: Module, modules: Module[]) {
-		for (const file of fileHandler.fileList) {
+	async applyFiles (mod: Module, modules: Module[]) {
+		let isJava = false;
+		for (const file of this._fileHandler.fileList) {
 			if (file.parentFolderName !== mod.parentFolderName || !file.tracked) continue;
-			file.setApiFileInfo(this._simpliciteApi.devInfo);
 			const remoteContent = await this.isConflict(file, mod.parentFolderName);
 			// if a conflict occurs, dont send following files and start resolution
 			if (remoteContent) {
@@ -149,9 +151,11 @@ export class SimpliciteApiController {
 			}
 			const res = await this._simpliciteApi.writeFile(file);
 			if (!res) continue;
-			fileHandler.setTrackedStatus(file.uri, false, modules);
+			// test if one java file is sent to trigger back compil
+			if (file.extension === '.java') isJava = true;
+			this._fileHandler.setTrackedStatus(file.uri, false, modules);
 		}
-		await this.triggerBackendCompilation(mod.instanceUrl);
+		if (isJava) await this.triggerBackendCompilation(mod.instanceUrl);
 	}
 
 	// returns the content of the remote file if there is a conflict
@@ -170,7 +174,7 @@ export class SimpliciteApiController {
 			}
 			await workspace.fs.writeFile(file.uri, remoteContent);
 			await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), remoteContent);
-			window.showInformationMessage('Simplicite: No local changes. Fetched remote content.');
+			logger.info('Simplicite: No local changes. Fetched remote content.');
 			return false;
 		}
 		// if we get there then local file has been modified, check if remote has changed
@@ -218,7 +222,7 @@ export class SimpliciteApiController {
 		} else {
 			await this._simpliciteApi.writeFile(file);
 			await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri)); // set temp file with current content
-			await this.triggerBackendCompilation(module.instanceUrl);
+			if (file.extension === '.java') await this.triggerBackendCompilation(module.instanceUrl);
 		}
 	}
 
@@ -238,12 +242,12 @@ export class SimpliciteApiController {
 					await workspace.fs.writeFile(Uri.file(file.uri.path), remoteContent);
 					await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), remoteContent);
 					await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
-					this.conflictStatus = false;
+					await this.resolveStatus(file);
 				} else if (choice.label === 'Override remote content') { // write local content on remote
 					await this._simpliciteApi.writeFile(file);
 					await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri));
 					await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
-					this.conflictStatus = false;
+					await this.resolveStatus(file);
 				}
 			}
 		});
@@ -253,7 +257,14 @@ export class SimpliciteApiController {
 		await this._simpliciteApi.writeFile(file);
 		await workspace.fs.writeFile(Uri.file(File.tempPathMaker(file)), await File.getContent(file.uri));
 		await workspace.fs.delete(Uri.file(STORAGE_PATH + 'temp/' + file.parentFolderName + '/RemoteFileContent.java'));
+		await this.resolveStatus(file);
+	}
+
+	private async resolveStatus (file: File) {
 		this.conflictStatus = false;
+		if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
+			await this._fileHandler.setTrackedStatus(file.uri, false, this._moduleHandler.modules);
+		}
 	}
 
 	private async triggerBackendCompilation(instanceUrl: string): Promise<any> {
@@ -262,8 +273,9 @@ export class SimpliciteApiController {
 			const app = this._appHandler.getApp(instanceUrl);
 			const obj = app.getBusinessObject('Script', 'ide_Script');
 			const res = await obj.action('CodeCompile', 0);
-			window.showInformationMessage(`Simplicite: Compilation ${res}`); // differentiate error and info
-			logger.info('compilation succeeded');
+			const msg = `${instanceUrl} compilation result : ${res}`;
+			window.showInformationMessage('Simplicite: ' + msg);
+			logger.info(msg);
 		} catch (e) {
 			logger.error(e);
 			window.showErrorMessage('Simplicite: Error cannnot trigger backend compilation');

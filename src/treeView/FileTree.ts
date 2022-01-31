@@ -30,7 +30,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		this.refresh();
 	}
 
-	// sets the viewItem value use in package.json to handle the commands linked to a specific item type
+	// sets the viewItem value, use in package.json to handle the commands linked to a specific item type
 	getTreeItem(element: UntrackedItem): UntrackedItem {
 		if (element.tracked === undefined && element.label !== 'Untracked files' && element.label !== 'No files to display' && element.label !== 'No file has been changed') {
 			element.contextValue = 'module';

@@ -2,7 +2,6 @@
 
 import { Uri, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
-import { replaceAll } from './utils';
 
 export class File {
 	uri: Uri;
@@ -14,7 +13,7 @@ export class File {
 	type: string | undefined;
 	scriptField: string | undefined;
 	fieldName: string | undefined;
-	rowId: number | undefined;
+	rowId: string | undefined;
 	extension: string;
 	constructor(path: string, simpliciteUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
 		this.uri = Uri.file(path);
@@ -23,7 +22,7 @@ export class File {
 		this.parentFolderName = parentFolderName;
 		this.tracked = tracked;
 		this.name = File.computeFileNameFromPath(path);
-		this.extension = File.computeFileExtensionFromPath(path);
+		this.extension = File.computeFileExtensionFromPath(path); // format ex: ".java"
 	}
 
 	static computeFileNameFromPath(filePath: string): string {
@@ -38,24 +37,24 @@ export class File {
 		return fileExtension;
 	}
 
-	// set mandatory values to send files on instance
-	setApiFileInfo(devInfo: DevInfo | undefined): void {
-		if (!this.type && !this.scriptField && !this.fieldName && devInfo) { // set the values only once
-			this.type = this.getBusinessObjectType(devInfo);
+	setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
+		if (!this.type && !this.scriptField && !this.fieldName) {
+			const {type, id} = this.getBusinessObjectInfo(moduleDevInfo);
+			this.type = type;
+			this.rowId = id;
 			this.scriptField = this.getProperScriptField(devInfo);
 			this.fieldName = this.getProperNameField(devInfo);
 		}
 	}
 
-	private getBusinessObjectType(devInfo: DevInfo): string | undefined {
-		for (const object of devInfo.objects) {
-			if (object.package) {
-				const comparePackage = replaceAll(object.package, /\./, '/');
-				if (this.uri.path.includes(comparePackage)) {
-					return object.object;
-				}
+	private getBusinessObjectInfo(moduleDevInfo: any): {type: string, id: string} {
+		for (const type in moduleDevInfo) {
+			for(const devInfoObject of moduleDevInfo[type]) {
+				if (!devInfoObject.sourcepath) continue;
+				if (this.uri.path.includes(devInfoObject.sourcepath)) return {type: type, id: devInfoObject.id};
 			}
 		}
+		return {type: '', id: ''};
 	}
 
 	private getProperScriptField(devInfo: DevInfo) {

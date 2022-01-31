@@ -3,7 +3,7 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.17",
+	"version": "1.0.18",
 	"engines": {
 		"vscode": "^1.52.0",
 		"node": ">=12"
@@ -37,7 +37,7 @@
 				},
 				{
 					"id": "simpliciteFile",
-					"name": "Simplicite modified file handler",
+					"name": "Simplicite file handler",
 					"when": "config.simplicite-vscode-tools.api.sendFileOnSave == false"
 				}
 			]
@@ -131,10 +131,6 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode-tools.compileWorkspace",
-				"title": "Simplicite: Compile java code in workspace"
-			},
-			{
 				"command": "simplicite-vscode-tools.logIn",
 				"title": "Simplicite: Log into detected instances"
 			},
@@ -164,7 +160,7 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.refreshModuleTree",
-				"title": "Simplicite: Refresh the module info tree view",
+				"title": "Simplicite: Refresh the Module Info tree view",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -172,7 +168,7 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.refreshFileHandler",
-				"title": "Simplicite: Refresh the modified file handler",
+				"title": "Simplicite: Refresh the File Handler tree view",
 				"icon": {
 					"light": "resources/light/refresh.svg",
 					"dark": "resources/dark/refresh.svg"
@@ -199,12 +195,12 @@
 				"title": "double click trigger command"
 			},
 			{
-				"command": "simplicite-vscode-tools.connectToRemoteFileSystem",
-				"title": "Simplicite: Connect to module remote file system"
+				"command": "simplicite-vscode-tools.initApiFileSystem",
+				"title": "Simplicite: Initialize Api File System"
 			},
 			{
 				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
-				"title": "Simplicite: Disconnect from the module remote file system"
+				"title": "Simplicite: Remove Api File System"
 			}
 		],
 		"configuration": {
@@ -216,8 +212,8 @@
 				},
 				"simplicite-vscode-tools.api.sendFileOnSave": {
 					"type": "boolean",
-					"default": false,
-					"description": "Enable sending modified file on save. This setting only affects on disk modules as api modules are already working this way."
+					"default": true,
+					"description": "Enable sending modified file on save."
 				}
 			}
 		},
@@ -243,27 +239,28 @@
 		"ncu": "ncu"
 	},
 	"devDependencies": {
-		"@theia/plugin": "latest",
+		"@theia/plugin": "^1.21.0",
 		"@types/copy-paste": "^1.1.30",
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.0.0",
-		"@types/node": "16.x",
+		"@types/node": "17.x",
 		"@types/valid-url": "^1.0.3",
 		"@types/vscode": "^1.52.0",
 		"@types/xml2js": "^0.4.9",
-		"@typescript-eslint/eslint-plugin": "^5.4.0",
-		"@typescript-eslint/parser": "^5.4.0",
+		"@typescript-eslint/eslint-plugin": "^5.9.1",
+		"@typescript-eslint/parser": "^5.9.1",
 		"assert": "^2.0.0",
-		"eslint": "^8.2.0",
+		"eslint": "^8.6.0",
 		"glob": "^7.2.0",
-		"mocha": "^9.1.3",
-		"npm-check-updates": "^12.0.3",
+		"mocha": "^9.1.4",
+		"npm-check-updates": "^12.1.0",
 		"process": "^0.11.10",
 		"ts-loader": "^9.2.6",
-		"typescript": "^4.5.2",
-		"vsce": "^2.3.0",
+		"typescript": "^4.5.4",
+		"ovsx": "^0.2.1",
+		"vsce": "^2.6.3",
 		"vscode-test": "^1.6.1",
-		"webpack": "^5.64.1",
+		"webpack": "^5.66.0",
 		"webpack-cli": "^4.9.1"
 	},
 	"dependencies": {
@@ -273,15 +270,15 @@
 		"os-browserify": "^0.3.0",
 		"path-browserify": "^1.0.1",
 		"process": "^0.11.10",
-		"simplicite": "^2.2.14",
+		"simplicite": "^2.2.15",
 		"stream": "^0.0.2",
 		"stream-browserify": "^3.0.0",
 		"stream-http": "^3.2.0",
 		"timers-browserify": "^2.0.12",
 		"url": "^0.11.0",
 		"valid-url": "^1.0.9",
-		"vscode-uri": "^3.0.2",
-		"winston": "^3.3.3",
+		"vscode-uri": "^3.0.3",
+		"winston": "^3.4.0",
 		"xml2js": "^0.4.23"
 	}
 }

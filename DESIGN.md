@@ -5,7 +5,7 @@ Manifeste d'extension, contient les informations relatives à l'extension (nom, 
 Les attributs "browser" et "main" sont les points d'entrés de l'extension lorsque cette dernière est packagée sous forme de vsix (https://marketplace.visualstudio.com/items?itemName=onlyutkarsh.vsix-viewer --> pour regarder le contenu d'un vsix)
 
 ## Paramètres de l'extension :
-Définis dans le package.json, ils sont accessibles directement dans les paramètres VSCode (*File > Preferences > Settings > Extensions > Simplicite VSCode tools > Api: Send File On Save*). Exemple pour accéder à la valeur d'un paramètre :  `workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')`.
+Définis dans le package.json, ils sont accessibles directement dans les paramètres VSCode (*File > Preferences > Settings > Extensions > Simplicite VSCode tools > Api: Send File On Save*). Exemple pour accéder à la valeur d'un paramètre : workspace.getConfiguration `('simplicite-vscode-tools').get('api.autoAuthentication')`.
 
 PI : 
 sendFileOnSave --> permet d'appliquer les changements lors de la sauvegarde. La tree view des fichiers n'est plus affichée dans ce cas car plus pertinente.
@@ -27,6 +27,9 @@ Stocke l'objet app de la lib npm simplicite sous la forme d'un tableau associati
 
 ## BarItem.ts :
 Affiche "Simplicite" dans la barre de status VSCode (en bas à droite). Cliquer sur ce composant ouvre le QuickPick (toutes les commandes de l'extension). Sur la version desktop, passer la souris au dessus affichera un markdown des instances connectés, pour les autres environnement (markdown non supporté) il s'agit uniquement d'une liste des url des instances connectées.
+
+## Cache.ts : 
+Stocke le row_id des objets précedemment envoyés sous la forme d'un tableau associatif.
 
 ## commands.ts :
 Initialise toutes les commandes et les ajoute au contexte de l'application.
@@ -56,24 +59,19 @@ Les classes FileTree et ModuleInfoTree implémentent TreeDataProvider (voir api 
 - FileTree.ts : Tree view de la gestion des fichiers. N'est affiché qu'avec le mode "manuel" d'application des modifications (sendFileOnSave == false).
 - ModuleInfoTree.ts : Tree view affichant les moduleDevInfo
 - treeViewClasses.ts : contient les classes utilisées par FileTree.
-Les tree views doivent être ajoutées via la méthode "window.registerTreeDataProvider()" et être déclarées dans le package.json.
+Les tree views doivent être ajoutés via la méthode "window.registerTreeDataProvider()" et être déclarées dans le package.json.
 Les attributs relatifs aux tree views (package.json) sont les suivants : "viewsWelcome", "view/item/context", "view/title", "explorer".
 Les boutons / interactions possibles avec les tree views se font grâce aux commandes.
 
 ## Points d'améliorations :
 Traductions anglais français.
-
 Ecrire les logs dans un fichier quand le contexte l'autorise + améliorer la pertinence des messages.
 
 Remote file system quand les virtuals file systems seront supportés sur les versions VS Code web (https://code.visualstudio.com/api/extension-guides/virtual-documents). L'implémentation ne devrait pas poser trop de problèmes car tous les accès au filesystem se font via l'api vscode: `vscode.workspace.fs`.
 
 Ne pas afficher les commandes inutiles lorsque le parametre sendFileOnSave est true ou afficher un message précisant que ces commandes n'auront pas d'effets.
 
-Tester l'extension sur mac, versions web, Theia.
-
 ## Note diverses :
 Impossible pour le moment d'ajouter des icones autres que les product icons (https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) dans la barre de status.
 
 A ce jour, les extensions java (redhat et microsoft) ne sont pas compatibles avec VS Code web.
-
-Comparatif de la compatibilité de l'api VS Code avec Api Theia: https://eclipse-theia.github.io/vscode-theia-comparator/status.html

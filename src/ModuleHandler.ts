@@ -9,6 +9,7 @@ import { SimpliciteApi } from './SimpliciteApi';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { PomXMLData } from './interfaces';
 import { DevInfo } from './DevInfo';
+import { FileHandler } from './FileHandler';
 
 export class ModuleHandler {
 	modules: Array<Module>;
@@ -68,7 +69,7 @@ export class ModuleHandler {
 		this.compareWithPersistence();
 	}
 
-	compareWithPersistence() { // compare the initial modules found in the workspace with the persistent datas. Mandatory to get api file system module
+	private compareWithPersistence() { // compare the initial modules found in the workspace with the persistent datas. Mandatory to get api file system module
 		const parsedModule: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
 		for (const parMod of parsedModule) {
 			if (this.modules.length === 0 && !parMod.apiFileSystem) { // if no module is not found on disk delete
@@ -89,35 +90,6 @@ export class ModuleHandler {
 			if (parMod.token !== '') this.spreadToken(parMod.instanceUrl, parMod.token);
 		}
 
-	}
-
-	moduleLength(): number {
-		return this.modules.length;
-	}
-
-	isModule (mod: Module): boolean {
-		for (const module of this.modules) {
-			if (this.compareLowcase(module, mod)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	compareLowcase (mod1: Module, mod2: Module): boolean {
-		if (mod1.workspaceFolderPath.toLowerCase() === mod2.workspaceFolderPath.toLowerCase()) {
-			return true;
-		}
-		return false;
-	}
-
-	isRemoteModuleInWorkspace (wks: readonly WorkspaceFolder[], module: Module): boolean {
-		for (const wk of wks) {
-			if (wk.name === module.parentFolderName) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	spreadToken(instanceUrl: string, token: string): void {
@@ -198,16 +170,6 @@ export class ModuleHandler {
 		return false;
 	}
 
-	removeAllModuleWithInstance(instanceUrl: string): void {
-		const moduleArray: Module[] = this.modules;
-		const newInfo = [];
-		for (const module of moduleArray) {
-			if (module.instanceUrl !== instanceUrl) newInfo.push(module);
-		}
-		this.modules = newInfo;
-		this._moduleHasBeenModified();
-	}
-
 	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: DevInfo | undefined): void {
 		this.removeConnectedInstance(instanceUrl);
 		for (const mod of this.modules) {
@@ -236,7 +198,7 @@ export class ModuleHandler {
 		this._moduleHasBeenModified();
 	}
 
-	async loginModuleState(simpliciteApi: SimpliciteApi, module: Module, token: string): Promise<void> {
+	async loginModuleState(simpliciteApi: SimpliciteApi, module: Module, token: string, fileHandler: FileHandler): Promise<void> {
 		this.addConnectedInstance(module.instanceUrl);
 		for (const mod of this.modules) {
 			if (mod.instanceUrl === module.instanceUrl) { // share connected values to every module from instance
@@ -244,7 +206,7 @@ export class ModuleHandler {
 				mod.token = token;
 			}
 		}
-		await this.refreshModulesDevInfo(simpliciteApi);
+		await this.refreshModulesDevInfo(simpliciteApi, fileHandler);
 		this._moduleHasBeenModified();
 	}
 	
@@ -268,9 +230,13 @@ export class ModuleHandler {
 		this._barItem.show(this.modules, this.connectedInstances);
 	}
 
-	async refreshModulesDevInfo (simpliciteApi: SimpliciteApi): Promise<void> {
+	async refreshModulesDevInfo (simpliciteApi: SimpliciteApi, fileHandler: FileHandler): Promise<void> {
 		for (const mod of this.modules) {
-			if (mod.connected) mod.moduleDevInfo = await simpliciteApi.fetchModuleInfo(mod.instanceUrl, mod.name);	
+			if (mod.connected) {
+				mod.moduleDevInfo = await simpliciteApi.fetchModuleInfo(mod.instanceUrl, mod.name);	
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+				fileHandler.setFilesModuleDevInfo(mod, simpliciteApi.devInfo!);
+			}
 			else mod.moduleDevInfo = undefined;
 		}
 	}

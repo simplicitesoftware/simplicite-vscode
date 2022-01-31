@@ -1,18 +1,18 @@
 'use strict';
 
 export class DevInfo {
-  dependencies: {artifact: string, group: string, version: string}[];
+	dependencies: {artifact: string, group: string, version: string}[];
 	javadoc: string;
 	jvm: {minimal: number, recommended: number, version: number};
 	objects: DevInfoObject[];
 	version: string;
-  constructor(devInfo: DevInfo) {
-    this.dependencies = devInfo.dependencies;
-    this.javadoc = devInfo.javadoc;
-    this.jvm = devInfo.jvm;
-    this.objects = devInfo.objects;
-    this.version = devInfo.version;
-  }
+	constructor(devInfo: DevInfo) {
+		this.dependencies = devInfo.dependencies;
+		this.javadoc = devInfo.javadoc;
+		this.jvm = devInfo.jvm;
+		this.objects = devInfo.objects;
+		this.version = devInfo.version;
+	}
 
 	getSourceField(type: string) {
 		for (const obj of this.objects) {
