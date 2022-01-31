@@ -113,7 +113,7 @@ export class SimpliciteApi {
 
 	async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> {
 		const obj = this.appAndBusinnessObject(file);
-		const res = await obj.search({ [file.fieldName!]: file.name }, { inlineDocuments: [ true ] });
+		const res = await obj.get(file.rowId, { inlineDocuments: [ true ] });
 		const content = res[0][file.scriptField!].content;
 		if (!content) {
 			return undefined;
