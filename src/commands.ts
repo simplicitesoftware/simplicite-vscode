@@ -216,19 +216,19 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		try {
 			const instanceUrl = await window.showInputBox({
 				placeHolder: 'instance url',
-				title: 'Simplicite: Type the name of the instance url'
+				title: 'Simplicite: Type the name of the instance base URL'
 			});
 			if (!instanceUrl) {
-				throw new Error();
+				throw new Error('Empty instance base URL');
 			} if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) {
 				throw new Error(instanceUrl + ' is not a valid url');
 			}
 			const moduleName = await window.showInputBox({
 				placeHolder: 'module name',
-				title: 'Simplicite: Type the name of the module'
+				title: 'Simplicite: Type the name of the module to add to the workspace'
 			});
 			if (!moduleName) {
-				throw new Error();
+				throw new Error('Empty module name');
 			}
 			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
 			const module = new Module(moduleName, '', instanceUrl, token, true, true);
@@ -246,16 +246,16 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		}
 	});
 	
-	const disconnectRemoteFileSystem = commands.registerCommand('simplicite-vscode-tools.disconnectRemoteFileSystem', async () => {
+	const removeApiFileSystem = commands.registerCommand('simplicite-vscode-tools.removeApiFileSystem', async () => {
 		if (apiFileSystemController.apiFileSystemList.length === 0) {
 			return;
 		}
 		const moduleName = await window.showInputBox({
 			placeHolder: 'module name',
-			title: 'Simplicite: Type the name of the remote module to remove from workspace'
+			title: 'Simplicite: Type the name of the module to remove from the workspace'
 		});
 		if (!moduleName) {
-			throw new Error();
+			throw new Error('Empty module name');
 		}
 		let module: undefined | Module;
 		let objIndex = 0;
@@ -314,7 +314,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	// ------------------------------
 
 	// public command can be used by other dev if needed
-	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, initApiFileSystem, disconnectRemoteFileSystem];
+	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, initApiFileSystem, removeApiFileSystem];
 	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger];
 	context.subscriptions.concat(publicCommand, privateCommand);

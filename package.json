@@ -196,11 +196,11 @@
 			},
 			{
 				"command": "simplicite-vscode-tools.initApiFileSystem",
-				"title": "Simplicite: Initialize Api File System"
+				"title": "Simplicite: Initialize API File System"
 			},
 			{
-				"command": "simplicite-vscode-tools.disconnectRemoteFileSystem",
-				"title": "Simplicite: Remove Api File System"
+				"command": "simplicite-vscode-tools.removeApiFileSystem",
+				"title": "Simplicite: Remove API File System"
 			}
 		],
 		"configuration": {
