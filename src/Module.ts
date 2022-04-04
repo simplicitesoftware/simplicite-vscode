@@ -2,6 +2,7 @@
 
 export class Module {
 	name: string;
+	apiModuleName: string;
 	workspaceFolderPath: string;
 	instanceUrl: string;
 	token: string;
@@ -12,6 +13,8 @@ export class Module {
 	parentFolderName: string;
 	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, apiFileSystem: boolean, instanceJump: boolean) {
 		this.name = name;
+		if (apiFileSystem) this.apiModuleName = Module.getApiModuleName(name, instanceUrl);
+		else this.apiModuleName = '';
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.instanceUrl = instanceUrl;
 		this.token = token;
@@ -26,5 +29,9 @@ export class Module {
 		const decomposedPath = folderPath.split('/');
 		const index = decomposedPath.length - 1;
 		return decomposedPath[index];
+	}
+
+	static getApiModuleName (moduleName: string, instanceUrl: string) {
+		return moduleName + "@" + instanceUrl;
 	}
 }

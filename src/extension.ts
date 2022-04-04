@@ -43,7 +43,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
-	const apiFileSystemController = new ApiFileSystemController();
+	const apiFileSystemController = new ApiFileSystemController(simpliciteApiController, moduleHandler);
 
 	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler, apiFileSystemController);
 

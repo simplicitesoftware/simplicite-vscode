@@ -26,7 +26,7 @@ export class ApiFileSystem {
 			moduleHandler.addModule(this.module, false);
 		}
 		try {
-			const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name);
+			const uri = Uri.file(STORAGE_PATH + this.module.apiModuleName);
 			try { // if directory does not exist or is empty then initFiles
 				const res = await workspace.fs.readDirectory(uri);
 				if (res.length === 0) throw new Error();
@@ -44,7 +44,7 @@ export class ApiFileSystem {
 			}
 			if (!flag) {
 				// create the workspace only once, extension will reload
-				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(STORAGE_PATH + 'Api_' + this.module.name), name: 'Api_' + this.module.name });
+				workspace.updateWorkspaceFolders(0, 0, { uri: Uri.parse(STORAGE_PATH + this.module.apiModuleName), name: this.module.apiModuleName });
 			}
 		} catch (e) {
 			logger.error(e);
@@ -62,7 +62,7 @@ export class ApiFileSystem {
 			const m = ms[0];
 			await this.createFiles();
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
-			await workspace.fs.writeFile(Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/pom.xml'), Buffer.from(pom.content, 'base64'));
+			await workspace.fs.writeFile(Uri.file(STORAGE_PATH + this.module.apiModuleName + '/pom.xml'), Buffer.from(pom.content, 'base64'));
 			return true;
 		} catch (e) {
 			logger.error(e);
@@ -82,7 +82,7 @@ export class ApiFileSystem {
 				if (!res || res.length === 0) continue;		
 				const content = this.readContent(res[0], type);
 				if (!content) continue;	
-				const uri = Uri.file(STORAGE_PATH + 'Api_' + this.module.name + '/' + moduleObj.sourcepath);
+				const uri = Uri.file(STORAGE_PATH + this.module.apiModuleName + '/' + moduleObj.sourcepath);
 				workspace.fs.writeFile(uri, Buffer.from(res[0][this._simpliciteApi.devInfo.getSourceField(type)].content, 'base64'));
 			}
 		}

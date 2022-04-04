@@ -14,6 +14,7 @@ import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
 import { ApiFileSystemController } from './ApiFileSystemController';
 import { FileItem } from './treeView/treeViewClasses';
+import { WorkspaceController } from './WorkspaceController';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -29,7 +30,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		// eslint-disable-next-line no-prototype-builtins
 		if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
 			element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-			const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element);
+			const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element, false);
 			if (!moduleObject) {
 				window.showErrorMessage('Simplicite: ' + element + ' is not a module');
 			}
@@ -247,69 +248,87 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 	
 	const removeApiFileSystem = commands.registerCommand('simplicite-vscode-tools.removeApiFileSystem', async () => {
-		if (apiFileSystemController.apiFileSystemList.length === 0) {
-			return;
-		}
 		const moduleName = await window.showInputBox({
 			placeHolder: 'module name',
-			title: 'Simplicite: Type the name of the module to remove from the workspace'
+			title: 'Simplicite: Type the name of the module (module-name@instance-url) to remove from the workspace'
 		});
 		if (!moduleName) {
 			throw new Error('Empty module name');
 		}
-		let module: undefined | Module;
-		let objIndex = 0;
-		for (const rfs of apiFileSystemController.apiFileSystemList) {
-			objIndex++;
-			if (rfs.module.name === moduleName) {
-				module = rfs.module;
-			}
-		}
-		if (!module) {
-			try {
-				let index = 0;
-				if (!workspace.workspaceFolders) {
-					throw new Error();
-				}
-				for (const wk of workspace.workspaceFolders) {
-					if (wk.name === 'Api_' + moduleName) {
-						moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
-						workspace.updateWorkspaceFolders(index, 1);
-					}
-					index++;
-				}
-			} catch (e) {
-				moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
-			}
+		const module = moduleHandler.getModuleFromName(moduleName, true);
+		if (module === undefined) {
+			window.showWarningMessage('Simplicite: ' + moduleName + 'has not been found.')
 			return;
 		}
-		apiFileSystemController.apiFileSystemList.splice(objIndex - 1, 1); // remove apiFileSystem
-		if (moduleHandler.countModulesOfInstance(module.instanceUrl) === 1) { // if the removed api module is the only module connected to the instance, disconnect
-			await simpliciteApiController.instanceLogout(module.instanceUrl);
-		} else { // else remove the module 
-			moduleHandler.removeApiModule(module.parentFolderName, moduleInfoTree, simpliciteApi.devInfo);
-		}
-		try {
-			if (!workspace.workspaceFolders) {
-				throw new Error();
-			}
-			let index = 0;
-			for (const wk of workspace.workspaceFolders) {
-				if (wk.name === module.parentFolderName) {
-					workspace.updateWorkspaceFolders(index, 1);
-				}
-				index++;
-			}
-			// need to delete after workspace change, otherwise resource is busy
-			if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file
-				throw 'No module workspaceFolderPath';
-			}
-			const uri = Uri.file(module.workspaceFolderPath);
-			await workspace.fs.delete(uri , { recursive: true });
-		} catch (e) {
-			logger.error(e);
-		}
+		await apiFileSystemController.removeApiFileSystem(module.apiModuleName);
+		WorkspaceController.removeApiFileSystemFromWorkspace(module);
 	});
+
+
+
+		// if (apiFileSystemController.apiFileSystemList.length === 0) {
+		// 	return;
+		// }
+		// const moduleName = await window.showInputBox({
+		// 	placeHolder: 'module name',
+		// 	title: 'Simplicite: Type the name of the module to remove from the workspace'
+		// });
+		// if (!moduleName) {
+		// 	throw new Error('Empty module name');
+		// }
+		// let module: undefined | Module;
+		// let objIndex = 0;
+		// for (const rfs of apiFileSystemController.apiFileSystemList) {
+		// 	objIndex++;
+		// 	if (rfs.module.name === moduleName) {
+		// 		module = rfs.module;
+		// 	}
+		// }
+		// if (!module) {
+		// 	try {
+		// 		let index = 0;
+		// 		if (!workspace.workspaceFolders) {
+		// 			throw new Error();
+		// 		}
+		// 		for (const wk of workspace.workspaceFolders) {
+		// 			if (wk.name === module) {
+		// 				moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
+		// 				workspace.updateWorkspaceFolders(index, 1);
+		// 			}
+		// 			index++;
+		// 		}
+		// 	} catch (e) {
+		// 		moduleHandler.removeApiModule('Api_' + moduleName, moduleInfoTree, simpliciteApi.devInfo);
+		// 	}
+		// 	return;
+		// }
+		// apiFileSystemController.apiFileSystemList.splice(objIndex - 1, 1); // remove apiFileSystem
+		// if (moduleHandler.countModulesOfInstance(module.instanceUrl) === 1) { // if the removed api module is the only module connected to the instance, disconnect
+		// 	await simpliciteApiController.instanceLogout(module.instanceUrl);
+		// } else { // else remove the module 
+		// 	moduleHandler.removeApiModule(module.parentFolderName, moduleInfoTree, simpliciteApi.devInfo);
+		// }
+		// try {
+		// 	if (!workspace.workspaceFolders) {
+		// 		throw new Error();
+		// 	}
+		// 	let index = 0;
+		// 	for (const wk of workspace.workspaceFolders) {
+		// 		if (wk.name === module.parentFolderName) {
+		// 			workspace.updateWorkspaceFolders(index, 1);
+		// 		}
+		// 		index++;
+		// 	}
+		// 	// need to delete after workspace change, otherwise resource is busy
+		// 	if (module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file
+		// 		throw 'No module workspaceFolderPath';
+		// 	}
+		// 	const uri = Uri.file(module.workspaceFolderPath);
+		// 	await workspace.fs.delete(uri , { recursive: true });
+		// } catch (e) {
+		// 	logger.error(e);
+		// }
+
 	
 	// ------------------------------
 

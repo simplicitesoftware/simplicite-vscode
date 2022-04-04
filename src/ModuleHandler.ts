@@ -49,6 +49,13 @@ export class ModuleHandler {
 		}
 	}
 
+	public removeModule (name: string, instanceUrl: string, isApi: boolean) {
+		this.modules.forEach((mod: Module, i: number) => {
+			if (isApi && mod.apiModuleName === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1); 
+		  else if (mod.name === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1);
+		});
+	}
+
 	removeModuleFromWkPath(wkPath: string): Module | false {
 		const tempModules = [];
 		let module: Module | false = false;
@@ -100,14 +107,14 @@ export class ModuleHandler {
 		}
 	}
 
-	getModuleFromName(moduleName: string): Module | undefined {
+	getModuleFromName(moduleName: string, isApi: boolean): Module | undefined {
 		for (const module of this.modules) {
-			if (module.name === moduleName) {
-				return module;
-			}
+			if (isApi && moduleName === module.apiModuleName)	return module;
+			else if (moduleName = module.name) return module;
 		}
 		return undefined;
 	}
+
 
 	getModuleFromParentFolder(parentFolderPath: string): Module | undefined {
 		for (const module of this.modules) {
@@ -165,7 +172,7 @@ export class ModuleHandler {
 		}
 		for (const wk of workspace.workspaceFolders) {
 			if (wk.name ===  module.name && !module.apiFileSystem) return wk.uri.path;
-			else if (wk.name === 'Api_' + module.name && module.apiFileSystem) return wk.uri.path;
+			else if (wk.name === module.apiModuleName && module.apiFileSystem) return wk.uri.path;
 		}
 		return false;
 	}
@@ -181,18 +188,6 @@ export class ModuleHandler {
 				mod.moduleDevInfo = undefined;
 				mod.token = '';
 			}
-		}
-		moduleInfoTree.feedData(devInfo, this.modules);
-		this._moduleHasBeenModified();
-	}
-
-	removeApiModule(parentFolderName: string, moduleInfoTree: ModuleInfoTree, devInfo: any) {
-		let index = 0;
-		for (const mod of this.modules) {
-			if (mod.parentFolderName === parentFolderName) {
-				this.modules.splice(index, 1);
-			}
-			index++;
 		}
 		moduleInfoTree.feedData(devInfo, this.modules);
 		this._moduleHasBeenModified();
@@ -248,14 +243,6 @@ export class ModuleHandler {
 			}
 		}
 		return '';
-	}
-
-	countModulesOfInstance(instanceUrl: string): number {
-		let index = 0;
-		for (const mod of this.modules) {
-			if (mod.instanceUrl === instanceUrl) index++;
-		}
-		return index;
 	}
 }
 
