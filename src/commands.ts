@@ -260,7 +260,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 			window.showWarningMessage('Simplicite: ' + moduleName + 'has not been found.')
 			return;
 		}
-		await apiFileSystemController.removeApiFileSystem(module.apiModuleName);
+		await apiFileSystemController.removeApiFileSystem(module);
 		WorkspaceController.removeApiFileSystemFromWorkspace(module);
 	});
 

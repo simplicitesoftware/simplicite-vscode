@@ -109,7 +109,7 @@ export class ModuleHandler {
 
 	getModuleFromName(moduleName: string, isApi: boolean): Module | undefined {
 		for (const module of this.modules) {
-			if (isApi && moduleName === module.apiModuleName)	return module;
+			if (isApi && moduleName === module.name)	return module;
 			else if (moduleName = module.name) return module;
 		}
 		return undefined;

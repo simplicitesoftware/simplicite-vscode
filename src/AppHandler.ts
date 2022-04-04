@@ -6,7 +6,7 @@ export class AppHandler {
 	}
 	getApp(moduleURL: string): any {
 		if (this.appList.get(moduleURL) === undefined) {
-			this.setApp(moduleURL, simplicite.session({ url: moduleURL }));
+			this.setApp(moduleURL, simplicite.session({ url: moduleURL, debug: true }));
 		}
 		return this.appList.get(moduleURL);
 	}

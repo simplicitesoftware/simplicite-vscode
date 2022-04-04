@@ -58,12 +58,10 @@ export class ApiFileSystemController {
 		return afs;
 	}
 
-	public async removeApiFileSystem (apiModuleName: string) {
+	public async removeApiFileSystem (module: Module) {
 		// this function has the responsability to check how many modules depends from the targeted module's instance url
 		// only one module is connected --> deconnect from it as it won't affect any module
 		// Many modules connected to same instance --> dont deconnect, simply remove the apiFileSystem
-		const module = this.getApiModule(apiModuleName);
-		if (module == undefined) throw new Error('Cannot find ' + apiModuleName + 'in api modules.');
 		const count = this.countConnectedModulesFromSameInstance(module.instanceUrl);
 		if (count === 1) await this.simpliciteApiController.instanceLogout(module.instanceUrl);
 		this.removeFromAfsListAndModuleList(module);

@@ -32,6 +32,8 @@ export class Module {
 	}
 
 	static getApiModuleName (moduleName: string, instanceUrl: string) {
-		return moduleName + "@" + instanceUrl;
+		let withoutHttp = instanceUrl.replace('https://', '');
+		withoutHttp = withoutHttp.replace('http://', '');  
+		return moduleName + "@" + withoutHttp;
 	}
 }
