@@ -2,7 +2,7 @@
 
 import { workspace, Uri } from 'vscode';
 import { logger } from './Log';
-import { Module } from './Module';
+import { ApiModule } from './ApiModule';
 import { ModuleHandler } from './ModuleHandler';
 import { Buffer } from 'buffer';
 import { SimpliciteApi } from './SimpliciteApi';
@@ -11,10 +11,10 @@ export class ApiFileSystem {
 	private _app: any;
 	private _baseUrl: string;
 	private _simpliciteApi: SimpliciteApi;
-	module: Module; // not private because need to access in extension.ts
-	constructor (app: any, module: Module, simpliciteApi: SimpliciteApi) {
+	module: ApiModule; // not private because need to access in extension.ts
+	constructor (app: any, module: ApiModule, simpliciteApi: SimpliciteApi) {
 		this._app = app;
-		this._baseUrl = STORAGE_PATH + module.parentFolderName;
+		this._baseUrl = STORAGE_PATH; //+ module.parentFolderName; todo
 		this.module = module;
 		this._simpliciteApi = simpliciteApi;
 	}

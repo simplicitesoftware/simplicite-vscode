@@ -10,9 +10,10 @@ import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { PomXMLData } from './interfaces';
 import { DevInfo } from './DevInfo';
 import { FileHandler } from './FileHandler';
+import { ApiModule } from './ApiModule';
 
 export class ModuleHandler {
-	modules: Array<Module>;
+	modules: Array<Module | ApiModule>;
 	connectedInstances: string[];
 	_globalState: Memento;
 	_barItem: BarItem;
@@ -33,15 +34,16 @@ export class ModuleHandler {
 	addModule (module: Module, onInitialization: boolean) {
 		let flag = true;
 		for (const mod of this.modules) {
-			if (mod.name === module.name && mod.apiFileSystem === module.apiFileSystem) {
+			if (mod.name === module.name /*&& mod.apiFileSystem === module.apiFileSystem*/) {
 				flag = false;
 			}
 		}
-		if (module.workspaceFolderPath === '' || module.parentFolderName === '') {
-			const wk = this.getWorkspaceFolderPath(module);
-			module.workspaceFolderPath = wk ? wk : '';
-			module.parentFolderName = Module.computeParentFolderName(module.workspaceFolderPath);
-		}
+		// todo
+		// if (module.workspaceFolderPath === '' || module.parentFolderName === '') {
+		// 	const wk = this.getWorkspaceFolderPath(module);
+		// 	module.workspaceFolderPath = wk ? wk : '';
+		// 	module.parentFolderName = Module.computeParentFolderName(module.workspaceFolderPath);
+		// }
 		// if not already in, add module to list
 		if (flag) {
 			this.modules.push(module);
@@ -51,8 +53,9 @@ export class ModuleHandler {
 
 	public removeModule (name: string, instanceUrl: string, isApi: boolean) {
 		this.modules.forEach((mod: Module, i: number) => {
-			if (isApi && mod.apiModuleName === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1); 
-		  else if (mod.name === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1);
+			// SEE CONDITIONS HERE
+			//if (isApi && mod.apiModuleName === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1); 
+		  if (mod.name === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1);
 		});
 	}
 
@@ -60,7 +63,7 @@ export class ModuleHandler {
 		const tempModules = [];
 		let module: Module | false = false;
 		for (const mod of this.modules) {
-			if (mod.workspaceFolderPath !== wkPath) {
+			if (1) { // todo
 				tempModules.push(mod);
 			} else {
 				module = mod;
@@ -77,16 +80,16 @@ export class ModuleHandler {
 	}
 
 	private compareWithPersistence() { // compare the initial modules found in the workspace with the persistent datas. Mandatory to get api file system module
-		const parsedModule: Array<Module> = this._globalState.get('simplicite-modules-info') || [];
+		const parsedModule: Array<Module | ApiModule> = this._globalState.get('simplicite-modules-info') || [];
 		for (const parMod of parsedModule) {
-			if (this.modules.length === 0 && !parMod.apiFileSystem) { // if no module is not found on disk delete
+			if (this.modules.length === 0 && parMod instanceof ApiModule) { // if no module is not found on disk delete
 				continue;
-			} else if (!parMod.apiFileSystem) {
+			} else if (1/*!parMod.apiFileSystem*/) {
 				let isModuleOnDisk = false;
 				for (const mod of this.modules) {
-					if (parMod.parentFolderName === mod.parentFolderName) {
-						isModuleOnDisk = true;
-					}
+					// if (parMod.parentFolderName === mod.parentFolderName) { // todo
+					// 	isModuleOnDisk = true;
+					// }
 				}
 				if (!isModuleOnDisk) {
 					continue;
@@ -96,7 +99,6 @@ export class ModuleHandler {
 			this.addModule(parMod, false);
 			if (parMod.token !== '') this.spreadToken(parMod.instanceUrl, parMod.token);
 		}
-
 	}
 
 	spreadToken(instanceUrl: string, token: string): void {
@@ -107,37 +109,45 @@ export class ModuleHandler {
 		}
 	}
 
-	getModuleFromName(moduleName: string, isApi: boolean): Module | undefined {
+	getModuleFromNameAndInstance(moduleName: string, instanceUrl: string): Module | ApiModule | undefined {
 		for (const module of this.modules) {
-			if (isApi && moduleName === module.name)	return module;
-			else if (moduleName = module.name) return module;
+			if (moduleName === module.name && instanceUrl === module.instanceUrl) return module;
 		}
 		return undefined;
 	}
 
+	getModuleFromName(moduleName: string, instanceUrl: string): Module | undefined {
+		for (const module of this.modules) {
+			if (module !instanceof ApiModule && moduleName === module.name && instanceUrl === module.instanceUrl) return module;
+		}
+		return undefined;
+	}
+
+	getApiModuleFromName(moduleName: string, instanceUrl: string): ApiModule | undefined {
+		for (const module of this.modules) {
+			if (module instanceof ApiModule && moduleName === module.name && instanceUrl === module.instanceUrl)	return module;
+		}
+		return undefined;
+	}
+
+	getModuleFromWorkspacePath(wkPath: string): Module | ApiModule | undefined {
+		for (const mod of this.modules) {
+			if(wkPath === mod.workspaceFolderPath) return mod;
+		}
+		return undefined;
+	}
 
 	getModuleFromParentFolder(parentFolderPath: string): Module | undefined {
 		for (const module of this.modules) {
-			if (module.parentFolderName === parentFolderPath) {
-				return module;
-			}
+			// if (module.parentFolderName === parentFolderPath) { todo
+			// 	return module;
+			// }
 		}
 		return undefined;
 	}
 
-	getModuleFromWorkspacePath(workspacePath: string): Module | undefined {
-		for (const module of this.modules) {
-			if (module.workspaceFolderPath === workspacePath) {
-				return module;
-			}
-		}
-		return undefined;
-	}
-
-	async setSimpliciteModulesFromDisk(): Promise<void> { // returns array of module objects
-		if (workspace.workspaceFolders === undefined) {
-			return;
-		}			
+	async setSimpliciteModulesFromDisk(): Promise<void> {
+		if (workspace.workspaceFolders === undefined) return;
 		for (const workspaceFolder of workspace.workspaceFolders) {
 			try {
 				const globPatern = '**/module-info.json'; // if it contains module-info.json -> simplicite module
@@ -148,7 +158,7 @@ export class ModuleHandler {
 				}
 				const pomXMLData: PomXMLData = await this.getModuleInstanceUrlAndNameFromDisk(workspaceFolder);
 				if (modulePom[0]) {
-					this.addModule(new Module(pomXMLData.name, workspaceFolder.uri.path, pomXMLData.instanceUrl, '', false, false), true);
+					this.addModule(new Module(pomXMLData.name, workspaceFolder.uri.path, pomXMLData.instanceUrl, '', false), true);
 				}
 			} catch (e: any) {
 				logger.warn(e);
@@ -171,8 +181,8 @@ export class ModuleHandler {
 			return false;
 		}
 		for (const wk of workspace.workspaceFolders) {
-			if (wk.name ===  module.name && !module.apiFileSystem) return wk.uri.path;
-			else if (wk.name === module.apiModuleName && module.apiFileSystem) return wk.uri.path;
+			if (wk.name ===  module.name /*&& !module.apiFileSystem*/) return wk.uri.path;
+			//else if (wk.name === module.apiModuleName && module.apiFileSystem) return wk.uri.path;
 		}
 		return false;
 	}
@@ -180,14 +190,15 @@ export class ModuleHandler {
 	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: DevInfo | undefined): void {
 		this.removeConnectedInstance(instanceUrl);
 		for (const mod of this.modules) {
-			if (mod.apiFileSystem) {
-				this.removeModuleFromWkPath(mod.workspaceFolderPath);
-			}
-			if (mod.instanceUrl === instanceUrl) {
-				mod.connected = false;
-				mod.moduleDevInfo = undefined;
-				mod.token = '';
-			}
+			// todo
+			// if (mod.apiFileSystem) {
+			// 	this.removeModuleFromWkPath(mod.workspaceFolderPath);
+			// }
+			// if (mod.instanceUrl === instanceUrl) {
+			// 	mod.connected = false;
+			// 	mod.moduleDevInfo = undefined;
+			// 	mod.token = '';
+			// }
 		}
 		moduleInfoTree.feedData(devInfo, this.modules);
 		this._moduleHasBeenModified();

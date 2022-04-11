@@ -79,7 +79,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			await simpliciteApiController.resolveConflict(file);
 			return;
 		}
-		const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
+		const module = moduleHandler.getModuleFromNameAndInstance(file.workspaceFolderPath, file.simpliciteUrl);
 		if (!module) {
 			logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
 			return;
@@ -114,15 +114,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			for (const rfs of apiFileSystemController.apiFileSystemList) {
 				index++;
 				if (rfs.module.name === module.name) {
-					if (rfs.module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file (not fun)
-						logger.error('workspaceFolderPath is undefined');
-						return;
-					}
-					const uri = Uri.file(rfs.module.workspaceFolderPath);
-					workspace.fs.delete(uri);
-					apiFileSystemController.apiFileSystemList = apiFileSystemController.apiFileSystemList.splice(index, 1);
-					logger.info('removed api module from workspace');
-					break;
+					// todo
+					// if (rfs.module.workspaceFolderPath === '') { // important condition, if empty string => Uri.file can resolve to the root of the main disk and delete every file (not fun)
+					// 	logger.error('workspaceFolderPath is undefined');
+					// 	return;
+					// }
+					// const uri = Uri.file(rfs.module.workspaceFolderPath);
+					// workspace.fs.delete(uri);
+					// apiFileSystemController.apiFileSystemList = apiFileSystemController.apiFileSystemList.splice(index, 1);
+					// logger.info('removed api module from workspace');
+					// break;
 				}
 			}
 		}
@@ -141,10 +142,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			&& moduleHandler.modules.length
 			&& window.activeTextEditor) {
 			const filePath = window.activeTextEditor.document.uri.path;
-			if (!filePath.includes('.java')) {
+			const file = fileHandler.getFileFromFullPath(filePath);
+			if (file.extension !== '.java') {
 				return undefined;
 			}
-			const file = fileHandler.getFileFromFullPath(filePath);
 			// set the api file info onDidChangeActiveTextEditor
 			const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
 			if (!module || !module.moduleDevInfo) {

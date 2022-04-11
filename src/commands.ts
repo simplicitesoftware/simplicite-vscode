@@ -15,6 +15,7 @@ import { AppHandler } from './AppHandler';
 import { ApiFileSystemController } from './ApiFileSystemController';
 import { FileItem } from './treeView/treeViewClasses';
 import { WorkspaceController } from './WorkspaceController';
+import { ApiModule } from './ApiModule';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -28,9 +29,16 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteApiController | any) {
 		// eslint-disable-next-line no-prototype-builtins
+		const instanceUrl = await window.showInputBox({
+			placeHolder: 'instance url',
+			title: 'Simplicite: Type in the instance url'
+		});
+		if (!instanceUrl) {
+			throw new Error();
+		}
 		if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
 			element = await inputFilePath('Simplicite: Type in the module name', 'module name');
-			const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element, false);
+			const moduleObject: Module | undefined = moduleHandler.getModuleFromName(element, instanceUrl);
 			if (!moduleObject) {
 				window.showErrorMessage('Simplicite: ' + element + ' is not a module');
 			}
@@ -232,7 +240,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				throw new Error('Empty module name');
 			}
 			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
-			const module = new Module(moduleName, '', instanceUrl, token, true, true);
+			const module = new ApiModule(moduleName, '', instanceUrl, token, true, true);
 			moduleHandler.addModule(module, true);
 			await simpliciteApiController.tokenOrCredentials(module);
 			if (!simpliciteApi.devInfo || !moduleHandler.connectedInstances.includes(instanceUrl)) {
@@ -248,6 +256,13 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 	
 	const removeApiFileSystem = commands.registerCommand('simplicite-vscode-tools.removeApiFileSystem', async () => {
+		const instanceUrl = await window.showInputBox({
+			placeHolder: 'instance url',
+			title: 'Simplicite: Type in the instance url'
+		});
+		if (!instanceUrl) {
+			throw new Error();
+		}
 		const moduleName = await window.showInputBox({
 			placeHolder: 'module name',
 			title: 'Simplicite: Type the name of the module (module-name@instance-url) to remove from the workspace'
@@ -255,9 +270,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 		if (!moduleName) {
 			throw new Error('Empty module name');
 		}
-		const module = moduleHandler.getModuleFromName(moduleName, true);
+		const module = moduleHandler.getApiModuleFromName(moduleName, instanceUrl);
 		if (module === undefined) {
-			window.showWarningMessage('Simplicite: ' + moduleName + 'has not been found.')
+			window.showWarningMessage('Simplicite: ' + moduleName + 'has not been found.');
 			return;
 		}
 		await apiFileSystemController.removeApiFileSystem(module);

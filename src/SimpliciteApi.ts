@@ -16,7 +16,7 @@ export class SimpliciteApi {
 		this._appHandler = appHandler;
 	}
 
-	async login(instanceUrl: string, credentials: Credentials | undefined, token: string): Promise<string | false> {
+	async login(instanceUrl: string, credentials: Credentials | undefined, token: string | undefined): Promise<string | false> {
 		const app = this._appHandler.getApp(instanceUrl);
 		if (credentials) {
 			app.setPassword(credentials.password);

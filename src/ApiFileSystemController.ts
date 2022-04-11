@@ -6,6 +6,8 @@ import { ModuleHandler } from './ModuleHandler';
 import { SimpliciteApi } from './SimpliciteApi';
 import { Module } from './Module';
 import { SimpliciteApiController } from './SimpliciteApiController';
+import { workspace } from 'vscode';
+import { ApiModule } from './ApiModule';
 
 // gets called in extension.ts to init the already existants api file systems
 export class ApiFileSystemController {
@@ -26,7 +28,7 @@ export class ApiFileSystemController {
 						throw new Error();
 					}
 				}
-				if (module.apiFileSystem && simpliciteApi.devInfo) {
+				if (simpliciteApi.devInfo && module instanceof ApiModule) {
 					const app = appHandler.getApp(module.instanceUrl);
 					const rfsControl = new ApiFileSystem(app, module, simpliciteApi);
 					this.apiFileSystemList.push(rfsControl);
@@ -58,7 +60,7 @@ export class ApiFileSystemController {
 		return afs;
 	}
 
-	public async removeApiFileSystem (module: Module) {
+	public async removeApiFileSystem (module: ApiModule) {
 		// this function has the responsability to check how many modules depends from the targeted module's instance url
 		// only one module is connected --> deconnect from it as it won't affect any module
 		// Many modules connected to same instance --> dont deconnect, simply remove the apiFileSystem
@@ -75,7 +77,8 @@ export class ApiFileSystemController {
 		return count;
 	}
 
-	private removeFromAfsListAndModuleList (module: Module) {
+	// see how it goes with new ApiModule implementation
+	private removeFromAfsListAndModuleList (module: ApiModule) {
 		this.apiFileSystemList.forEach((apiFileSystem: ApiFileSystem, index: number) => {
 			if (apiFileSystem.module.apiModuleName === module.apiModuleName) this.apiFileSystemList.splice(index, 1);
 		});

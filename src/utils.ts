@@ -36,9 +36,10 @@ export function removeFileExtension(template: string): string {
 
 export function getModuleFromWorkspacePath(wkPath: string, modules: Module[]): Module | false {
 	for (const module of modules) {
-		if (module.workspaceFolderPath === wkPath) {
-			return module;
-		}
+		// todo
+		// if (module.workspaceFolderPath === wkPath) {
+		// 	return module;
+		// }
 	}
 	return false;
 }
@@ -48,9 +49,10 @@ export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAn
 	for (const module of modules) {
 		const moduleObject: FileAndModule = { module: module, fileList: [] };
 		for (const file of files) {
-			if (file.workspaceFolderPath === module.workspaceFolderPath) {
-				moduleObject.fileList.push(file);
-			}
+			// todo
+			// if (file.workspaceFolderPath === module.workspaceFolderPath) {
+			// 	moduleObject.fileList.push(file);
+			// }
 		}
 		fileModule.push(moduleObject);
 	}
