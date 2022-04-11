@@ -1,0 +1,115 @@
+{
+  "display": {
+    "prefix": ["display"],
+    "body": [
+      "/**",
+      "* Main page display method",
+      "* @param params Request parameters",
+      "*/",
+      "@Override",
+      "public String display(Parameters params) {",
+      "\ttry {",
+      "\t\treturn null;",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description": "Main page display method"
+  },
+  "displaypublic": {
+    "prefix": ["displaypublic"],
+    "body": [
+      "/**",
+      "* Main public page display method",
+      "* @param params Request parameters",
+      "*/",
+      "@Override",
+      "public String displayPublic(Parameters params) {",
+      "\ttry {",
+      "\t\treturn null;",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description": "Main public page display method"
+  },
+  "displayhome": {
+    "prefix": ["displayhome"],
+    "body": [
+      "/**",
+      "* Home page display method",
+      "* @param params Request parameters",
+      "*/",
+      "@Override",
+      "public String displayHome(Parameters params) {",
+      "\ttry {",
+      "\t\treturn null;",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description": "Home page display method"
+  },
+  "displaylogon": {
+    "prefix": ["displaylogon"],
+    "body": [
+      "/**",
+      "* Public home page display method",
+      "* @param params Request parameters",
+      "*/",
+      "@Override",
+      "public String displayPublicHome(Parameters params) {",
+      "\ttry {",
+      "\t\treturn null;",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description":"Logon page display method"
+  },
+  "displaylogout": {
+    "prefix": ["displaylogout"],
+    "body": [
+      "/**",
+      "* Logout page display method",
+      "* @param params Request parameters",
+      "*/",
+      "@Override",
+      "public String displayLogout(Parameters params) {",
+      "\ttry {",
+      "\t\treturn null;",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description":"Logout page display method"
+  },
+  "unittests": {
+    "prefix": ["unittests"],
+    "body": [
+      "/**",
+      "* Unit tests method",
+      "*/",
+      "@Override",
+      "public String unitTests() {",
+      "\ttry {",
+      "\t\treturn \"Unit tests for\" + getName();",
+      "\t} catch (Exception e) {",
+      "\t\tAppLog.error(null, e, getGrant());",
+      "\t\treturn e.getMessage();",
+      "\t}",
+      "}"
+    ],
+    "description":" Unit tests method"
+  }
+}

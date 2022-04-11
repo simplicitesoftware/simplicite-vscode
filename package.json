@@ -16,6 +16,7 @@
 	},
 	"bugs": "https://github.com/simplicitesoftware/simplicite-vscode/issues",
 	"categories": [
+		"Snippets",
 		"Other"
 	],
 	"keywords": [
@@ -29,6 +30,16 @@
 	"browser": "./dist/vscode-extension.js",
 	"main": "./dist/theia-extension.js",
 	"contributes": {
+		"snippets": [
+			{
+				"language": "java",
+				"path": "./resources/snippets/disposition.json"
+			},
+			{
+				"language": "java",
+				"path": "./resources/snippets/extobject.json"
+			}
+		],
 		"views": {
 			"explorer": [
 				{
