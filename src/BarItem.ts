@@ -51,7 +51,7 @@ export class BarItem {
 				for (const module of modules) {
 					if (url === module.instanceUrl) {
 						moduleMarkdown += '- ';
-						moduleMarkdown += module.parentFolderName + '\n\n';
+						moduleMarkdown += module.name + '\n\n';
 					}
 				}
 			}

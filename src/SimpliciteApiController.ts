@@ -32,11 +32,9 @@ export class SimpliciteApiController {
 	}
 
 	// login to every module
-	async loginAll(): Promise<void> { 
+	async loginAll(): Promise<void> {
 		for (const module of this._moduleHandler.modules) {
-			if (module.connected) {
-				continue;
-			} else if (!isHttpsUri(module.instanceUrl) && !(isHttpUri(module.instanceUrl))) {
+			if (!isHttpsUri(module.instanceUrl) && !(isHttpUri(module.instanceUrl))) {
 				window.showErrorMessage('Simplicite: ' + module.instanceUrl + ' is not a valid url');
 				continue;
 			}
@@ -45,6 +43,7 @@ export class SimpliciteApiController {
 	}
 
 	async tokenOrCredentials(module: Module): Promise<void> {
+		if (module.connected) return;
 		let credentials: Credentials | undefined;
 		let token = '';
 		if (module.token === '') {
@@ -141,8 +140,8 @@ export class SimpliciteApiController {
 	async applyFiles (mod: Module, modules: Module[]) {
 		let isJava = false;
 		for (const file of this._fileHandler.fileList) {
-			if (file.parentFolderName !== mod.parentFolderName || !file.tracked) continue;
-			const remoteContent = await this.isConflict(file, mod.parentFolderName);
+			if (file.parentFolderName !== mod.name || !file.tracked) continue;
+			const remoteContent = await this.isConflict(file, mod.name);
 			// if a conflict occurs, dont send following files and start resolution
 			if (remoteContent) {
 				this.conflictStatus = true;
@@ -215,7 +214,7 @@ export class SimpliciteApiController {
 	}
 
 	async writeFileController(file: File, module: Module): Promise<void> {
-		const remoteContent = await this.isConflict(file, module.parentFolderName);
+		const remoteContent = await this.isConflict(file, module.name);
 		if (remoteContent) {
 			this.conflictStatus = true;
 			await this.notifyAndSetConflict(file, remoteContent);

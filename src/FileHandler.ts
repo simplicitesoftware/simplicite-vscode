@@ -6,9 +6,9 @@ import { File } from './File';
 import { Module } from './Module';
 import { bindFileAndModule, validFileExtension } from './utils';
 import { FileTree } from './treeView/FileTree';
-import { getModuleFromWorkspacePath } from './utils';
 import { FileAndModule } from './interfaces';
 import { DevInfo } from './DevInfo';
+import { ModuleHandler } from './ModuleHandler';
 
 export class FileHandler {
 	fileTree?: FileTree;
@@ -19,11 +19,11 @@ export class FileHandler {
 		this._globalState = globalState;
 	}
 
-	static async build(globalState: Memento, modules: Module[]): Promise<FileHandler> {
+	static async build(globalState: Memento, moduleHandler: ModuleHandler): Promise<FileHandler> {
 		const fileHandler = new FileHandler(globalState);
 		try {
-			fileHandler.fileList = await fileHandler.FileDetector(modules);
-			await fileHandler.initTempFolder(bindFileAndModule(modules, fileHandler.fileList));
+			fileHandler.fileList = await fileHandler.FileDetector(moduleHandler);
+			await fileHandler.initTempFolder(bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
 		} catch (e) {
 			logger.error(e);
 		}
@@ -34,7 +34,7 @@ export class FileHandler {
 	async initTempFolder(fileModule: FileAndModule[]) {
 		try {
 			for (const fm of fileModule) {
-				const modulePath = STORAGE_PATH + 'temp/' + fm.module.parentFolderName + '/';
+				const modulePath = STORAGE_PATH + 'temp/' + fm.module.name + '/';
 				await workspace.fs.createDirectory(Uri.parse(modulePath));
 				for (const file of fm.fileList) {
 					const tempFilePath = File.tempPathMaker(file);
@@ -60,7 +60,7 @@ export class FileHandler {
 		this._globalState.update('simplicite-files-info', jsonContent);
 	}
 
-	async FileDetector(modules: Module[]): Promise<File[]> {
+	async FileDetector(moduleHandler: ModuleHandler): Promise<File[]> {
 		this.fileList = [];
 		if (workspace.workspaceFolders === undefined) {
 			throw new Error('no workspace detected');
@@ -74,7 +74,7 @@ export class FileHandler {
 				const files = await workspace.findFiles(relativePattern);
 				for (const file of files) {
 					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/.temp/')) {
-						const module = getModuleFromWorkspacePath(workspaceFolder.uri.path, modules);
+						const module = moduleHandler.getModuleFromWorkspacePath(workspaceFolder.uri.path);
 						const wk = workspaceFolder.uri.path.toLowerCase();
 						let filePath = file.path;
 						filePath = filePath.toLowerCase();
@@ -82,13 +82,13 @@ export class FileHandler {
 						if (!module || test) {
 							continue;
 						}
-						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.parentFolderName, false));
+						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));
 					}
 				}
 			}
 		}
 		try {
-			if (this.fileTree) await this.fileTree.setFileModule(modules, fileList);
+			if (this.fileTree) await this.fileTree.setFileModule(moduleHandler.modules, fileList);
 			return this.setTrackedStatusPersistence(fileList);
 		} catch (e) {
 			logger.warn('File Detector: ' + e);

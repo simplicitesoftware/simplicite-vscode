@@ -12,7 +12,7 @@ import * as path from 'path';
 export class FileTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // this attribute and the below one are mandatory to refresh the component
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
-	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus()) // todo
+	fileModule: FileAndModule[]; // is set in setFileModule, which is called on every file changes (fileDetector() & setTrackedStatus())
 	runPath: string;
 	constructor(runPath: string, modules: Module[], files: File[]) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
@@ -65,7 +65,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			return [];
 		}
 		for (const fm of this.fileModule) {
-			const treeItem = new ModuleItem(fm.module.parentFolderName, TreeItemCollapsibleState.Collapsed, fm.module.instanceUrl);
+			const treeItem = new ModuleItem(fm.module.name, TreeItemCollapsibleState.Collapsed, fm.module.instanceUrl);
 			treeItem.iconPath = {
 				light: path.join(this.runPath, 'resources/light/module.svg'),
 				dark: path.join(this.runPath, 'resources/dark/module.svg')
@@ -82,7 +82,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		}
 		for (const fm of this.fileModule) {
 			let untrackedFlag = false;
-			if (fm.fileList.length > 0 && fm.module.parentFolderName === label) {
+			if (fm.fileList.length > 0 && fm.module.name === label) {
 				for (const file of fm.fileList) {
 					if (file.tracked) {
 						const legibleFileName = this.legibleFileName(file.uri.path);
@@ -113,7 +113,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		const untrackedFiles = [];
 		if (this.fileModule) {
 			for (const fm of this.fileModule) {
-				if (fm.fileList.length > 0 && fm.module.parentFolderName === moduleName) {
+				if (fm.fileList.length > 0 && fm.module.name === moduleName) {
 					for (const file of fm.fileList) {
 						if (!file.tracked) {
 							const legibleFileName = this.legibleFileName(file.uri.path);
