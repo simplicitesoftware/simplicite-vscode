@@ -4,7 +4,11 @@
 Simplicite VSCode tools
 =======================
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=simplicitesoftware_simplicite-vscode&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=simplicitesoftware_simplicite-vscode)
+
 Simplicite low code platform tools to make life easier for designers in an IDE environment.
+
+
 
 * * *
 
