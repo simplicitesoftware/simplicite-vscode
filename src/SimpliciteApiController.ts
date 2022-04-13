@@ -38,12 +38,16 @@ export class SimpliciteApiController {
 				window.showErrorMessage('Simplicite: ' + module.instanceUrl + ' is not a valid url');
 				continue;
 			}
-			await this.tokenOrCredentials(module);
+			try {
+				await this.tokenOrCredentials(module);
+			} catch(e) {
+
+			}
 		}
 	}
 
-	async tokenOrCredentials(module: Module): Promise<void> {
-		if (module.connected) return;
+	async tokenOrCredentials(module: Module): Promise<boolean> {
+		if (module.connected) return true;
 		let credentials: Credentials | undefined;
 		let token = '';
 		if (module.token === '') {
@@ -51,51 +55,46 @@ export class SimpliciteApiController {
 		} else {
 			token = module.token;
 		}
-		await this.loginMethod(module, credentials, token);
+		return await this.loginMethod(module, credentials, token);
 	}
-
-	private async loginMethod(module: Module, credentials: Credentials | undefined, token: string): Promise<void> {
+	
+	private async loginMethod(module: Module, credentials: Credentials | undefined, token: string): Promise<boolean> {
 		const instanceUrl = module.instanceUrl;
 		const givenToken = await this._simpliciteApi.login(instanceUrl, credentials, token);
 		if (!givenToken) {
 			this._moduleHandler.spreadToken(instanceUrl, ''); // reset token
 			this._appHandler.appList.delete(instanceUrl);
 			this._moduleHandler.saveModules();
-			return;
+			return false;
 		}
 		await this._moduleHandler.loginModuleState(this._simpliciteApi, module, givenToken, this._fileHandler);
 		this._moduleInfoTree?.feedData(this._simpliciteApi.devInfo, this._moduleHandler.modules);
+		return true;
 	} 
 
 	private async getCredentials(module: Module): Promise<Credentials | undefined> {
-		try {
-			let usernamePlaceHolder = 'username';
-			let passwordPlaceHolder = 'password';
-			if (env.appHost !== 'desktop') {
-				usernamePlaceHolder = `username (instance url: ${module.instanceUrl})`;
-				passwordPlaceHolder = `password (instance url: ${module.instanceUrl})`;
-			}
-			const username = await window.showInputBox({
-				placeHolder: usernamePlaceHolder,
-				title: 'Simplicite: Authenticate to ' + module.name + ' API (' + module.instanceUrl + ')'
-			});
-			if (!username) {
-				throw new Error('Authentication cancelled');
-			}
-			const password = await window.showInputBox({
-				placeHolder: passwordPlaceHolder,
-				title: 'Simplicite: Authenticate to ' + module.name + ' API (' + module.instanceUrl + ')',
-				password: true
-			});
-			if (!password) {
-				throw new Error('Authentication cancelled');
-			}
-			return { userName: username, password: password };
-		} catch (e) {
-			// if the process is cancelled, delete app
-			this._appHandler.appList.delete(module.instanceUrl);
-			return undefined;
+		let usernamePlaceHolder = 'username';
+		let passwordPlaceHolder = 'password';
+		if (env.appHost !== 'desktop') {
+			usernamePlaceHolder = `username (instance url: ${module.instanceUrl})`;
+			passwordPlaceHolder = `password (instance url: ${module.instanceUrl})`;
 		}
+		const username = await window.showInputBox({
+			placeHolder: usernamePlaceHolder,
+			title: 'Simplicite: Authenticate to ' + module.name + ' API (' + module.instanceUrl + ')'
+		});
+		if (!username) {
+			throw new Error('Simplicité: input cancelled');
+		}
+		const password = await window.showInputBox({
+			placeHolder: passwordPlaceHolder,
+			title: 'Simplicite: Authenticate to ' + module.name + ' API (' + module.instanceUrl + ')',
+			password: true
+		});
+		if (!password) {
+			throw new Error('Simplicité: input cancelled');
+		}
+			return { userName: username, password: password };
 	}
 
 	async logoutAll(): Promise<void> { // disconnect every instance

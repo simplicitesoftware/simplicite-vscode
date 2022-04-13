@@ -11,11 +11,13 @@ export class ApiModule extends Module {
   private _app: any;
 	private _simpliciteApi: SimpliciteApi | null;
   apiModuleName: string;
-  constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null) {
+	workspaceName: string | undefined;
+  constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null, workspaceName: string | undefined) {
     super(name, workspaceFolderPath, instanceUrl, token);
     this.apiModuleName = ApiModule.getApiModuleName(name, instanceUrl);
     this._app = app;
 		this._simpliciteApi = simpliciteApi;
+		this.workspaceName = workspaceName;
   }
 
   public static getApiModuleName (moduleName: string, instanceUrl: string) {
@@ -31,7 +33,6 @@ export class ApiModule extends Module {
 	}
 
 	async createProject(): Promise<boolean> {
-		try {
 			const mdl = await this._app.getBusinessObject('Module');
 			// look for module row_id
 			const ms = await mdl.search({ mdl_name: this.name} );
@@ -40,10 +41,6 @@ export class ApiModule extends Module {
 			const pom = await mdl.print('Module-MavenModule', m.row_id);
 			await workspace.fs.writeFile(Uri.file(STORAGE_PATH + this.apiModuleName + '/pom.xml'), Buffer.from(pom.content, 'base64'));
 			return true;
-		} catch (e) {
-			logger.error(e);
-			return false;
-		}
 	}
 
 	async createFiles (): Promise<any> {
@@ -52,12 +49,17 @@ export class ApiModule extends Module {
 			const businessObj = this._app.getBusinessObject(type, 'ide_' + type);
 			for (const moduleObj of this.moduleDevInfo[type]) {
 				if (!moduleObj.sourcepath) continue;
-				const res = await businessObj.search({ row_id: moduleObj.id }, { inlineDocuments: [ true ] });
-				if (!res || res.length === 0) continue;		
-				const content = this.readContent(res[0], type);
-				if (!content) continue;	
-				const uri = Uri.file(STORAGE_PATH + this.apiModuleName + '/' + moduleObj.sourcepath);
-				workspace.fs.writeFile(uri, Buffer.from(res[0][this._simpliciteApi.devInfo.getSourceField(type)].content, 'base64'));
+				try {
+					const res = await businessObj.search({ row_id: moduleObj.id }, { inlineDocuments: [ true ] });
+					if (!res || res.length === 0) continue;		
+					const content = this.readContent(res[0], type);
+					if (!content) continue;	
+					const uri = Uri.file(STORAGE_PATH + this.apiModuleName + '/' + moduleObj.sourcepath);
+					workspace.fs.writeFile(uri, Buffer.from(res[0][this._simpliciteApi.devInfo.getSourceField(type)].content, 'base64'));
+				} catch(e) {
+					logger.error(e);
+				}
+				
 			}
 		}
 	}
@@ -82,7 +84,7 @@ export class ApiModule extends Module {
     }
     const uri = Uri.file(this.workspaceFolderPath);
     try {
-      workspace.fs.delete(uri);
+      workspace.fs.delete(uri, { recursive: true });
     } catch(e) {
       logger.error(e);
     }

@@ -1,6 +1,7 @@
 'use strict';
 
 import { window, MarkdownString, StatusBarItem, env } from 'vscode';
+import { ApiModule } from './ApiModule';
 import { Module } from './Module';
 
 export class BarItem {
@@ -12,9 +13,9 @@ export class BarItem {
 	}
 
 	// refresh the BarItem
-	show(modules: Array<Module>, connectedInstances: string[]): void {
+	show(modules: Array<Module | ApiModule>, connectedInstances: string[]): void {
 		if (modules.length === 0 && connectedInstances.length === 0) {
-			this.barItem.tooltip = 'No Simplicite module detected';
+			this.barItem.tooltip = 'No Simplicite module connected';
 			return;
 		}
 		if (env.appHost !== 'desktop') {

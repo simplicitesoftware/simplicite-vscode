@@ -6,7 +6,6 @@ export class Module {
 	token: string;
 	moduleDevInfo: any;
 	connected: boolean;
-	//parentFolderName: string;
 	workspaceFolderPath: string;
 	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string) {
 		this.name = name;
@@ -14,13 +13,6 @@ export class Module {
 		this.token = token;
 		this.moduleDevInfo = undefined;
 		this.connected = false;
-		//this.parentFolderName = Module.computeParentFolderName(workspaceFolderPath); // check
 		this.workspaceFolderPath = workspaceFolderPath;
 	}
-
-	// static computeParentFolderName (folderPath: string) {
-	// 	const decomposedPath = folderPath.split('/');
-	// 	const index = decomposedPath.length - 1;
-	// 	return decomposedPath[index];
-	// }
 }

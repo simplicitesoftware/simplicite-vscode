@@ -16,8 +16,8 @@ import { SimpliciteApiController } from './SimpliciteApiController';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
 import { commandInit } from './commands';
-import { ApiFileSystemController } from './ApiFileSystemController';
 import { DevInfo } from './DevInfo';
+import { WorkspaceController } from './WorkspaceController';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	initGlobalValues(context.globalStorageUri.path);
@@ -29,8 +29,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const simpliciteApi = new SimpliciteApi(appHandler);
 	const moduleHandler = await ModuleHandler.build(context.globalState, barItem, appHandler, simpliciteApi);
 	const fileHandler = await FileHandler.build(context.globalState, moduleHandler);
-	
-
 	
 	const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
 	new QuickPick(context.subscriptions, simpliciteApiController);
@@ -45,9 +43,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
-	const apiFileSystemController = new ApiFileSystemController(simpliciteApiController, moduleHandler);
-
-	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler, apiFileSystemController);
+	const publicCommand = commandInit(context, simpliciteApiController, simpliciteApi, moduleHandler, fileHandler, moduleInfoTree, appHandler, barItem);
 
 	if (workspace.getConfiguration('simplicite-vscode-tools').get('api.autoAuthentication')) { // settings are set in the package.json
 		try {
@@ -56,6 +52,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			logger.error(e);
 		}
 	}
+
+	await WorkspaceController.workspaceFolderChangeListener(moduleHandler, simpliciteApiController, fileHandler, simpliciteApi, moduleInfoTree, appHandler, barItem);
 
 	// Save file detection
 	workspace.onDidSaveTextDocument(async (event: TextDocument) => {
@@ -78,7 +76,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 			await simpliciteApiController.resolveConflict(file);
 			return;
 		}
-		const module = moduleHandler.getModuleFromNameAndInstance(file.workspaceFolderPath, file.simpliciteUrl);
+		const module = moduleHandler.getModuleFromWorkspacePath(file.workspaceFolderPath);
 		if (!module) {
 			logger.error('Cannot get module info from ' + file.workspaceFolderPath ? file.workspaceFolderPath : 'undefined');
 			return;
