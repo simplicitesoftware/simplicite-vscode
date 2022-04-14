@@ -60,7 +60,6 @@ export class ModuleHandler {
 
 	public removeModule (name: string, instanceUrl: string) {
 		this.modules.forEach((mod: Module | ApiModule, i: number) => {
-			// SEE CONDITIONS HERE
 			if (mod instanceof ApiModule && mod.apiModuleName === ApiModule.getApiModuleName(name, instanceUrl) 
 			|| !(mod instanceof ApiModule) && mod.name === name && mod.instanceUrl === instanceUrl) this.modules.splice(i, 1); 
 		});
@@ -96,7 +95,9 @@ export class ModuleHandler {
 					break;
 				}
 			}
-			if (parMod instanceof ApiModule && workspace.name === parMod.workspaceName) {
+			if (!(parMod instanceof ApiModule)) continue;
+			window.showInformationMessage(`${workspace.name} ; ${parMod.workspaceName}`)
+			if (parMod instanceof ApiModule && ( (!workspace.name && parMod.workspaceName === 'Untitled (Workspace)') || (workspace.name === parMod.workspaceName) ) ) {
 				this.addModule(parMod, false);
 			}
 		}
@@ -198,9 +199,6 @@ export class ModuleHandler {
 	logoutModuleState(instanceUrl: string, moduleInfoTree: ModuleInfoTree, devInfo: DevInfo | undefined): void {
 		this.removeConnectedInstance(instanceUrl);
 		for (const mod of this.modules) {
-			if (mod instanceof ApiModule) {
-				this.removeModuleFromWkPath(mod.workspaceFolderPath);
-			}
 			if (mod.instanceUrl === instanceUrl) {
 				mod.connected = false;
 				mod.moduleDevInfo = undefined;

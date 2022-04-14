@@ -15,6 +15,7 @@ import { FileItem } from './treeView/treeViewClasses';
 import { WorkspaceController } from './WorkspaceController';
 import { ApiModule } from './ApiModule';
 import { BarItem } from './BarItem';
+import { Prompt } from './Prompt'
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
@@ -22,22 +23,27 @@ import { BarItem } from './BarItem';
 // ------------------------------
 // Apply commands
 export const commandInit = function (context: ExtensionContext, simpliciteApiController: SimpliciteApiController, simpliciteApi: SimpliciteApi, moduleHandler: ModuleHandler, fileHandler: FileHandler, moduleInfoTree: ModuleInfoTree, appHandler: AppHandler, barItem: BarItem) {
+	const prompt = new Prompt(context.globalState);
+
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteApiController.applyAll(moduleHandler.modules);
 	});
 	
 	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteApiController | any) {
 		try {
-			const instanceUrl = await simpleInput('Simplicite: Type in the instance url', 'instance url');
-			// todo , see what's inside element and add instanceUrl (no need for input here)
+			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url') || '';
 			let module: Module | ApiModule | null;
 			if (!element.hasOwnProperty('label') && !element.hasOwnProperty('description')) {
-				element = await simpleInput('Simplicite: Type in the module name', 'module name');
+				element = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
 				module = moduleHandler.getModuleFromNameAndInstance(element, instanceUrl);
 			} else {
 				module = moduleHandler.getModuleFromNameAndInstance(element.label, instanceUrl);	
 			}
-			if(module) await simpliciteApiController.applyModuleFiles(module, moduleHandler.modules);
+			if(module) {
+				await simpliciteApiController.applyModuleFiles(module, moduleHandler.modules);
+				prompt.addElement('url', module.instanceUrl);
+				prompt.addElement('name', module.name);
+			}
 			else throw new Error('Cannot get module ' + element.label ? element.label : element);
 		} catch(e) {
 			logger.error("Simplicité: " + e);
@@ -46,8 +52,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
 		try {
-			const instanceUrl = await simpleInput('Simplicite: Type in the instance url' ,'instance url');
+			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url') || '';
 			await simpliciteApiController.applyInstanceFiles(moduleHandler.modules, instanceUrl, moduleHandler.connectedInstances);
+			prompt.addElement('url', instanceUrl);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -65,6 +72,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 	
 	// ------------------------------
+	// Reset prompt cache
+	const resetPromptCache = commands.registerCommand('simplicite-vscode-tools.resetPromptCache', async () => {
+		prompt.resetValues();
+	});
 	// Authentication commands
 	const loginIntoDetectedInstances = commands.registerCommand('simplicite-vscode-tools.logIn', async () => {
 		await simpliciteApiController.loginAll();
@@ -89,9 +100,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	});
 
 	async function logAction(): Promise<Module | ApiModule> {
-		const instanceUrl = await simpleInput('Simplicite: Type the url of the Simplicité instance', 'instance url');
+		const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
 		const module = moduleHandler.getFirstModuleFromInstance(instanceUrl);
 		if (!module) throw new Error('No module affiliated with instance ' + instanceUrl);
+		prompt.addElement('url', instanceUrl);
 		return module;
 	}
 	
@@ -172,11 +184,13 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 	
 	const initApiFileSystem = commands.registerCommand('simplicite-vscode-tools.initApiFileSystem', async () => {
 		// todo , check and handle case where process is aborted and info needs to stay relevant
+		let moduleName;
+		let instanceUrl;
 		try {
-			const instanceUrl = await simpleInput('Simplicite: Type the name of the instance base URL', 'instance url'); 
+			instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 			if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
 	
-			const moduleName = await simpleInput('Simplicite: Type the name of the module to add to the workspace', 'module name');
+			moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module to add to the workspace', 'module name');
 			const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
 			const module = new ApiModule(moduleName, '', instanceUrl, token, appHandler.getApp(instanceUrl), simpliciteApi, workspace.name);
 			if(token !== '') {
@@ -189,30 +203,37 @@ export const commandInit = function (context: ExtensionContext, simpliciteApiCon
 				const res = await simpliciteApiController.tokenOrCredentials(module);
 				if (!res) throw('');
 			}
+			prompt.addElement('url', instanceUrl);
+			prompt.addElement('name', moduleName);
 		} catch (e: any) {
 			if(e.message !== 'Simplicité: input cancelled' && e !== '') window.showInformationMessage('Simplicite: ' + e.message);
 			logger.error(e);
-			await moduleHandler.setModulesFromScratch(appHandler, simpliciteApi);
+			try {
+				moduleHandler.removeModule(moduleName ? moduleName : '', instanceUrl ? instanceUrl : '');
+			} catch(e) {
+				logger.warn('Attempt to remove module after init api module process aborted failed');
+			}
 		}
 	});
 	
 	const removeApiFileSystem = commands.registerCommand('simplicite-vscode-tools.removeApiFileSystem', async () => {
 		try {
-			const apiModuleName = await simpleInput('Simplicite: Type in the api module name', 'moduleName@instance.url');
+			const apiModuleName = await prompt.getUserSelectedValue('apiName','Simplicite: Type in the api module name', 'moduleName@instance.url');
 			const module = moduleHandler.getApiModuleFromApiName(apiModuleName);
 			if (!module) throw new Error('');
+			prompt.addElement('apiName', apiModuleName);
 			WorkspaceController.removeApiFileSystemFromWorkspace(module);
 			WorkspaceController.deleteAndRemoveFromWorkspace(module, moduleHandler, barItem);
 		} catch(e: any) {
 			logger.error(e);
-			window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
+			if(e.message !== 'Simplicité: input cancelled') window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
 		}
 	});
 	
 	// ------------------------------
 
 	// public command can be used by other dev if needed
-	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, initApiFileSystem, removeApiFileSystem];
+	const publicCommand = [applyChanges, applySpecificInstance,  applySpecificModule, compileWorkspace, loginIntoDetectedInstances, logIntoSpecificInstance, logout, logoutFromSpecificInstance, trackFile, untrackFile, refreshModuleTree, refreshFileHandler, initApiFileSystem, removeApiFileSystem, resetPromptCache];
 	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, itemDoubleClickTrigger];
 	context.subscriptions.concat(publicCommand, privateCommand);

@@ -127,7 +127,7 @@ export class SimpliciteApiController {
 	async applyInstanceFiles(modules: Module[], instanceUrl: string, connectedInstances: string[]) {
 		if (!connectedInstances.includes(instanceUrl)) {
 			window.showWarningMessage('Simplicite: ' + instanceUrl + ' is not connected');
-			return;
+			throw '';
 		}
 		for (const mod of modules) {
 			if (mod.instanceUrl === instanceUrl && mod.connected) {

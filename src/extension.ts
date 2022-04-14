@@ -1,7 +1,7 @@
 'use strict';
 
 import { logger } from './Log';
-import { workspace, ExtensionContext, TextDocument, WorkspaceFoldersChangeEvent, env, languages, window, Disposable, Uri } from 'vscode';
+import { workspace, ExtensionContext, TextDocument, env, languages, window, Disposable } from 'vscode';
 import { CompletionProvider } from './CompletionProvider';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
