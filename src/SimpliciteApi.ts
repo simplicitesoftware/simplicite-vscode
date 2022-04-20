@@ -7,7 +7,6 @@ import { File } from './File';
 import { logger } from './Log';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
-import { Credentials } from './interfaces';
 
 export class SimpliciteApi {
 	_appHandler: AppHandler;
@@ -16,22 +15,12 @@ export class SimpliciteApi {
 		this._appHandler = appHandler;
 	}
 
-	async login(instanceUrl: string, credentials: Credentials | undefined, token: string | undefined): Promise<string | false> {
-		const app = this._appHandler.getApp(instanceUrl);
-		if (credentials) {
-			app.setPassword(credentials.password);
-			app.setUsername(credentials.userName);
-		} else if (token !== '') {
-			app.authtoken = token;
-		} else if (!credentials && token === '') {
-			return false;
-		}
+	async login(app: any): Promise<string | false> {
 		try {
 			const res = await app.login();
-			app.setPassword(undefined);
-			app.setUsername(undefined);
+			
 			if (!this.devInfo) {
-				this.devInfo = await this.fetchDevInfo(instanceUrl);
+				this.devInfo = await this.fetchDevInfo(app.instanceUrl);
 			}
 			const message = 'Logged in as ' + res.login + ' at: ' + app.parameters.url;
 			window.showInformationMessage('Simplicite: ' + message);

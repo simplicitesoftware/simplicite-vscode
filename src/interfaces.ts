@@ -15,9 +15,14 @@ export interface FileAndModule {
 	fileList: File[],
 }
 
-export interface PomXMLData {
+export interface UrlAndName {
 	instanceUrl: string,
 	name: string
+}
+
+export interface NameAndWorkspacePath {
+	name: string,
+	wkPath: string
 }
 
 export interface Credentials {

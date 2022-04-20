@@ -3,7 +3,7 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.0.20",
+	"version": "1.0.21",
 	"engines": {
 		"vscode": "^1.52.0",
 		"node": ">=12"
@@ -216,6 +216,10 @@
 			{
 				"command": "simplicite-vscode-tools.resetPromptCache",
 				"title": "Simplicite: Reset prompt cache"
+			},
+			{
+				"command": "simplicite-vscode-tools.resetPersistence",
+				"title": "Simplicite: Reset persistence"
 			}
 		],
 		"configuration": {
