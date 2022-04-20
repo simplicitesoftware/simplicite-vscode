@@ -11,6 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * * *
 
+[1.0.21]
+--------
+
+### Added
+- Various code snippets
+- Completion on values typed in commands such as urls, modules name and api modules name. 
+
+### Changed
+- New behavior for api module => an api module in an undefined workspace will be deleted on vscode closing. While in a defined workspace, the module will persists.
+
+### Fixed
+- Connexion prompt won't appear multiple time when instance is already connected
+
+* * *
+
+[1.0.20]
+--------
+
+### Updated
+- Updated dependencies
+
+* * *
+
 [1.0.19]
 --------
 
