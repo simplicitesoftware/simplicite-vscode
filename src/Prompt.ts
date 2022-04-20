@@ -112,6 +112,16 @@ export class Prompt {
 		this.promptValues = new PromptCached();
 		this.savePromptValues();
 	}
+
+	async simpleInput(title: string, placeHolder: string, isPassword: boolean | void) {
+		const input = await window.showInputBox({
+			placeHolder: placeHolder,
+			title: title,
+			password: isPassword ? isPassword : false
+		});
+		if (!input) throw new Error('Simplicité: input cancelled');
+		return input;
+	}
 }
 
 class PromptCached {

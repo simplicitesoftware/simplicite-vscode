@@ -142,20 +142,20 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode-tools.logIn",
-				"title": "Simplicite: Log into detected instances"
+				"command": "simplicite-vscode-tools.login",
+				"title": "Simplicite: Log into every instances"
 			},
 			{
-				"command": "simplicite-vscode-tools.logIntoSpecificInstance",
-				"title": "Simplicite: Log into specific instance"
+				"command": "simplicite-vscode-tools.logIntoInstance",
+				"title": "Simplicite: Log into instance"
 			},
 			{
-				"command": "simplicite-vscode-tools.logOut",
-				"title": "Simplicite: Log out from all instances"
+				"command": "simplicite-vscode-tools.logout",
+				"title": "Simplicite: Log out from every instances"
 			},
 			{
-				"command": "simplicite-vscode-tools.logOutFromInstance",
-				"title": "Simplicite: Log out from specific instance"
+				"command": "simplicite-vscode-tools.logoutFromInstance",
+				"title": "Simplicite: Log out from instance"
 			},
 			{
 				"command": "simplicite-vscode-tools.copyLogicalName",

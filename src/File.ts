@@ -5,9 +5,6 @@ import { DevInfo } from './DevInfo';
 
 export class File {
 	uri: Uri;
-	simpliciteUrl: string;
-	workspaceFolderPath: string;
-	parentFolderName: string;
 	tracked: boolean;
 	name: string;
 	type: string | undefined;
@@ -15,16 +12,15 @@ export class File {
 	fieldName: string | undefined;
 	rowId: string | undefined;
 	extension: string;
-	constructor(path: string, simpliciteUrl: string, workspaceFolderPath: string, parentFolderName: string, tracked: boolean) {
-		this.uri = Uri.file(path);
-		this.simpliciteUrl = simpliciteUrl;
-		this.workspaceFolderPath = workspaceFolderPath;
-		this.parentFolderName = parentFolderName;
+	constructor(uri: Uri, tracked: boolean) {
+		this.uri = uri
 		this.tracked = tracked;
-		this.name = File.computeFileNameFromPath(path);
-		this.extension = File.computeFileExtensionFromPath(path); // format ex: ".java"
+		this.name = File.computeFileNameFromPath(uri.path);
+		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 	}
 
+
+	// todo , check for URI
 	static computeFileNameFromPath(filePath: string): string {
 		const decomposed = filePath.split('/');
 		const decomposeDot = decomposed[decomposed.length - 1].split('.'); // remove extension
@@ -76,9 +72,5 @@ export class File {
 	static async getContent(fileUri: Uri): Promise<Uint8Array> {
 		const content = await workspace.fs.readFile(fileUri);
 		return content;
-	}
-
-	static tempPathMaker(file: File) {
-		return STORAGE_PATH + 'temp/' + file.parentFolderName + '/' + file.name + file.extension;
 	}
 }

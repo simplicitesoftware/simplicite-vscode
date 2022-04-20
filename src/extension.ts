@@ -5,7 +5,7 @@ import { workspace, ExtensionContext, TextDocument, env, languages, window, Disp
 import { CompletionProvider } from './CompletionProvider';
 //import { BarItem } from './BarItem';
 //import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-//import { QuickPick } from './QuickPick';
+import { QuickPick } from './QuickPick';
 //import { FileTree } from './treeView/FileTree';
 //import { FileHandler } from './FileHandler';
 //import { ModuleHandler } from './ModuleHandler';
@@ -15,18 +15,25 @@ import { File } from './File';
 //import { SimpliciteApiController } from './SimpliciteApiController';
 import { SimpliciteApi } from './SimpliciteApi';
 import { AppHandler } from './AppHandler';
-//import { commandInit } from './commands';
+import { commandInit } from './commands';
 import { DevInfo } from './DevInfo';
 //import { WorkspaceController } from './WorkspaceController';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
+import { Prompt } from './Prompt';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	initGlobalValues(context.globalStorageUri.path);
 	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
 	logger.info('Starting extension on ' + env.appName);
 	
-	const simpliciteInstanceController = new SimpliciteInstanceController();
-	await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
+	const prompt = new Prompt(context.globalState);
+
+	const simpliciteInstanceController = await SimpliciteInstanceController.build(prompt, context.globalState);
+	await simpliciteInstanceController.loginAll();
+
+	const publicCommand = commandInit(context, simpliciteInstanceController, prompt);
+
+	new QuickPick(context.subscriptions);
 	
 	// const barItem = new BarItem();
 	// const appHandler = new AppHandler();
@@ -35,7 +42,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	// const fileHandler = await FileHandler.build(context.globalState, moduleHandler);
 	
 	// const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
-	// new QuickPick(context.subscriptions, simpliciteApiController);
+	// 
 
 	// if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
 	// 	const fileTree = new FileTree(context.extensionUri.path, moduleHandler.modules, fileHandler.fileList);

@@ -1,34 +1,33 @@
 // 'use strict';
 
 // import { logger } from './Log';
-// import { Memento, RelativePattern, workspace, Uri } from 'vscode';
+import { Memento, RelativePattern, workspace, Uri, TextDocument } from 'vscode';
 // import { File } from './File';
 // import { Module } from './Module';
 // import { bindFileAndModule, validFileExtension } from './utils';
-// import { FileTree } from './treeView/FileTree';
+import { FileTree } from './treeView/FileTree';
 // import { FileAndModule } from './interfaces';
 // import { DevInfo } from './DevInfo';
 // //import { ModuleHandler } from './ModuleHandler';
 
-// export class FileHandler {
-// 	fileTree?: FileTree;
-// 	fileList: Array<File>;
-// 	private _globalState: Memento;
-// 	constructor(globalState: Memento) {
-// 		this.fileList = [];
-// 		this._globalState = globalState;
-// 	}
+export class FileHandler {
+  fileTree?: FileTree;
 
-// 	static async build(globalState: Memento, moduleHandler: ModuleHandler): Promise<FileHandler> {
-// 		const fileHandler = new FileHandler(globalState);
-// 		try {
-// 			fileHandler.fileList = await fileHandler.FileDetector(moduleHandler);
-// 			await fileHandler.initTempFolder(bindFileAndModule(moduleHandler.modules, fileHandler.fileList));
-// 		} catch (e) {
-// 			logger.error(e);
-// 		}
-// 		return fileHandler;
-// 	}
+	private _globalState: Memento;
+	constructor(globalState: Memento) {
+		this._globalState = globalState;
+	}
+
+  static async build(globalState: Memento) {
+    const fileHandler = new FileHandler(globalState);
+    await fileHandler.fileListener();
+  } 
+
+  async fileListener() {
+    workspace.onDidSaveTextDocument(async (doc: TextDocument) => {
+      const 
+    })
+  }
 
 // 	// create temp folder and copy files to store the initial state of a file (for conflict resolution)
 // 	async initTempFolder(fileModule: FileAndModule[]) {
@@ -145,4 +144,4 @@
 // 		}
 // 		return new File('', '', '', '', false);
 // 	}
-// }
+}

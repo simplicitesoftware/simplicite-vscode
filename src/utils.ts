@@ -34,16 +34,16 @@ export function removeFileExtension(template: string): string {
 	return fileName;
 }
 
-export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAndModule[] {
-	const fileModule = [];
-	for (const module of modules) {
-		const moduleObject: FileAndModule = { module: module, fileList: [] };
-		for (const file of files) {
-			if (file.workspaceFolderPath === module.workspaceFolderPath) {
-				moduleObject.fileList.push(file);
-			}
-		}
-		fileModule.push(moduleObject);
-	}
-	return fileModule;
-}
+// export function bindFileAndModule(modules: Array<Module>, files: File[]): FileAndModule[] {
+// 	const fileModule = [];
+// 	for (const module of modules) {
+// 		const moduleObject: FileAndModule = { module: module, fileList: [] };
+// 		for (const file of files) {
+// 			if (file.workspaceFolderPath === module.workspaceFolderPath) {
+// 				moduleObject.fileList.push(file);
+// 			}
+// 		}
+// 		fileModule.push(moduleObject);
+// 	}
+// 	return fileModule;
+// }
