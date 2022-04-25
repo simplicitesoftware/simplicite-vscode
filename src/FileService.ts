@@ -1,31 +1,21 @@
 // 'use strict';
 
 // import { logger } from './Log';
-import { Memento, RelativePattern, workspace, Uri, TextDocument } from 'vscode';
-// import { File } from './File';
-// import { Module } from './Module';
-// import { bindFileAndModule, validFileExtension } from './utils';
-import { FileTree } from './treeView/FileTree';
-// import { FileAndModule } from './interfaces';
-// import { DevInfo } from './DevInfo';
-// //import { ModuleHandler } from './ModuleHandler';
+import { workspace, TextDocument } from 'vscode';
+import { logger } from './Log';
+import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
-export class FileHandler {
-  fileTree?: FileTree;
 
-	private _globalState: Memento;
-	constructor(globalState: Memento) {
-		this._globalState = globalState;
-	}
+export class FileService {
 
-  static async build(globalState: Memento) {
-    const fileHandler = new FileHandler(globalState);
-    await fileHandler.fileListener();
-  } 
-
-  async fileListener() {
+  public static async fileListener(simpliciteInstanceController: SimpliciteInstanceController) {
     workspace.onDidSaveTextDocument(async (doc: TextDocument) => {
-      const 
+      const fileInstance = simpliciteInstanceController.getFileAndInstanceFromPath(doc.uri);
+      if (!fileInstance) {
+        logger.error('Detected save on document but could not retrieve the correspondant file');
+        return;
+      }
+      await fileInstance.instance.sendFile(fileInstance.file);
     })
   }
 

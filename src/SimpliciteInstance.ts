@@ -4,10 +4,10 @@ import { Module } from './Module';
 import { ApiModule } from './ApiModule';
 import { NameAndWorkspacePath } from './interfaces';
 import simplicite from 'simplicite';
-import { SimpliciteApi } from './SimpliciteApi';
 import { Memento, window } from 'vscode';
 import { logger } from './Log';
 import { DevInfo } from './DevInfo';
+import { File } from './File';
 
 // represent a simplicite instance
 export class SimpliciteInstance {
@@ -50,17 +50,16 @@ export class SimpliciteInstance {
 	async login(): Promise<void> {
 		try {
 			const res = await this.app.login();
-			this.app.setPassword(undefined);
+			this.app.setPassword('');
 			const msg  = 'Logged in as ' + res.login + ' at: ' + this.app.parameters.url;
 			window.showInformationMessage('Simplicite: ' + msg);
 			logger.info(msg);
 		} catch (e: any) {
-			logger.error(e);
+			this.app.setAuthToken('');
 			window.showErrorMessage('Simplicite: ' + e.message ? e.message : e);
+			throw new Error(e);
 		}
 	}
-
-
 
 	async logout(): Promise<void> {
 		try {
@@ -80,5 +79,10 @@ export class SimpliciteInstance {
 		} catch(e) {
 			logger.error(e);
 		}
+	}
+
+	async sendFile(file: File) {
+		const obj = this.app.getBusinessObject(file.type, 'ide_' + file.type);
+		const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
 	}
 }

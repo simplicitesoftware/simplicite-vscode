@@ -1,13 +1,13 @@
 'use strict';
 
 import { SimpliciteInstance } from './SimpliciteInstance';
-import { workspace, WorkspaceFolder, RelativePattern, Memento } from 'vscode';
+import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { NameAndWorkspacePath, UrlAndName } from './interfaces';
 import { logger } from './Log';
-import { SimpliciteApi } from './SimpliciteApi';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
+import { File } from './File';
 
 export class SimpliciteInstanceController {
 	simpliciteInstances: Map<string, SimpliciteInstance>;
@@ -27,7 +27,7 @@ export class SimpliciteInstanceController {
 		return simpliciteInstanceController
 	}
 
-	// AUTHENTICATION --------------------------
+	// AUTHENTICATION 
 
 	async loginAll() {
 		this.simpliciteInstances.forEach(async (instance: SimpliciteInstance, url: string) => {
@@ -38,19 +38,31 @@ export class SimpliciteInstanceController {
 	async loginInstance(instanceUrl: string) {
 		try {
 			const instance = this.simpliciteInstances.get(instanceUrl);
-			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url'); // make this a function ? redondant
+			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url');
 			if(!instance.app.authtoken) await this.setCredentials(instance.app);
 			await instance.login();
 			await this.applyLoginValues(instance);
 		} catch(e) {
+			// delete token in persistance. Usefull when token is expired
+			this.deleteToken(instanceUrl);
 			logger.error(e);
 		}
 	}
 
-	async applyLoginValues(instance: SimpliciteInstance) {
+	private async applyLoginValues(instance: SimpliciteInstance) {
 		if(!this.devInfo) this.devInfo = await instance.getDevInfo();
 		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
-		authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
+		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instance.app.url);
+		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
+		else authenticationValues[index].authtoken = instance.app.authtoken;
+		this._globalStorage.update(AUTHENTICATION_STORAGE, authenticationValues);
+	}
+
+	private deleteToken(instanceUrl: string) {
+		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
+		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instanceUrl);
+		//if(index === -1) return;
+		authenticationValues.splice(index, 1);
 		this._globalStorage.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
@@ -78,11 +90,7 @@ export class SimpliciteInstanceController {
 		app.setPassword(password);
 	}
 
-	// FILES ------------------------------------------------------------
-
-	
-
-	// MODULES INITIALIZATION -------------------------------------------
+	// MODULES INITIALIZATION 
 
 	async setSimpliciteInstancesFromWorkspace(): Promise<void> {
 		const res = await this.getInstancesAndModulesFromWorkspace();
@@ -118,5 +126,18 @@ export class SimpliciteInstanceController {
 		const pom = (await workspace.openTextDocument(file[0])).getText();
 		const res = await parseStringPromise(pom);
 		return {instanceUrl: res.project.properties[0]['simplicite.url'][0], name: res.project['name'][0]};
+	}
+
+	// FILES
+
+	public getFileAndInstanceFromPath(uri: Uri): {file: File, instance: SimpliciteInstance} | undefined {
+		let file = undefined;
+		for (const instance of this.simpliciteInstances.values()) {
+			for (const m of instance.modules.values()) {
+				file = m.getFileFromPath(uri);
+				if(file) return {file: file, instance: instance};
+			}
+		}
+		return file;
 	}
 }

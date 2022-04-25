@@ -7,7 +7,7 @@ import { CompletionProvider } from './CompletionProvider';
 //import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
 //import { FileTree } from './treeView/FileTree';
-//import { FileHandler } from './FileHandler';
+import { FileService } from './FileService';
 //import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
 import { initGlobalValues } from './constants';
@@ -34,6 +34,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const publicCommand = commandInit(context, simpliciteInstanceController, prompt);
 
 	new QuickPick(context.subscriptions);
+
+	FileService.fileListener(simpliciteInstanceController);
 	
 	// const barItem = new BarItem();
 	// const appHandler = new AppHandler();
@@ -153,7 +155,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	// 	}
 	// });
 
-	// return publicCommand;
+	return publicCommand;
 }
 
 function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {

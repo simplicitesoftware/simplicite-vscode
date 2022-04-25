@@ -41,7 +41,7 @@ export class Module {
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)) // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
-			this.files.set(uri.path, new File(uri, false));
+			this.files.set(uri.path.toLowerCase(), new File(uri, false));
 		})
 	}
 
@@ -55,5 +55,9 @@ export class Module {
 	public setFileStatus(uri: Uri, isTracked: boolean) {
 		const file = this.files.get(uri.path);
 		if(file) file.tracked = isTracked;
+	}
+
+	public getFileFromPath(uri: Uri): File | undefined {
+		return this.files.get(uri.path.toLowerCase());
 	}
 }
