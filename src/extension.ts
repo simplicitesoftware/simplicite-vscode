@@ -35,7 +35,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	new QuickPick(context.subscriptions);
 
-	FileService.fileListener(simpliciteInstanceController);
+	await FileService.build(simpliciteInstanceController);
 	
 	// const barItem = new BarItem();
 	// const appHandler = new AppHandler();

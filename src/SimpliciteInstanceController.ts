@@ -24,7 +24,7 @@ export class SimpliciteInstanceController {
 	static async build(prompt: Prompt, globalStorage: Memento) {
 		const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalStorage);
 		await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
-		return simpliciteInstanceController
+		return simpliciteInstanceController;
 	}
 
 	// AUTHENTICATION 
@@ -51,6 +51,7 @@ export class SimpliciteInstanceController {
 
 	private async applyLoginValues(instance: SimpliciteInstance) {
 		if(!this.devInfo) this.devInfo = await instance.getDevInfo();
+		if (this.devInfo) await instance.getModulesDevInfo(this.devInfo);
 		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instance.app.url);
 		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
@@ -69,7 +70,7 @@ export class SimpliciteInstanceController {
 	async logoutAll() {
 		this.simpliciteInstances.forEach(async (instance: SimpliciteInstance, url: string) => {
 			await this.logoutInstance(url);
-		})
+		});
 	}
 
 	async logoutInstance(instanceUrl: string) {
@@ -130,14 +131,26 @@ export class SimpliciteInstanceController {
 
 	// FILES
 
-	public getFileAndInstanceFromPath(uri: Uri): {file: File, instance: SimpliciteInstance} | undefined {
+	public getFileAndInstanceUrlFromPath(uri: Uri): {file: File, url: string} | undefined {
 		let file = undefined;
 		for (const instance of this.simpliciteInstances.values()) {
 			for (const m of instance.modules.values()) {
 				file = m.getFileFromPath(uri);
-				if(file) return {file: file, instance: instance};
+				if(file) return {file: file, url: instance.app.parameters.url};
 			}
 		}
 		return file;
+	}
+
+	public async sendFiles(files: File[], url: string) {
+		const instance = this.simpliciteInstances.get(url);
+		if (!instance) {
+			logger.error(url + ' is not a known instance');
+			return;
+		}
+		for (const f of files) {
+			await instance.sendFile(f);
+		}
+		await instance.triggerBackendCompilation();
 	}
 }

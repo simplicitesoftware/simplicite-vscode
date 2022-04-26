@@ -1,6 +1,7 @@
 'use strict';
 
 import { WorkspaceFolder, workspace, RelativePattern, Uri } from 'vscode';
+import { DevInfo } from './DevInfo';
 import { File } from './File';
 import { logger } from './Log';
 
@@ -33,16 +34,16 @@ export class Module {
 				if (wk.uri.path === this.workspaceFolderPath) returnWk = wk;
 			});
 			return returnWk;
-		}
+		};
 		const wk = getWk();
 		if (!wk) throw new Error('Unexpected behavior. Cannot init files because module folder is not in workspace');
 		const relativePattern = new RelativePattern(wk, '**/*');
 		let files = await workspace.findFiles(relativePattern);
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
-		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)) // some files need to be ignored (such as pom.xml, readme.md etc...)
+		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			this.files.set(uri.path.toLowerCase(), new File(uri, false));
-		})
+		});
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {
@@ -59,5 +60,12 @@ export class Module {
 
 	public getFileFromPath(uri: Uri): File | undefined {
 		return this.files.get(uri.path.toLowerCase());
+	}
+
+	public async setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
+		this.moduleDevInfo = moduleDevInfo;
+		this.files.forEach((f: File) => {
+			f.setInfoFromModuleDevInfo(moduleDevInfo, devInfo);
+		});
 	}
 }

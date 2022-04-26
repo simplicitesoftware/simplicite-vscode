@@ -13,17 +13,16 @@ export class File {
 	rowId: string | undefined;
 	extension: string;
 	constructor(uri: Uri, tracked: boolean) {
-		this.uri = uri
+		this.uri = uri;
 		this.tracked = tracked;
 		this.name = File.computeFileNameFromPath(uri.path);
 		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 	}
 
-
 	// todo , check for URI
 	static computeFileNameFromPath(filePath: string): string {
 		const decomposed = filePath.split('/');
-		const decomposeDot = decomposed[decomposed.length - 1].split('.'); // remove extension
+		const decomposeDot = decomposed[decomposed.length - 1].split('.');
 		return decomposeDot[decomposeDot.length - 2];
 	}
 
@@ -33,7 +32,7 @@ export class File {
 		return fileExtension;
 	}
 
-	setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
+	setInfoFromModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		if (!this.type && !this.scriptField && !this.fieldName) {
 			const {type, id} = this.getBusinessObjectInfo(moduleDevInfo);
 			this.type = type;
