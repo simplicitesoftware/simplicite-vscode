@@ -1,6 +1,6 @@
 'use strict';
 
-import { WorkspaceFolder, workspace, RelativePattern, Uri } from 'vscode';
+import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 import { logger } from './Log';
@@ -10,14 +10,16 @@ export class Module {
 	moduleDevInfo: any;
 	workspaceFolderPath: string;
 	files: Map<string, File>;
-	constructor(workspaceFolderPath: string) {
+	private _globalStorage: Memento
+	constructor(workspaceFolderPath: string, globalStorage: Memento) {
 		this.moduleDevInfo = undefined;
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.files = new Map();
+		this._globalStorage = globalStorage;
 	}
 
-	static async build(workspaceFolderPath: string) {
-		const module = new Module(workspaceFolderPath);
+	static async build(workspaceFolderPath: string, globalStorage: Memento) {
+		const module = new Module(workspaceFolderPath, globalStorage);
 		try {
 			await module.initFiles();
 		} catch(e) {
@@ -26,6 +28,23 @@ export class Module {
 		return module;
 	}
 
+	private isStringInTemplate(uri: Uri, stringList: string[]) {
+		for (const sl of stringList) {
+			if(uri.path.includes(sl)) return true;
+		}
+		return false;
+	}
+
+	
+
+	public async setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
+		this.moduleDevInfo = moduleDevInfo;
+		this.files.forEach((f: File) => {
+			f.setInfoFromModuleDevInfo(moduleDevInfo, devInfo);
+		});
+	}
+
+	// FILES
 	async initFiles() {
 		const getWk = (): WorkspaceFolder | undefined => {
 			if (!workspace.workspaceFolders) return undefined;
@@ -42,30 +61,36 @@ export class Module {
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
-			this.files.set(uri.path.toLowerCase(), new File(uri, false));
+			const lowerCasePath = uri.path.toLowerCase()
+			this.files.set(lowerCasePath, new File(uri, false));
 		});
 	}
 
-	private isStringInTemplate(uri: Uri, stringList: string[]) {
-		for (const sl of stringList) {
-			if(uri.path.includes(sl)) return true;
-		}
-		return false;
-	}
-
-	public setFileStatus(uri: Uri, isTracked: boolean) {
-		const file = this.files.get(uri.path);
-		if(file) file.tracked = isTracked;
+	public setFileStatus(files: File[], status: boolean) {
+		files.forEach((f: File) => {
+			const memoryFile = this.files.get(f.uri.path.toLowerCase());
+			if(memoryFile) memoryFile.tracked = status;
+		})
 	}
 
 	public getFileFromPath(uri: Uri): File | undefined {
-		return this.files.get(uri.path.toLowerCase());
+		const lowerCasePath = uri.path.toLowerCase()
+		return this.files.get(lowerCasePath);
 	}
 
-	public async setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
-		this.moduleDevInfo = moduleDevInfo;
-		this.files.forEach((f: File) => {
-			f.setInfoFromModuleDevInfo(moduleDevInfo, devInfo);
+	public getFilesAsArray(): string[] {
+		let files: string[] = [];
+		this.files.forEach((file: File) => {
+			files.push(file.uri.path);
 		});
+		return files;
+	}
+
+	public setFilesStatusStorage(filesPath: string[]) {
+		filesPath.forEach((path: string) => {
+			const file = this.files.get(path);
+			if(!file) return;
+			file.tracked = true;
+		})
 	}
 }

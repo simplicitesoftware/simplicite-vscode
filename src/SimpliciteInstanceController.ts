@@ -3,11 +3,12 @@
 import { SimpliciteInstance } from './SimpliciteInstance';
 import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri } from 'vscode';
 import { parseStringPromise } from 'xml2js';
-import { NameAndWorkspacePath, UrlAndName } from './interfaces';
+import { InstanceModules, ModulesFiles, NameAndWorkspacePath, UrlAndName } from './interfaces';
 import { logger } from './Log';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
+import Module = require('module');
 
 export class SimpliciteInstanceController {
 	simpliciteInstances: Map<string, SimpliciteInstance>;
@@ -152,5 +153,45 @@ export class SimpliciteInstanceController {
 			await instance.sendFile(f);
 		}
 		await instance.triggerBackendCompilation();
+	}
+
+	public setFilesStatus(files: Map<string, File[]>, status: boolean): void {
+		files.forEach((files: File[], url: string) => {
+			const instance = this.simpliciteInstances.get(url);
+			if(!instance) return;
+			instance.setFilesStatus(files, status);
+		});
+		this.setFilesStatusStorage();
+	}
+
+	private setFilesStatusStorage() {
+		let storageFiles: Array<InstanceModules> = this._globalStorage.get(FILES_STATUS_STORAGE) || [];
+		const filesToSave = this.getInstanceAssociatedToModulesFiles();
+		if(storageFiles === undefined || !(storageFiles instanceof Array)) {
+			storageFiles = [];
+			filesToSave.forEach((mod: InstanceModules) => {
+				storageFiles?.push({modules: mod.modules, url: mod.url});
+			});
+		} else {
+			filesToSave.forEach((mod: InstanceModules) => {
+				let exists = false;
+				for (const stor of storageFiles || []) {
+					if(stor.url === mod.url) {
+						stor.modules = mod.modules;
+						exists = true;
+					}
+				}
+				if(!exists) storageFiles!.push();
+			});
+		}
+		this._globalStorage.update(FILES_STATUS_STORAGE, storageFiles);
+	}
+
+	private getInstanceAssociatedToModulesFiles(): Array<InstanceModules> {
+		let filesToSave: Array<InstanceModules> = [];
+		this.simpliciteInstances.forEach((instance: SimpliciteInstance, url: string) => {
+			filesToSave.push({url: url, modules: instance.getFilesAssiociatedToModules()});
+		});
+		return filesToSave;
 	}
 }

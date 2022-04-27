@@ -46,7 +46,12 @@ export class FileService {
 		const delta = Date.now() - this.lastDetectedSave;
 		if (delta >= 1000 && !this.firstElement) {
 			this.firstElement = true;
-			await this.sendFiles();
+			// todo , test on setting to send or set as tracked
+			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
+				await this.sendFiles();
+			} else {
+				this.simpliciteInstanceController.setFilesStatus(this.files, true);
+			}
 			this.files = new Map();
 		}
 	}

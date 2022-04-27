@@ -11,18 +11,18 @@ export interface CustomMessage {
 
 // usefull object to bind files with their corresponding module
 export interface FileAndModule {
-	module: Module,
-	fileList: File[],
+	module: Module;
+	fileList: File[];
 }
 
 export interface UrlAndName {
-	instanceUrl: string,
-	name: string
+	instanceUrl: string;
+	name: string;
 }
 
 export interface NameAndWorkspacePath {
-	name: string,
-	wkPath: string
+	name: string;
+	wkPath: string;
 }
 
 export interface Credentials {
@@ -30,6 +30,15 @@ export interface Credentials {
 	password: string;
 }
 
+export interface ModulesFiles {
+	moduleName: string;
+	files: string[];
+}
+
+export interface InstanceModules {
+	url: string;
+	modules: ModulesFiles[];
+}
 
 
 

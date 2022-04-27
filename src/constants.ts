@@ -9,6 +9,7 @@ declare global { // has to be declared to asign value globally, these value are 
 	var EXCLUDED_FILES: string[];
 	var STORAGE_PATH: string;
 	var AUTHENTICATION_STORAGE: string;
+	var FILES_STATUS_STORAGE: string;
 }
 
 export const initGlobalValues = function(storagePath: string): void {
@@ -25,4 +26,6 @@ export const initGlobalValues = function(storagePath: string): void {
 	global.STORAGE_PATH = storagePath + '/';
 
 	global.AUTHENTICATION_STORAGE = 'simplicite_authentication';
+
+	global.FILES_STATUS_STORAGE = 'simplicite_files';
 };
