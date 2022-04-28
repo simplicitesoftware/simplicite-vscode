@@ -10,18 +10,16 @@ export class Module {
 	moduleDevInfo: any;
 	workspaceFolderPath: string;
 	files: Map<string, File>;
-	private _globalStorage: Memento
-	constructor(workspaceFolderPath: string, globalStorage: Memento) {
+	constructor(workspaceFolderPath: string) {
 		this.moduleDevInfo = undefined;
 		this.workspaceFolderPath = workspaceFolderPath;
 		this.files = new Map();
-		this._globalStorage = globalStorage;
 	}
 
-	static async build(workspaceFolderPath: string, globalStorage: Memento) {
-		const module = new Module(workspaceFolderPath, globalStorage);
+	static async build(workspaceFolderPath: string, globalStorage: Memento, app: any) {
+		const module = new Module(workspaceFolderPath);
 		try {
-			await module.initFiles();
+			await module.initFiles(app, globalStorage);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -35,8 +33,6 @@ export class Module {
 		return false;
 	}
 
-	
-
 	public async setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		this.moduleDevInfo = moduleDevInfo;
 		this.files.forEach((f: File) => {
@@ -45,7 +41,7 @@ export class Module {
 	}
 
 	// FILES
-	async initFiles() {
+	async initFiles(app: any, globalStorage: Memento) {
 		const getWk = (): WorkspaceFolder | undefined => {
 			if (!workspace.workspaceFolders) return undefined;
 			let returnWk = undefined;
@@ -62,15 +58,8 @@ export class Module {
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase()
-			this.files.set(lowerCasePath, new File(uri, false));
+			this.files.set(lowerCasePath, new File(uri, app, globalStorage));
 		});
-	}
-
-	public setFileStatus(files: File[], status: boolean) {
-		files.forEach((f: File) => {
-			const memoryFile = this.files.get(f.uri.path.toLowerCase());
-			if(memoryFile) memoryFile.tracked = status;
-		})
 	}
 
 	public getFileFromPath(uri: Uri): File | undefined {
@@ -86,11 +75,11 @@ export class Module {
 		return files;
 	}
 
-	public setFilesStatusStorage(filesPath: string[]) {
-		filesPath.forEach((path: string) => {
-			const file = this.files.get(path);
-			if(!file) return;
-			file.tracked = true;
+	public getTrackedFiles(): File[] {
+		const fileList: File[] = [];
+		this.files.forEach((file: File) => {
+			if(file.getTrackedStatus()) fileList.push(file);
 		})
+		return fileList;
 	}
 }

@@ -4,11 +4,10 @@ import { Module } from './Module';
 import { ApiModule } from './ApiModule';
 import { InstanceModules, ModulesFiles, NameAndWorkspacePath } from './interfaces';
 import simplicite from 'simplicite';
-import { Memento, Uri, window } from 'vscode';
+import { Memento, window } from 'vscode';
 import { logger } from './Log';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
-import { stringify, StringifyOptions } from 'querystring';
 
 // represent a simplicite instance
 export class SimpliciteInstance {
@@ -29,7 +28,6 @@ export class SimpliciteInstance {
 		const simpliciteInstance = new SimpliciteInstance(url, globalStorage);
 		simpliciteInstance.setAuthtoken();
 		await simpliciteInstance.initModules(modulesName);
-		simpliciteInstance.setFilesStatusStorage(url);
 		return simpliciteInstance;
 	}
 
@@ -37,7 +35,7 @@ export class SimpliciteInstance {
 		const modules: Map<string, Module> = new Map();
 		for (const value of modulesName) {
 			if(!modules.has(value.name)) {
-				const module = await Module.build(value.wkPath, this._globalStorage);
+				const module = await Module.build(value.wkPath, this._globalStorage, this.app);
 				modules.set(value.name, module);
 			}
 		}
@@ -77,37 +75,21 @@ export class SimpliciteInstance {
 		}
 	}
 
-	
-
-	
-
 	// FILES
 
-	public async sendFile(file: File) {
-		try {
-			const obj = this.app.getBusinessObject(file.type, 'ide_' + file.type);
-			const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
-			const doc = obj.getFieldDocument(file.scriptField);
-			if (doc === undefined) throw new Error('No document returned, cannot update content');
-			
-			const content = await File.getContent(file.uri);
-			doc.setContentFromText(content);
-			obj.setFieldValue(file.scriptField, doc);
-			const res = await obj.update(item, { inlineDocuments: true });
-			if (!res) {
-				window.showErrorMessage('Simplicite: Cannot synchronize ' + file.uri.path);
-				return false;
-			}
-		} catch(e) {
-			logger.error(e);
-			return false;
-		}
+	public getTrackedFiles(): File[] {
+		let trackedFiles: File[] = [];
+		this.modules.forEach((mod: Module) => {
+			const files = mod.getTrackedFiles();
+			trackedFiles = trackedFiles.concat(files);
+		});
+		return trackedFiles;
 	}
 
-	public setFilesStatus(files: File[], status: boolean) {
-		this.modules.forEach((mod: Module) => {
-			mod.setFileStatus(files, status);
-		})
+	public getModuleTrackedFiles(moduleName: string): File[] {
+		const mod = this.modules.get(moduleName);
+		if(!mod) return [];
+		return mod.getTrackedFiles();
 	}
 
 	public getFilesAssiociatedToModules(): Array<{moduleName: string, files: string[]}> {
@@ -116,20 +98,6 @@ export class SimpliciteInstance {
 			modFiles.push({moduleName: name, files: mod.getFilesAsArray()});
 		});
 		return modFiles;
-	}
-
-	setFilesStatusStorage(url: string): void {
-		const storedValues: Array<InstanceModules> | undefined = this._globalStorage.get(FILES_STATUS_STORAGE);
-		if(!storedValues) return;
-		for (const v of storedValues) {
-			if(v.url === url) {
-				this.modules.forEach((mod: Module, name: string) => {
-					v.modules.forEach((modFiles: ModulesFiles) => {
-						if(modFiles.moduleName === name) mod.setFilesStatusStorage(modFiles.files);
-					})
-				})
-			}
-		}
 	}
 
 	// DEV INFO 

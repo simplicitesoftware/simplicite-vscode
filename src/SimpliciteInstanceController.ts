@@ -142,56 +142,33 @@ export class SimpliciteInstanceController {
 		}
 		return file;
 	}
+ 
+	public async sendFiles(files: File[]) {
+		files.forEach(async (file: File) => {
+			await file.sendFile();
+		});
+	}
 
-	public async sendFiles(files: File[], url: string) {
+	public async sendAllFilesOnCommand(): Promise<void> {
+		let statusFiles: File[] = [];
+		this.simpliciteInstances.forEach((instance: SimpliciteInstance) => {
+			const res = instance.getTrackedFiles();
+			if(res) statusFiles = statusFiles.concat(res);
+		})
+		await this.sendFiles(statusFiles);
+	}
+
+	public async sendInstanceFilesOnCommand(url: string) {
 		const instance = this.simpliciteInstances.get(url);
-		if (!instance) {
-			logger.error(url + ' is not a known instance');
-			return;
-		}
-		for (const f of files) {
-			await instance.sendFile(f);
-		}
-		await instance.triggerBackendCompilation();
+		if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
+		const statusFiles: File[] = instance.getTrackedFiles();
+		await this.sendFiles(statusFiles);
 	}
 
-	public setFilesStatus(files: Map<string, File[]>, status: boolean): void {
-		files.forEach((files: File[], url: string) => {
-			const instance = this.simpliciteInstances.get(url);
-			if(!instance) return;
-			instance.setFilesStatus(files, status);
-		});
-		this.setFilesStatusStorage();
-	}
-
-	private setFilesStatusStorage() {
-		let storageFiles: Array<InstanceModules> = this._globalStorage.get(FILES_STATUS_STORAGE) || [];
-		const filesToSave = this.getInstanceAssociatedToModulesFiles();
-		if(storageFiles === undefined || !(storageFiles instanceof Array)) {
-			storageFiles = [];
-			filesToSave.forEach((mod: InstanceModules) => {
-				storageFiles?.push({modules: mod.modules, url: mod.url});
-			});
-		} else {
-			filesToSave.forEach((mod: InstanceModules) => {
-				let exists = false;
-				for (const stor of storageFiles || []) {
-					if(stor.url === mod.url) {
-						stor.modules = mod.modules;
-						exists = true;
-					}
-				}
-				if(!exists) storageFiles!.push();
-			});
-		}
-		this._globalStorage.update(FILES_STATUS_STORAGE, storageFiles);
-	}
-
-	private getInstanceAssociatedToModulesFiles(): Array<InstanceModules> {
-		let filesToSave: Array<InstanceModules> = [];
-		this.simpliciteInstances.forEach((instance: SimpliciteInstance, url: string) => {
-			filesToSave.push({url: url, modules: instance.getFilesAssiociatedToModules()});
-		});
-		return filesToSave;
+	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
+		const instance = this.simpliciteInstances.get(instanceUrl);
+		if(!instance) throw new Error('Cannot send files. ' + instanceUrl + ' is not a known instance');
+		const statusFiles = instance.getModuleTrackedFiles(moduleName);
+		await this.sendFiles(statusFiles);
 	}
 }

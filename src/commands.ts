@@ -25,40 +25,33 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 // Apply commands
 export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt) {
 
-	// const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
-	// 	await simpliciteApiController.applyAll(moduleHandler.modules);
-	// });
-	
-	// const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (element: SimpliciteApiController | any) {
-	// 	try {
-	// 		const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url') || '';
-	// 		let module: Module | ApiModule | null;
-	// 		if (!Object.prototype.hasOwnProperty.call(element, 'label') && !Object.prototype.hasOwnProperty.call(element, 'description')) {
-	// 			element = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
-	// 			module = moduleHandler.getModuleFromNameAndInstance(element, instanceUrl);
-	// 		} else {
-	// 			module = moduleHandler.getModuleFromNameAndInstance(element.label, instanceUrl);	
-	// 		}
-	// 		if(module) {
-	// 			await simpliciteApiController.applyModuleFiles(module, moduleHandler.modules);
-	// 			prompt.addElement('url', module.instanceUrl);
-	// 			prompt.addElement('name', module.name);
-	// 		}
-	// 		else throw new Error('Cannot get module ' + element.label ? element.label : element);
-	// 	} catch(e) {
-	// 		logger.error('Simplicité: ' + e);
-	// 	}
-	// });
+	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
+		const res = await simpliciteInstanceController.sendAllFilesOnCommand();
+	});
 
-	// const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
-	// 	try {
-	// 		const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url') || '';
-	// 		await simpliciteApiController.applyInstanceFiles(moduleHandler.modules, instanceUrl, moduleHandler.connectedInstances);
-	// 		prompt.addElement('url', instanceUrl);
-	// 	} catch(e) {
-	// 		logger.error(e);
-	// 	}
-	// });
+	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
+		try {
+			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
+			const res = await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
+			prompt.addElement('url', instanceUrl);
+		} catch(e) {
+			logger.error(e);
+		}
+	});
+	
+	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function () {
+		try {
+			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
+			const res = await simpliciteInstanceController.sendModuleFilesOnCommand(moduleName, instanceUrl);
+			prompt.addElement('url', instanceUrl);
+			prompt.addElement('name', moduleName);
+		} catch(e) {
+			logger.error(e);
+		}
+	});
+
+	
 	
 	// ------------------------------
 	// Compiling commands
@@ -240,7 +233,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	// ------------------------------
 
 	// public command can be used by other dev if needed
-	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance];
+	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule];
 	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName];
 	context.subscriptions.concat(publicCommand, privateCommand);

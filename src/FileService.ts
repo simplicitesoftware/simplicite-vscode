@@ -7,12 +7,12 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
 export class FileService {
 	lastDetectedSave: number;
-	files: Map<string, File[]>; // files to be sent, key = url, usefull to send file from same instance in same process
+	instanceFiles: Map<string, File[]>; // files to be sent, key = url, usefull to send file from same instance in same process
 	firstElement: boolean;
 	simpliciteInstanceController: SimpliciteInstanceController;
 	constructor (simpliciteInstanceController: SimpliciteInstanceController) {
 		this.lastDetectedSave = 0;
-		this.files = new Map();
+		this.instanceFiles = new Map();
 		this.firstElement = true;
 		this.simpliciteInstanceController = simpliciteInstanceController;
 	}
@@ -32,13 +32,6 @@ export class FileService {
 				this.lastDetectedSave = Date.now();
 			}
 			setTimeout(this.isSaveTheLast.bind(this), 1000);
-
-			// console.log('did save ' + doc.uri.path);
-			// const fileInstance = simpliciteInstanceController.getFileAndInstanceFromPath(doc.uri);
-			// if (!fileInstance) {
-			// 	logger.error('Detected save on document but could not retrieve the correspondant file');
-			// 	return;
-			// }
 		});
 	}
 
@@ -50,16 +43,24 @@ export class FileService {
 			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
 				await this.sendFiles();
 			} else {
-				this.simpliciteInstanceController.setFilesStatus(this.files, true);
+				this.setFileStatus(this.instanceFiles);
 			}
-			this.files = new Map();
+			this.instanceFiles = new Map();
 		}
+	}
+
+	private setFileStatus(instanceFiles: Map<string, File[]>) {
+		instanceFiles.forEach((instancesFiles: File[]) => {
+			instancesFiles.forEach((file: File) => {
+				file.saveFileAsTracked();
+			});
+		});
 	}
 
 	// loop on map.
 	private async sendFiles() {
-		this.files.forEach(async (f: File[], key: string) => {
-			await this.simpliciteInstanceController.sendFiles(f, key);
+		this.instanceFiles.forEach(async (f: File[], key: string) => {
+			await this.simpliciteInstanceController.sendFiles(f);
 		});
 	}
 
@@ -69,11 +70,11 @@ export class FileService {
 			logger.error(uri.path + ' is probably not a Simplicité file');
 			return;
 		}
-		if(!this.files.has(fileInstance.url)) this.files.set(fileInstance.url, [fileInstance.file]);
+		if(!this.instanceFiles.has(fileInstance.url)) this.instanceFiles.set(fileInstance.url, [fileInstance.file]);
 		else {
-			let values = this.files.get(fileInstance.url);
+			let values = this.instanceFiles.get(fileInstance.url);
 			values ? values.push(fileInstance.file) : values = [fileInstance.file];
-			this.files.set(fileInstance.url, values);
+			this.instanceFiles.set(fileInstance.url, values);
 		}
 	}
 

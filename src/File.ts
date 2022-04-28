@@ -1,22 +1,25 @@
 'use strict';
 
-import { Uri, workspace } from 'vscode';
+import { Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
+import { logger } from './Log';
 
 export class File {
 	uri: Uri;
-	tracked: boolean;
 	name: string;
 	type: string | undefined;
 	scriptField: string | undefined;
 	fieldName: string | undefined;
 	rowId: string | undefined;
 	extension: string;
-	constructor(uri: Uri, tracked: boolean) {
+	private _app: any;
+	private _globalStorage: Memento;
+	constructor(uri: Uri, app: any, globalStorage: Memento) {
 		this.uri = uri;
-		this.tracked = tracked;
 		this.name = File.computeFileNameFromPath(uri.path);
 		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
+		this._app = app;
+		this._globalStorage = globalStorage;
 	}
 
 	// todo , check for URI
@@ -71,5 +74,38 @@ export class File {
 	static async getContent(fileUri: Uri): Promise<Uint8Array> {
 		const content = await workspace.fs.readFile(fileUri);
 		return content;
+	}
+
+	public async sendFile() {
+		try {
+			const obj = this._app.getBusinessObject(this.type, 'ide_' + this.type);
+			const item = await obj.getForUpdate(this.rowId, { inlineDocuments: true });
+			const doc = obj.getFieldDocument(this.scriptField);
+			if (doc === undefined) throw new Error('No document returned, cannot update content');
+			
+			const content = await File.getContent(this.uri);
+			doc.setContentFromText(content);
+			obj.setFieldValue(this.scriptField, doc);
+			const res = await obj.update(item, { inlineDocuments: true });
+			const lowerPath = this.uri.path.toLowerCase();
+			this._globalStorage.update(lowerPath, undefined);
+			if (!res) {
+				window.showErrorMessage('Simplicite: Cannot synchronize ' + this.uri.path);
+			}
+		} catch(e) {
+			logger.error(e);
+			return false;
+		}
+		return true;
+	}
+
+	public saveFileAsTracked() {
+		const lowerPath = this.uri.path.toLowerCase();
+		this._globalStorage.update(lowerPath, true);
+	}
+
+	public getTrackedStatus() {
+		const lowerPath = this.uri.path.toLowerCase();
+		return this._globalStorage.get(lowerPath) ? true : false;
 	}
 }

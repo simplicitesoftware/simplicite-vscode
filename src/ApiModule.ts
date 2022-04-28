@@ -13,7 +13,7 @@ export class ApiModule extends Module {
 	apiModuleName: string;
 	workspaceName: string | undefined;
 	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null, workspaceName: string | undefined, globalStorage: Memento) {
-		super(workspaceFolderPath, globalStorage);
+		super(workspaceFolderPath);
 		this.apiModuleName = ApiModule.getApiModuleName(name, instanceUrl);
 		this._app = app;
 		this._simpliciteApi = simpliciteApi;
