@@ -9,6 +9,7 @@ import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 import Module = require('module');
+import { emit } from 'process';
 
 export class SimpliciteInstanceController {
 	simpliciteInstances: Map<string, SimpliciteInstance>;
@@ -36,17 +37,17 @@ export class SimpliciteInstanceController {
 		});
 	}
 
-	async loginInstance(instanceUrl: string) {
+	async loginInstance(instanceUrl: string)  {
 		try {
 			const instance = this.simpliciteInstances.get(instanceUrl);
 			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url');
 			if(!instance.app.authtoken) await this.setCredentials(instance.app);
 			await instance.login();
 			await this.applyLoginValues(instance);
-		} catch(e) {
+		} catch(e: any) {
 			// delete token in persistance. Usefull when token is expired
 			this.deleteToken(instanceUrl);
-			logger.error(e);
+			logger.error(e.message ? e.message : e);
 		}
 	}
 
@@ -154,7 +155,7 @@ export class SimpliciteInstanceController {
 		this.simpliciteInstances.forEach((instance: SimpliciteInstance) => {
 			const res = instance.getTrackedFiles();
 			if(res) statusFiles = statusFiles.concat(res);
-		})
+		});
 		await this.sendFiles(statusFiles);
 	}
 

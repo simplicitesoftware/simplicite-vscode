@@ -2,9 +2,8 @@
 
 import { Module } from './Module';
 import { SimpliciteApi } from './SimpliciteApi';
-import { workspace, Uri, Memento } from 'vscode';
+import { workspace, Uri } from 'vscode';
 import { logger } from './Log';
-//import { WorkspaceController } from './WorkspaceController';
 import { Buffer } from 'buffer';
 
 export class ApiModule extends Module {
@@ -12,12 +11,16 @@ export class ApiModule extends Module {
 	private _simpliciteApi: SimpliciteApi | null;
 	apiModuleName: string;
 	workspaceName: string | undefined;
-	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null, workspaceName: string | undefined, globalStorage: Memento) {
+	constructor(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null, workspaceName: string | undefined) {
 		super(workspaceFolderPath);
 		this.apiModuleName = ApiModule.getApiModuleName(name, instanceUrl);
 		this._app = app;
 		this._simpliciteApi = simpliciteApi;
 		this.workspaceName = workspaceName;
+	}
+
+	async build(name: string, workspaceFolderPath: string, instanceUrl: string, token: string, app: any, simpliciteApi: SimpliciteApi | null, workspaceName: string | undefined) {
+		const apiMod = new ApiModule(name, workspaceFolderPath, instanceUrl, token, app, simpliciteApi, workspaceName);
 	}
 	
 	public static getApiModuleName (moduleName: string, instanceUrl: string) {

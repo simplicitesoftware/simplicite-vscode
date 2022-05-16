@@ -57,18 +57,18 @@ export class Module {
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
-			const lowerCasePath = uri.path.toLowerCase()
+			const lowerCasePath = uri.path.toLowerCase();
 			this.files.set(lowerCasePath, new File(uri, app, globalStorage));
 		});
 	}
 
 	public getFileFromPath(uri: Uri): File | undefined {
-		const lowerCasePath = uri.path.toLowerCase()
+		const lowerCasePath = uri.path.toLowerCase();
 		return this.files.get(lowerCasePath);
 	}
 
 	public getFilesAsArray(): string[] {
-		let files: string[] = [];
+		const files: string[] = [];
 		this.files.forEach((file: File) => {
 			files.push(file.uri.path);
 		});
@@ -79,7 +79,7 @@ export class Module {
 		const fileList: File[] = [];
 		this.files.forEach((file: File) => {
 			if(file.getTrackedStatus()) fileList.push(file);
-		})
+		});
 		return fileList;
 	}
 }

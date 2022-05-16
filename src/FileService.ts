@@ -5,6 +5,7 @@ import { File } from './File';
 import { logger } from './Log';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
+//
 export class FileService {
 	lastDetectedSave: number;
 	instanceFiles: Map<string, File[]>; // files to be sent, key = url, usefull to send file from same instance in same process
@@ -26,7 +27,7 @@ export class FileService {
 	// ignore right files
 	public async fileListener() {
 		workspace.onDidSaveTextDocument(async (doc: TextDocument) => {
-			if (this.firstElement || Date.now() - this.lastDetectedSave < 500) { // intervalle < 500ms
+			if (this.firstElement || Date.now() - this.lastDetectedSave < 500) { // save intervalle < 500ms
 				this.addFile(doc.uri);
 				this.firstElement = false;
 				this.lastDetectedSave = Date.now();
@@ -39,7 +40,7 @@ export class FileService {
 		const delta = Date.now() - this.lastDetectedSave;
 		if (delta >= 1000 && !this.firstElement) {
 			this.firstElement = true;
-			// todo , test on setting to send or set as tracked
+			// test on setting to send or set as tracked
 			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
 				await this.sendFiles();
 			} else {

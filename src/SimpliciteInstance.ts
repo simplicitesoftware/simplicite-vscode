@@ -59,7 +59,7 @@ export class SimpliciteInstance {
 		} catch (e: any) {
 			this.app.setAuthToken('');
 			window.showErrorMessage('Simplicite: ' + e.message ? e.message : e);
-			throw new Error(e);
+			throw new Error(e.message);
 		}
 	}
 
