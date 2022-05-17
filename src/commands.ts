@@ -26,7 +26,7 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt) {
 
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
-		const res = await simpliciteInstanceController.sendAllFilesOnCommand();
+		const res = await simpliciteInstanceController.sendAllFiles();
 	});
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {

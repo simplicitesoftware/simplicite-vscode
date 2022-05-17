@@ -1,20 +1,21 @@
 'use strict';
 
-import { workspace, TextDocument, Uri } from 'vscode';
+import { url } from 'inspector';
+import { workspace, TextDocument, Uri, TextDocumentChangeEvent } from 'vscode';
 import { File } from './File';
+import { FileInstance } from './interfaces';
 import { logger } from './Log';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
-//
+// listens to saved files.
+// compatible with the vscode feature save all
 export class FileService {
-	lastDetectedSave: number;
-	instanceFiles: Map<string, File[]>; // files to be sent, key = url, usefull to send file from same instance in same process
-	firstElement: boolean;
-	simpliciteInstanceController: SimpliciteInstanceController;
+	private modifiedFiles: Map<string, Map<string, File>>; // key = url, modified simplicité files associated with their instances
+	private savedCpt: number; // not used when send on save option is disabled
+	private simpliciteInstanceController: SimpliciteInstanceController;
 	constructor (simpliciteInstanceController: SimpliciteInstanceController) {
-		this.lastDetectedSave = 0;
-		this.instanceFiles = new Map();
-		this.firstElement = true;
+		this.modifiedFiles = new Map();
+		this.savedCpt = 0;
 		this.simpliciteInstanceController = simpliciteInstanceController;
 	}
 
@@ -24,59 +25,59 @@ export class FileService {
 		return fileService;
 	}
 
-	// ignore right files
-	public async fileListener() {
+	private async fileListener() {
+
+		// get a trace of simplicité modified files
+		workspace.onDidChangeTextDocument((doc: TextDocumentChangeEvent) => {
+			const fileUrl = this.simpliciteInstanceController.getFileAndInstanceUrlFromPath(doc.document.uri);
+			if(!fileUrl) return;
+			this.setModifiedFile(fileUrl);
+		});
+
+		// check if saved file is in trace of modified files
 		workspace.onDidSaveTextDocument(async (doc: TextDocument) => {
-			if (this.firstElement || Date.now() - this.lastDetectedSave < 500) { // save intervalle < 500ms
-				this.addFile(doc.uri);
-				this.firstElement = false;
-				this.lastDetectedSave = Date.now();
+
+			const file = this.getModifiedFile(doc.uri);
+			if(!file) return;
+			file.saveFileAsTracked();
+			++this.savedCpt;
+			if(this.savedCpt === this.countModifiedFiles()) { // if all files have been saved
+				if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) await this.simpliciteInstanceController.sendAllFiles();
+				this.savedCpt = 0;
+				this.modifiedFiles = new Map();
 			}
-			setTimeout(this.isSaveTheLast.bind(this), 1000);
 		});
 	}
 
-	private async isSaveTheLast() {
-		const delta = Date.now() - this.lastDetectedSave;
-		if (delta >= 1000 && !this.firstElement) {
-			this.firstElement = true;
-			// test on setting to send or set as tracked
-			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
-				await this.sendFiles();
-			} else {
-				this.setFileStatus(this.instanceFiles);
+	private setModifiedFile(fileUrl: FileInstance): void {
+		const files = this.modifiedFiles.get(fileUrl.url);
+		if(!files) {
+			this.modifiedFiles.set(fileUrl.url, (new Map()).set(fileUrl.file.uri.path.toLowerCase(), fileUrl.file));
+		} else {
+			const path = fileUrl.file.uri.path;
+			if(!files.has(path)) {
+				files.set(path.toLowerCase(), fileUrl.file);
 			}
-			this.instanceFiles = new Map();
 		}
 	}
 
-	private setFileStatus(instanceFiles: Map<string, File[]>) {
-		instanceFiles.forEach((instancesFiles: File[]) => {
-			instancesFiles.forEach((file: File) => {
-				file.saveFileAsTracked();
-			});
-		});
+	private getModifiedFile(uri: Uri): File | undefined {
+		// loop on instances
+		const value = this.modifiedFiles.values();
+		for(const instance of value) {
+			const file = instance.get(uri.path.toLowerCase());
+			if(file) return file;
+		}
+		return undefined;
 	}
 
-	// loop on map.
-	private async sendFiles() {
-		this.instanceFiles.forEach(async (f: File[], key: string) => {
-			await this.simpliciteInstanceController.sendFiles(f);
-		});
-	}
-
-	private addFile(uri: Uri) {
-		const fileInstance = this.simpliciteInstanceController.getFileAndInstanceUrlFromPath(uri);
-		if (!fileInstance) {
-			logger.error(uri.path + ' is probably not a Simplicité file');
-			return;
+	private countModifiedFiles(): number {
+		let x = 0;
+		const value = this.modifiedFiles.values();
+		for(const instance of value) {
+			x += instance.size;
 		}
-		if(!this.instanceFiles.has(fileInstance.url)) this.instanceFiles.set(fileInstance.url, [fileInstance.file]);
-		else {
-			let values = this.instanceFiles.get(fileInstance.url);
-			values ? values.push(fileInstance.file) : values = [fileInstance.file];
-			this.instanceFiles.set(fileInstance.url, values);
-		}
+		return x;
 	}
 
 	// 	// create temp folder and copy files to store the initial state of a file (for conflict resolution)
@@ -97,101 +98,5 @@ export class FileService {
 	// 		} catch(e) {
 	// 			logger.warn(e);
 	// 		}
-	// 	}
-	
-	// 	private updateFileStatus() {
-	// 		const jsonContent = [];
-	// 		for (const file of this.fileList) {
-	// 			if (file.tracked) {
-	// 				jsonContent.push({ path: file.uri.path, tracked: file.tracked });
-	// 			}
-	// 		}
-	// 		this._globalState.update('simplicite-files-info', jsonContent);
-	// 	}
-	
-	// 	async FileDetector(moduleHandler: ModuleHandler): Promise<File[]> {
-	// 		this.fileList = [];
-	// 		if (workspace.workspaceFolders === undefined) {
-	// 			throw new Error('no workspace detected');
-	// 		}
-	// 		const fileList = [];
-	// 		const wks = workspace.workspaceFolders;
-	// 		for (const workspaceFolder of wks) {
-	// 			for (const valid of SUPPORTED_FILES) {
-	// 				const globPatern = '**/*' + valid;
-	// 				const relativePattern = new RelativePattern(workspaceFolder, globPatern);
-	// 				const files = await workspace.findFiles(relativePattern);
-	// 				for (const file of files) {
-	// 					if (validFileExtension(file.path) && !file.path.includes(workspaceFolder.name + '.xml') && !file.path.includes('/.temp/')) {
-	// 						const module = moduleHandler.getModuleFromWorkspacePath(workspaceFolder.uri.path);
-	// 						const wk = workspaceFolder.uri.path.toLowerCase();
-	// 						let filePath = file.path;
-	// 						filePath = filePath.toLowerCase();
-	// 						const test = !filePath.includes(wk);
-	// 						if (!module || test) {
-	// 							continue;
-	// 						}
-	// 						fileList.push(new File(file.path, module.instanceUrl, workspaceFolder.uri.path, module.name, false));
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 		try {
-	// 			if (this.fileTree) await this.fileTree.setFileModule(moduleHandler.modules, fileList);
-	// 			return this.setTrackedStatusPersistence(fileList);
-	// 		} catch (e) {
-	// 			logger.warn('File Detector: ' + e);
-	// 			return fileList;
-	// 		}
-	// 	}
-	
-	// 	private setTrackedStatusPersistence(fileList: File[]): File[] {
-	// 		try {
-	// 			const jsonContent: any[] = this._globalState.get('simplicite-files-info') || [];
-	// 			for (const file of fileList) {
-	// 				for (const content of jsonContent) {
-	// 					if (file.uri.path === content.path) {
-	// 						file.tracked = content.tracked;
-	// 						break;
-	// 					}
-	// 				}
-	// 			}
-	// 		} catch (e: any) {
-	// 			throw new Error(e.message);
-	// 		}
-	// 		return fileList;
-	// 	}
-	
-	// 	async setTrackedStatus(fileUri: Uri, status: boolean, modules: Module[]): Promise<void> { // set the status true / false, and spread value to other objects
-	// 		for (const file of this.fileList) {
-	// 			const loopFileLowerCase = file.uri.path;
-	// 			loopFileLowerCase.toLowerCase();
-	// 			const paramFileLowerCase = fileUri.path;
-	// 			paramFileLowerCase.toLowerCase();
-	// 			if (loopFileLowerCase === paramFileLowerCase) {
-	// 				file.tracked = status;
-	// 			}
-	// 		}
-	// 		this.updateFileStatus();
-	// 		if (this.fileTree) await this.fileTree.setFileModule(modules, this.fileList);
-	// 	}
-	
-	// 	setFilesModuleDevInfo(mod: Module, devInfo: DevInfo) {
-	// 		for (const file of this.fileList) {
-	// 			if (file.simpliciteUrl !== mod.instanceUrl) continue;
-	// 			file.setModuleDevInfo(mod.moduleDevInfo, devInfo);
-	// 		}
-	// 	}
-	
-	// 	getFileFromFullPath(fullPath: string): File {
-	// 		for (const file of this.fileList) {
-	// 			let lowercasePath = file.uri.path;
-	// 			lowercasePath = lowercasePath.toLowerCase();
-	// 			fullPath = fullPath.toLowerCase();
-	// 			if (lowercasePath === fullPath) {
-	// 				return file;
-	// 			}
-	// 		}
-	// 		return new File('', '', '', '', false);
 	// 	}
 }

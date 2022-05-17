@@ -22,13 +22,13 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 
 export async function activate(context: ExtensionContext): Promise<any> {
+	logger.info('Starting extension on ' + env.appName);
 	initGlobalValues(context.globalStorageUri.path);
 	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
-	logger.info('Starting extension on ' + env.appName);
-	
-	const prompt = new Prompt(context.globalState);
+	const globalState = context.globalState;
+	const prompt = new Prompt(globalState);
 
-	const simpliciteInstanceController = await SimpliciteInstanceController.build(prompt, context.globalState);
+	const simpliciteInstanceController = await SimpliciteInstanceController.build(prompt, globalState);
 	await simpliciteInstanceController.loginAll();
 
 	const publicCommand = commandInit(context, simpliciteInstanceController, prompt);
@@ -40,8 +40,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	// const barItem = new BarItem();
 	// const appHandler = new AppHandler();
 	// const simpliciteApi = new SimpliciteApi(appHandler);
-	// const moduleHandler = await ModuleHandler.build(context.globalState, barItem, appHandler, simpliciteApi);
-	// const fileHandler = await FileHandler.build(context.globalState, moduleHandler);
+	// const moduleHandler = await ModuleHandler.build(globalState, barItem, appHandler, simpliciteApi);
+	// const fileHandler = await FileHandler.build(globalState, moduleHandler);
 	
 	// const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
 	// 

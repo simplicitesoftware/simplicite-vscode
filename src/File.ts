@@ -38,8 +38,8 @@ export class File {
 	setInfoFromModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		if (!this.type && !this.scriptField && !this.fieldName) {
 			const {type, id} = this.getBusinessObjectInfo(moduleDevInfo);
-			this.type = type;
 			this.rowId = id;
+			this.type = type;
 			this.scriptField = this.getProperScriptField(devInfo);
 			this.fieldName = this.getProperNameField(devInfo);
 		}
@@ -48,7 +48,7 @@ export class File {
 	private getBusinessObjectInfo(moduleDevInfo: any): {type: string, id: string} {
 		for (const type in moduleDevInfo) {
 			for(const devInfoObject of moduleDevInfo[type]) {
-				if (!devInfoObject.sourcepath) continue;
+				if (!devInfoObject.sourcepath) continue; // no sourcepath == no code file associated
 				if (this.uri.path.includes(devInfoObject.sourcepath)) return {type: type, id: devInfoObject.id};
 			}
 		}
@@ -78,7 +78,9 @@ export class File {
 
 	public async sendFile() {
 		try {
-			const obj = this._app.getBusinessObject(this.type, 'ide_' + this.type);
+			const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
+			//const test = await obj.get(this.rowId);
+			//test.;
 			const item = await obj.getForUpdate(this.rowId, { inlineDocuments: true });
 			const doc = obj.getFieldDocument(this.scriptField);
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
@@ -90,8 +92,11 @@ export class File {
 			const lowerPath = this.uri.path.toLowerCase();
 			this._globalStorage.update(lowerPath, undefined);
 			if (!res) {
-				window.showErrorMessage('Simplicite: Cannot synchronize ' + this.uri.path);
+				const msg = this.uri.path;
+				logger.error('Simplicite: Cannot synchronize ' + msg);
+				window.showErrorMessage(msg);
 			}
+			logger.info(`${this.uri.path} has been successfully applied`);
 		} catch(e) {
 			logger.error(e);
 			return false;

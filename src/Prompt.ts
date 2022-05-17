@@ -19,7 +19,6 @@ export class Prompt {
 		this._globalState.update('simplicite-prompt-cache', this.promptValues);
 	}
 	
-	
 	private getValuesList(attributeName: string) {
 		// breaks are shown as useless after the return statement, but they are mandatory for some reason otherwise it returns every case
 		switch(attributeName) {

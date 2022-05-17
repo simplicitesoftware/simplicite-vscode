@@ -40,5 +40,10 @@ export interface InstanceModules {
 	modules: ModulesFiles[];
 }
 
+export interface FileInstance {
+	file: File;
+	url: string;
+}
+
 
 

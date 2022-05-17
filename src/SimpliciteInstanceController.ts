@@ -3,24 +3,22 @@
 import { SimpliciteInstance } from './SimpliciteInstance';
 import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri } from 'vscode';
 import { parseStringPromise } from 'xml2js';
-import { InstanceModules, ModulesFiles, NameAndWorkspacePath, UrlAndName } from './interfaces';
+import { FileInstance, NameAndWorkspacePath, UrlAndName } from './interfaces';
 import { logger } from './Log';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
-import Module = require('module');
-import { emit } from 'process';
 
 export class SimpliciteInstanceController {
-	simpliciteInstances: Map<string, SimpliciteInstance>;
-	prompt: Prompt;
-	devInfo: DevInfo | undefined;
+	private prompt: Prompt;
 	private _globalStorage: Memento;
+	devInfo: DevInfo | undefined;
+	simpliciteInstances: Map<string, SimpliciteInstance>;
 	constructor(prompt: Prompt, globalStorage: Memento) {
-		this.simpliciteInstances = new Map();
 		this.prompt = prompt;
-		this.devInfo = undefined;
 		this._globalStorage = globalStorage;
+		this.devInfo = undefined;
+		this.simpliciteInstances = new Map();
 	}
 
 	static async build(prompt: Prompt, globalStorage: Memento) {
@@ -133,15 +131,14 @@ export class SimpliciteInstanceController {
 
 	// FILES
 
-	public getFileAndInstanceUrlFromPath(uri: Uri): {file: File, url: string} | undefined {
-		let file = undefined;
+	public getFileAndInstanceUrlFromPath(uri: Uri): FileInstance | undefined {
 		for (const instance of this.simpliciteInstances.values()) {
 			for (const m of instance.modules.values()) {
-				file = m.getFileFromPath(uri);
+				const file = m.getFileFromPath(uri);
 				if(file) return {file: file, url: instance.app.parameters.url};
 			}
 		}
-		return file;
+		return undefined;
 	}
  
 	public async sendFiles(files: File[]) {
@@ -150,13 +147,11 @@ export class SimpliciteInstanceController {
 		});
 	}
 
-	public async sendAllFilesOnCommand(): Promise<void> {
-		let statusFiles: File[] = [];
-		this.simpliciteInstances.forEach((instance: SimpliciteInstance) => {
-			const res = instance.getTrackedFiles();
-			if(res) statusFiles = statusFiles.concat(res);
-		});
-		await this.sendFiles(statusFiles);
+	public async sendAllFiles(): Promise<void> {
+		const instanceUrls = this.simpliciteInstances.keys();
+		for (const url of instanceUrls) {
+			await this.sendInstanceFilesOnCommand(url);
+		}
 	}
 
 	public async sendInstanceFilesOnCommand(url: string) {
@@ -164,6 +159,7 @@ export class SimpliciteInstanceController {
 		if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
 		const statusFiles: File[] = instance.getTrackedFiles();
 		await this.sendFiles(statusFiles);
+		instance.triggerBackendCompilation(); // todo , implement already compiling backend queue
 	}
 
 	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
