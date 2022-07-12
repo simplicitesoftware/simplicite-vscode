@@ -206,20 +206,20 @@
 				"title": "double click trigger command"
 			},
 			{
-				"command": "simplicite-vscode-tools.initApiFileSystem",
-				"title": "Simplicite: Initialize API File System"
+				"command": "simplicite-vscode-tools.initApiModule",
+				"title": "Simplicite: Initialize API Module"
 			},
 			{
-				"command": "simplicite-vscode-tools.removeApiFileSystem",
-				"title": "Simplicite: Remove API File System"
+				"command": "simplicite-vscode-tools.removeApiModule",
+				"title": "Simplicite: Remove API module from the current workspace"
 			},
 			{
 				"command": "simplicite-vscode-tools.resetPromptCache",
 				"title": "Simplicite: Reset prompt cache"
 			},
 			{
-				"command": "simplicite-vscode-tools.resetPersistence",
-				"title": "Simplicite: Reset persistence"
+				"command": "simplicite-vscode-tools.resetExtensionData",
+				"title": "Simplicite: Wipe extension data"
 			}
 		],
 		"configuration": {

@@ -45,5 +45,11 @@ export interface FileInstance {
 	url: string;
 }
 
+export interface ApiModuleSave {
+	moduleName: string;
+	instanceUrl: string;
+	toDelete: boolean;
+}
+
 
 

@@ -3,27 +3,16 @@
 import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
-import { logger } from './Log';
 
 export class Module {
 	// remove name as it should be in map
 	moduleDevInfo: any;
-	workspaceFolderPath: string;
 	files: Map<string, File>;
-	constructor(workspaceFolderPath: string) {
+	name: string;
+	constructor(name: string) {
 		this.moduleDevInfo = undefined;
-		this.workspaceFolderPath = workspaceFolderPath;
 		this.files = new Map();
-	}
-
-	static async build(workspaceFolderPath: string, globalStorage: Memento, app: any) {
-		const module = new Module(workspaceFolderPath);
-		try {
-			await module.initFiles(app, globalStorage);
-		} catch(e) {
-			logger.error(e);
-		}
-		return module;
+		this.name = name;
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {
@@ -33,7 +22,7 @@ export class Module {
 		return false;
 	}
 
-	public async setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
+	public setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		this.moduleDevInfo = moduleDevInfo;
 		this.files.forEach((f: File) => {
 			f.setInfoFromModuleDevInfo(moduleDevInfo, devInfo);
@@ -41,12 +30,12 @@ export class Module {
 	}
 
 	// FILES
-	async initFiles(app: any, globalStorage: Memento) {
+	async initFiles(app: any, globalState: Memento, workspaceFolderPath: string) {
 		const getWk = (): WorkspaceFolder | undefined => {
 			if (!workspace.workspaceFolders) return undefined;
 			let returnWk = undefined;
 			workspace.workspaceFolders.forEach(wk => {
-				if (wk.uri.path === this.workspaceFolderPath) returnWk = wk;
+				if (wk.uri.path === workspaceFolderPath) returnWk = wk;
 			});
 			return returnWk;
 		};
@@ -58,7 +47,7 @@ export class Module {
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase();
-			this.files.set(lowerCasePath, new File(uri, app, globalStorage));
+			this.files.set(lowerCasePath, new File(uri, app, globalState));
 		});
 	}
 

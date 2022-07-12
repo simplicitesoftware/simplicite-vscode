@@ -11,21 +11,19 @@ import { File } from './File';
 
 // represent a simplicite instance
 export class SimpliciteInstance {
-	modules: Map<string, Module>;
-	apiModules: Map<string, ApiModule>;
+	modules: Map<string, Module | ApiModule>;
 	app: any;
 	isBackendCompiling: boolean;
-	private _globalStorage: Memento;
-	constructor(instanceUrl: string, globalStorage: Memento) {
+	private _globalState: Memento;
+	constructor(instanceUrl: string, globalState: Memento) {
 		this.modules = new Map();
-		this.apiModules = new Map();
 		this.app = simplicite.session({ url: instanceUrl /*, debug: true*/ });
-		this._globalStorage = globalStorage;
+		this._globalState = globalState;
 		this.isBackendCompiling = false;
 	}
 
-	static async build(modulesName: NameAndWorkspacePath[], url: string, globalStorage: Memento): Promise<SimpliciteInstance> {
-		const simpliciteInstance = new SimpliciteInstance(url, globalStorage);
+	static async build(modulesName: NameAndWorkspacePath[], url: string, globalState: Memento): Promise<SimpliciteInstance> {
+		const simpliciteInstance = new SimpliciteInstance(url, globalState);
 		simpliciteInstance.setAuthtoken();
 		await simpliciteInstance.initModules(modulesName);
 		return simpliciteInstance;
@@ -35,7 +33,8 @@ export class SimpliciteInstance {
 		const modules: Map<string, Module> = new Map();
 		for (const value of modulesName) {
 			if(!modules.has(value.name)) {
-				const module = await Module.build(value.wkPath, this._globalStorage, this.app);
+				const module = new Module(value.name);
+				await module.initFiles(this.app, this._globalState, value.wkPath);
 				modules.set(value.name, module);
 			}
 		}
@@ -43,7 +42,7 @@ export class SimpliciteInstance {
 	}
 
 	private setAuthtoken() {
-		const list: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
+		const list: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
 		list.forEach(a => {
 			if(a.instanceUrl === this.app.parameters.url) this.app.authtoken = a.authtoken;
 		});
@@ -79,7 +78,7 @@ export class SimpliciteInstance {
 
 	public getTrackedFiles(): File[] {
 		let trackedFiles: File[] = [];
-		this.modules.forEach((mod: Module) => {
+		this.modules.forEach((mod: Module | ApiModule) => {
 			const files = mod.getTrackedFiles();
 			trackedFiles = trackedFiles.concat(files);
 		});
@@ -94,7 +93,7 @@ export class SimpliciteInstance {
 
 	public getFilesAssiociatedToModules(): Array<{moduleName: string, files: string[]}> {
 		const modFiles : Array<{moduleName: string, files: string[]}> = [];
-		this.modules.forEach((mod: Module, name: string) => {
+		this.modules.forEach((mod: Module | ApiModule, name: string) => {
 			modFiles.push({moduleName: name, files: mod.getFilesAsArray()});
 		});
 		return modFiles;
@@ -104,7 +103,8 @@ export class SimpliciteInstance {
 
 	async getDevInfo() {
 		try {
-			return new DevInfo(await this.app.getDevInfo());
+			const devInfo = await this.app.getDevInfo();
+			return new DevInfo(devInfo);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -112,17 +112,27 @@ export class SimpliciteInstance {
 
 	private async getModuleDevInfo(moduleName: string) {
 		try {
-			return await this.app.getDevInfo(moduleName);
+			const moduleDevInfo = await this.app.getDevInfo(moduleName);
+			return moduleDevInfo;
 		} catch(e: any) {
 			throw new Error(e);
 		}
 	}
 
-	public async getModulesDevInfo(devInfo: DevInfo) {
-		this.modules.forEach(async (m: Module, name: string) => {
-			const moduleDevInfo = await this.getModuleDevInfo(name);
-			await m.setModuleDevInfo(moduleDevInfo, devInfo);
+	public async setModulesDevInfo(devInfo: DevInfo) {
+		this.modules.forEach(async (m: Module | ApiModule, name: string) => {
+			await this.setSingleModuleDevInfo(devInfo, m instanceof ApiModule ? m.name : name, m);
 		});
+	}
+
+	public async setSingleModuleDevInfo(devInfo: DevInfo, moduleName: string, module: Module | ApiModule) {
+		try {
+			const moduleDevInfo = await this.getModuleDevInfo(moduleName);
+			module.setModuleDevInfo(moduleDevInfo, devInfo);
+		} catch(e) {
+			logger.error(e);
+		}
+		
 	}
 
 	// BACKEND COMPILATION
@@ -142,4 +152,15 @@ export class SimpliciteInstance {
 		}
 	}
 	
+// UTIL
+ 
+ public deleteModule(moduleName: string) {
+	for (const key of this.modules.keys()) {
+		const module = this.modules.get(key)!;
+		if(module.name === moduleName || module instanceof ApiModule && module.apiModuleName === moduleName) {
+			this.modules.delete(key);
+		}
+	}
+ }
+
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-import { commands, window, env, workspace, ExtensionContext } from 'vscode';
+import { commands, window, env, workspace, ExtensionContext, Memento, Uri } from 'vscode';
 import { logger } from './Log';
 // import { SimpliciteApiController } from './SimpliciteApiController';
 // import { ModuleInfoTree } from './treeView/ModuleInfoTree';
@@ -17,13 +17,15 @@ import { ApiModule } from './ApiModule';
 // import { BarItem } from './BarItem';
 import { Prompt } from './Prompt';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
+import { SimpliciteInstance } from './SimpliciteInstance';
+import { WorkspaceController } from './WorkspaceController';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands
-export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt) {
+export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento) {
 
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		const res = await simpliciteInstanceController.sendAllFiles();
@@ -69,7 +71,6 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	const resetPromptCache = commands.registerCommand('simplicite-vscode-tools.resetPromptCache', async () => {
 		prompt.resetValues();
 	});
-
 
 	// Authentication commands
 	const login = commands.registerCommand('simplicite-vscode-tools.login', async () => {
@@ -182,60 +183,54 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	
 	// ------------------------------
 	
-	// const initApiFileSystem = commands.registerCommand('simplicite-vscode-tools.initApiFileSystem', async () => {
-	// 	// todo , check and handle case where process is aborted and info needs to stay relevant
-	// 	let moduleName;
-	// 	let instanceUrl;
-	// 	try {
-	// 		instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
-	// 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
+	const initApiModule = commands.registerCommand('simplicite-vscode-tools.initApiModule', async () => {
+		try {
+ 			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
+	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module to add to the workspace', 'module name');
+			await simpliciteInstanceController.initApiModule(instanceUrl, moduleName, false);
+		} catch(e) {
+			logger.error(e);
+		}
+	});
 	
-	// 		moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module to add to the workspace', 'module name');
-	// 		const token = moduleHandler.getInstanceToken(instanceUrl); // get token if exists
-	// 		const module = new ApiModule(moduleName, '', instanceUrl, token, appHandler.getApp(instanceUrl), simpliciteApi, workspace.name);
-	// 		if(token !== '') {
-	// 			module.connected = true;
-	// 			module.moduleDevInfo = await simpliciteApi.fetchModuleInfo(instanceUrl, moduleName);
-	// 			moduleHandler.addModule(module, true);
-	// 			await moduleHandler.loginModuleState(simpliciteApi, module, module.token, fileHandler);
-	// 		} else {
-	// 			moduleHandler.addModule(module, true);
-	// 			const res = await simpliciteApiController.tokenOrCredentials(module);
-	// 			if (!res) throw('');
-	// 		}
-	// 		prompt.addElement('url', instanceUrl);
-	// 		prompt.addElement('name', moduleName);
-	// 	} catch (e: any) {
-	// 		if(e.message !== 'Simplicité: input cancelled' && e !== '') window.showInformationMessage('Simplicite: ' + e.message);
-	// 		logger.error(e);
-	// 		try {
-	// 			moduleHandler.removeModule(moduleName ? moduleName : '', instanceUrl ? instanceUrl : '');
-	// 		} catch(e) {
-	// 			logger.warn('Attempt to remove module after init api module process aborted failed');
-	// 		}
-	// 	}
-	// });
-	
-	// const removeApiFileSystem = commands.registerCommand('simplicite-vscode-tools.removeApiFileSystem', async () => {
-	// 	try {
-	// 		const apiModuleName = await prompt.getUserSelectedValue('apiName','Simplicite: Type in the api module name', 'moduleName@instance.url');
-	// 		const module = moduleHandler.getApiModuleFromApiName(apiModuleName);
-	// 		if (!module) throw new Error('');
-	// 		prompt.addElement('apiName', apiModuleName);
-	// 		WorkspaceController.removeApiFileSystemFromWorkspace(module);
-	// 		WorkspaceController.deleteModuleAndFiles(module, moduleHandler, barItem);
-	// 	} catch(e: any) {
-	// 		logger.error(e);
-	// 		if(e.message !== 'Simplicité: input cancelled') window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
-	// 	}
-	// });
+	const removeApiModule = commands.registerCommand('simplicite-vscode-tools.removeApiModule', async () => {
+		try {
+			const apiModuleName = await prompt.getUserSelectedValue('apiName','Simplicite: Type in the api module name', 'moduleName@instance.url');
+			const reg = new RegExp("/^([a-zA-Z0-9_-]+)@([a-zA-Z._-]+)$/");
+			const res = reg.exec(apiModuleName);
+			const test = 1;
+			//simpliciteInstanceController.deleteApiModule();
+		} catch(e: any) {
+			logger.error(e);
+			if(e.message !== 'Simplicité: input cancelled') window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
+		}
+	});
 	
 	// ------------------------------
 
+	// RESET
+	const resetExtensionData = commands.registerCommand('simplicite-vscode-tools.resetExtensionData', async () => {
+		try {
+			globalState.update(API_MODULES_STORAGE, undefined);
+			globalState.update(AUTHENTICATION_STORAGE, undefined);
+			globalState.update(FILES_STATUS_STORAGE, undefined);
+			//prompt.resetValues(); 
+			try {
+				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true})
+			} catch(e) {
+				logger.error(e);
+			}
+		} catch(e: any) {
+			logger.error(e);	
+		}
+	});
+
+
 	// public command can be used by other dev if needed
-	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule];
+	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, initApiModule, removeApiModule];
 	// private commands are needed for the tree views, it's not relevant to expose them
-	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName];
+	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, resetExtensionData];
 	context.subscriptions.concat(publicCommand, privateCommand);
 	return publicCommand;
 };

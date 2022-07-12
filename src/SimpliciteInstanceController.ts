@@ -1,28 +1,34 @@
 'use strict';
 
 import { SimpliciteInstance } from './SimpliciteInstance';
-import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri } from 'vscode';
+import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri, SnippetString } from 'vscode';
 import { parseStringPromise } from 'xml2js';
-import { FileInstance, NameAndWorkspacePath, UrlAndName } from './interfaces';
+import { ApiModuleSave, FileInstance, NameAndWorkspacePath, UrlAndName } from './interfaces';
 import { logger } from './Log';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
+import { ApiModule } from './ApiModule';
+import { WorkspaceController } from './WorkspaceController';
+import { info } from 'console';
+import { throws } from 'assert';
 
 export class SimpliciteInstanceController {
 	private prompt: Prompt;
-	private _globalStorage: Memento;
+	private _globalState: Memento;
 	devInfo: DevInfo | undefined;
 	simpliciteInstances: Map<string, SimpliciteInstance>;
-	constructor(prompt: Prompt, globalStorage: Memento) {
+	constructor(prompt: Prompt, globalState: Memento) {
 		this.prompt = prompt;
-		this._globalStorage = globalStorage;
+		this._globalState = globalState;
 		this.devInfo = undefined;
 		this.simpliciteInstances = new Map();
 	}
 
-	static async build(prompt: Prompt, globalStorage: Memento) {
-		const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalStorage);
+	static async build(prompt: Prompt, globalState: Memento) {
+		const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState);
+		await simpliciteInstanceController.clearExpiredApiModules();
+		await simpliciteInstanceController.setSimpliciteApiModules();
 		await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
 		return simpliciteInstanceController;
 	}
@@ -35,36 +41,38 @@ export class SimpliciteInstanceController {
 		});
 	}
 
-	async loginInstance(instanceUrl: string)  {
+	async loginInstance(instanceUrl: string): Promise<boolean> {
 		try {
 			const instance = this.simpliciteInstances.get(instanceUrl);
-			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url');
+			if (!instance) throw new Error(instanceUrl + ' cannot be found in known instances url');
 			if(!instance.app.authtoken) await this.setCredentials(instance.app);
 			await instance.login();
 			await this.applyLoginValues(instance);
+			return true;
 		} catch(e: any) {
 			// delete token in persistance. Usefull when token is expired
 			this.deleteToken(instanceUrl);
 			logger.error(e.message ? e.message : e);
+			return false;
 		}
 	}
 
 	private async applyLoginValues(instance: SimpliciteInstance) {
 		if(!this.devInfo) this.devInfo = await instance.getDevInfo();
-		if (this.devInfo) await instance.getModulesDevInfo(this.devInfo);
-		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
+		if (this.devInfo) await instance.setModulesDevInfo(this.devInfo);
+		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instance.app.url);
 		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
 		else authenticationValues[index].authtoken = instance.app.authtoken;
-		this._globalStorage.update(AUTHENTICATION_STORAGE, authenticationValues);
+		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
 	private deleteToken(instanceUrl: string) {
-		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalStorage.get(AUTHENTICATION_STORAGE) || [];
+		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instanceUrl);
 		//if(index === -1) return;
 		authenticationValues.splice(index, 1);
-		this._globalStorage.update(AUTHENTICATION_STORAGE, authenticationValues);
+		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
 	async logoutAll() {
@@ -99,7 +107,7 @@ export class SimpliciteInstanceController {
 			if(!this.simpliciteInstances.has(key)) {
 				const value = res.get(key);
 				if(!value) continue;
-				const instance = await SimpliciteInstance.build(value, key, this._globalStorage);
+				const instance = await SimpliciteInstance.build(value, key, this._globalState);
 				this.simpliciteInstances.set(key, instance);
 			}
 		}
@@ -109,11 +117,15 @@ export class SimpliciteInstanceController {
 		const list: Map<string, NameAndWorkspacePath[]> = new Map();
 		for (const wk of workspace.workspaceFolders || []) {
 			try {
+				const name = wk.name;
+				const re = new RegExp('^([A-Za-z0-9_-]+@[A-Za-z0-9-_\.]+)$');
+				const folderName = re.exec(name);
+				if(folderName) throw new Error(`Ignoring API Module ${folderName[0]} during module initialization`);
 				const res: UrlAndName = await this.getModuleUrlAndNameFromWorkspace(wk);
 				if(!list.has(res.instanceUrl)) list.set(res.instanceUrl, [{name: res.name, wkPath: wk.uri.path}]);
 				else list.get(res.instanceUrl)?.push({name: res.name, wkPath: wk.uri.path});
 			} catch(e) {
-				logger.error(e);
+				logger.warn(e);
 			}
 		}
 		return list;
@@ -127,6 +139,93 @@ export class SimpliciteInstanceController {
 		const pom = (await workspace.openTextDocument(file[0])).getText();
 		const res = await parseStringPromise(pom);
 		return {instanceUrl: res.project.properties[0]['simplicite.url'][0], name: res.project['name'][0]};
+	}
+
+	// set the simplicite api modules on vs code start
+	// create modules, set the delete flag to true, and does not recreate project files as it's already been done
+	private async setSimpliciteApiModules() {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
+		console.log(saved);
+		saved.forEach(async (apiModSave) => {
+			try {
+				await this.initApiModule(apiModSave.instanceUrl, apiModSave.moduleName, apiModSave.toDelete);
+			} catch(e) {
+				logger.error(e);
+			}
+		});
+	}
+
+	private updateApiModuleState(moduleName: string, instanceUrl: string, toDelete: boolean) {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
+		const index = saved.findIndex(apiMS => {
+			apiMS.moduleName === moduleName && apiMS.instanceUrl === instanceUrl;
+		})
+		saved[index] = { instanceUrl: instanceUrl, moduleName: moduleName, toDelete: toDelete };
+		this._globalState.update(API_MODULES_STORAGE, saved);
+	}
+
+	public async initApiModule(instanceUrl: string, moduleName: string, toDelete: boolean): Promise<void> {
+		let instance = this.simpliciteInstances.get(instanceUrl);
+		// associate to instance or create one
+		if(!instance)	{
+			instance = await SimpliciteInstance.build([], instanceUrl, this._globalState);
+		}
+		if(instance) {
+			const apiModule = new ApiModule(moduleName, instanceUrl, instance.app, this._globalState);
+			instance.modules.set(ApiModule.getApiModuleName(moduleName, instanceUrl), apiModule);
+			// adding instance here, needs to be removed if process gets an error
+			this.simpliciteInstances.set(instanceUrl, instance);
+			const success = await this.loginInstance(instanceUrl);
+			if(this.devInfo && success) {
+				if(!toDelete) {
+					await apiModule.createProject(this.devInfo);
+				}
+				//this.updateApiModuleState(apiModSave.instanceUrl, apiModSave.moduleName, true);
+				apiModule.saveApiModule();
+				WorkspaceController.addWorkspaceFolder(apiModule.apiModuleName);
+			} else {
+				this.simpliciteInstances.delete(instanceUrl);
+			}
+		}
+	}
+
+	private async clearExpiredApiModules() {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
+		console.log('clear');
+		console.log(saved);
+		saved.forEach(async (apiMS) => {
+
+		});
+	}
+
+	public deleteApiModule(moduleName: string, instanceUrl: string) {
+		let instance = this.simpliciteInstances.get(instanceUrl);
+		if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
+		const module = instance.modules.get(moduleName);
+		if(!module || !(module instanceof ApiModule)) throw new Error('Cannot delete Api module, module '+moduleName+' does not exist, or is not an Api module');
+		module.deleteFiles();
+		instance.modules.delete(moduleName);
+		this.removeExpiredPersistence(moduleName, instanceUrl);
+	}
+
+	private removeExpiredPersistence(moduleName: string, instanceUrl: string) {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || []; // check
+		const index = saved.findIndex((apiMS) => {
+			apiMS.instanceUrl === instanceUrl && apiMS.moduleName === moduleName;
+		})
+		saved.splice(index, 1);
+		this._globalState.update(API_MODULES_STORAGE, saved);
+	}
+
+	async removeModule(moduleName: string) {
+		for (const key of this.simpliciteInstances.keys()) {
+			const instance = this.simpliciteInstances.get(key)!;
+			instance.deleteModule(moduleName);
+			if(instance.modules.size === 0) {
+				await instance.logout();
+				this.simpliciteInstances.delete(key);
+			}
+		}
 	}
 
 	// FILES
