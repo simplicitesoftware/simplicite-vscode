@@ -13,13 +13,13 @@ export class File {
 	rowId: string | undefined;
 	extension: string;
 	private _app: any;
-	private _globalStorage: Memento;
-	constructor(uri: Uri, app: any, globalStorage: Memento) {
+	private _globalState: Memento;
+	constructor(uri: Uri, app: any, globalState: Memento) {
 		this.uri = uri;
 		this.name = File.computeFileNameFromPath(uri.path);
 		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 		this._app = app;
-		this._globalStorage = globalStorage;
+		this._globalState = globalState;
 	}
 
 	// todo , check for URI
@@ -90,7 +90,7 @@ export class File {
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(item, { inlineDocuments: true });
 			const lowerPath = this.uri.path.toLowerCase();
-			this._globalStorage.update(lowerPath, undefined);
+			this._globalState.update(lowerPath, undefined);
 			if (!res) {
 				const msg = this.uri.path;
 				logger.error('Simplicite: Cannot synchronize ' + msg);
@@ -106,11 +106,11 @@ export class File {
 
 	public saveFileAsTracked() {
 		const lowerPath = this.uri.path.toLowerCase();
-		this._globalStorage.update(lowerPath, true);
+		this._globalState.update(lowerPath, true);
 	}
 
 	public getTrackedStatus() {
 		const lowerPath = this.uri.path.toLowerCase();
-		return this._globalStorage.get(lowerPath) ? true : false;
+		return this._globalState.get(lowerPath) ? true : false;
 	}
 }

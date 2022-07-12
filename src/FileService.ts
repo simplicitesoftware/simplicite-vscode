@@ -26,7 +26,6 @@ export class FileService {
 	}
 
 	private async fileListener() {
-
 		// get a trace of simplicité modified files
 		workspace.onDidChangeTextDocument((doc: TextDocumentChangeEvent) => {
 			const fileUrl = this.simpliciteInstanceController.getFileAndInstanceUrlFromPath(doc.document.uri);

@@ -11,12 +11,12 @@ export class Prompt {
 	}
 	
 	getPromptValues(): PromptCached {
-		const savedValues: PromptCached | undefined = this._globalState.get('simplicite-prompt-cache');
+		const savedValues: PromptCached | undefined = this._globalState.get(PROMPT_CACHE);
 		return savedValues ? savedValues : new PromptCached();
 	}
 	
 	savePromptValues() {
-		this._globalState.update('simplicite-prompt-cache', this.promptValues);
+		this._globalState.update(PROMPT_CACHE, this.promptValues);
 	}
 	
 	private getValuesList(attributeName: string) {

@@ -12,18 +12,17 @@ import { FileService } from './FileService';
 import { validFileExtension } from './utils';
 import { initGlobalValues } from './constants';
 import { File } from './File';
-//import { SimpliciteApiController } from './SimpliciteApiController';
-import { SimpliciteApi } from './SimpliciteApi';
-import { AppHandler } from './AppHandler';
 import { commandInit } from './commands';
 import { DevInfo } from './DevInfo';
 //import { WorkspaceController } from './WorkspaceController';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
+import { WorkspaceController } from './WorkspaceController';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName);
 	initGlobalValues(context.globalStorageUri.path);
+
 	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
 	const globalState = context.globalState;
 	const prompt = new Prompt(globalState);
@@ -31,14 +30,15 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const simpliciteInstanceController = await SimpliciteInstanceController.build(prompt, globalState);
 	await simpliciteInstanceController.loginAll();
 
-	const publicCommand = commandInit(context, simpliciteInstanceController, prompt);
+	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState);
 
 	new QuickPick(context.subscriptions);
 
 	await FileService.build(simpliciteInstanceController);
-	
+		
+	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
 	// const barItem = new BarItem();
-	// const appHandler = new AppHandler();
+
 	// const simpliciteApi = new SimpliciteApi(appHandler);
 	// const moduleHandler = await ModuleHandler.build(globalState, barItem, appHandler, simpliciteApi);
 	// const fileHandler = await FileHandler.build(globalState, moduleHandler);
@@ -156,6 +156,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	// });
 
 	return publicCommand;
+}
+
+function clearUnusedApiModule() {
+	
 }
 
 function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {

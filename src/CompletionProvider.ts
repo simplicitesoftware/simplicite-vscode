@@ -35,7 +35,6 @@ export class CompletionProvider implements CompletionItemProvider {
 		for (const object of this._currentObjectInfo) {
 			if (object.name === fileName) {
 				for (const completionAttribute in this._genericObjectDevInfo.completion) {
-					// eslint-disable-next-line no-prototype-builtins
 					if (object.hasOwnProperty(completionAttribute)) {
 						for (const item of object[completionAttribute]) {
 							completionItems.push(new CustomCompletionItem(item.name, CompletionItemKind.Text, completionAttribute));
