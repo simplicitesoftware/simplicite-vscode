@@ -7,30 +7,31 @@
 	"configurations": [
 		{
 			"name": "Run Vscode Extension in VS Code",
-			"type": "pwa-extensionHost",
-			"debugWebWorkerHost": true,
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionDevelopmentKind=web"
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/**/vscode-extension.js"
+				"${workspaceFolder}/dist/**/vscode-extension.js",
+				"${workspaceFolder}/dist/**/vscode-extension.js.map"
 			],
-			"preLaunchTask": "npm: vscode:watch"
+			"preLaunchTask": "npm: vscode:watch",
+			"type": "extensionHost",
+			"debugWebWorkerHost": true,
 		},
 		{
 			"name": "Run Theia Extension in VS Code",
-			"runtimeVersion": "^12.0.0",
-			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}",
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/**/theia-extension.js"
+				"${workspaceFolder}/dist/**/theia-extension.js",
+				"${workspaceFolder}/dist/**/theia-extension.js.map"
 			],
-			"preLaunchTask": "npm: theia:watch"
+			"preLaunchTask": "npm: theia:watch",
+			"type": "extensionHost",
+			"debugWebWorkerHost": true,
 		}
 	]
 }
