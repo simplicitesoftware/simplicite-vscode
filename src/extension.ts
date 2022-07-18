@@ -27,8 +27,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	const globalState = context.globalState;
 	const prompt = new Prompt(globalState);
 
-	const simpliciteInstanceController = await SimpliciteInstanceController.build(prompt, globalState);
-	await simpliciteInstanceController.loginAll();
+	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState);
+	await simpliciteInstanceController.initAll();
 
 	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState);
 

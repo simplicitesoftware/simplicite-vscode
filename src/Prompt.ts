@@ -133,3 +133,9 @@ class PromptCached {
 		this.apiModuleNames = [];
 	}
 }
+
+export enum PromptValue {
+	url = 'url',
+	apiName = 'apiName',
+	name = 'name'
+}

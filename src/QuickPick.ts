@@ -3,6 +3,7 @@
 import { commands, Command, extensions, window, Disposable } from 'vscode';
 import { logger } from './Log';
 
+// Quick pick shows a list of the extensions commands
 export class QuickPick {
 	constructor(subscriptions: Disposable[]) {
 		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
