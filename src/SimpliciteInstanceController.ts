@@ -25,12 +25,10 @@ export class SimpliciteInstanceController {
 		this.simpliciteInstances = new Map();
 	}
 
-	static async build(prompt: Prompt, globalState: Memento) {
-		const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState);
-		await simpliciteInstanceController.clearExpiredApiModules();
-		await simpliciteInstanceController.setSimpliciteApiModules();
-		await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
-		return simpliciteInstanceController;
+	async initAll() {
+		await this.clearExpiredApiModules();
+		await this.setApiModuleAfterReset();
+		await this.setSimpliciteInstancesFromWorkspace();
 	}
 
 	// AUTHENTICATION 
@@ -141,30 +139,8 @@ export class SimpliciteInstanceController {
 		return {instanceUrl: res.project.properties[0]['simplicite.url'][0], name: res.project['name'][0]};
 	}
 
-	// set the simplicite api modules on vs code start
-	// create modules, set the delete flag to true, and does not recreate project files as it's already been done
-	private async setSimpliciteApiModules() {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
-		console.log(saved);
-		saved.forEach(async (apiModSave) => {
-			try {
-				await this.initApiModule(apiModSave.instanceUrl, apiModSave.moduleName, apiModSave.toDelete);
-			} catch(e) {
-				logger.error(e);
-			}
-		});
-	}
-
-	private updateApiModuleState(moduleName: string, instanceUrl: string, toDelete: boolean) {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
-		const index = saved.findIndex(apiMS => {
-			apiMS.moduleName === moduleName && apiMS.instanceUrl === instanceUrl;
-		})
-		saved[index] = { instanceUrl: instanceUrl, moduleName: moduleName, toDelete: toDelete };
-		this._globalState.update(API_MODULES_STORAGE, saved);
-	}
-
-	public async initApiModule(instanceUrl: string, moduleName: string, toDelete: boolean): Promise<void> {
+	// api module states : is it already in workspace (might not be if workspace folder is empty)
+	public async initApiModule(instanceUrl: string, moduleName: string): Promise<void> {
 		let instance = this.simpliciteInstances.get(instanceUrl);
 		// associate to instance or create one
 		if(!instance)	{
@@ -177,11 +153,15 @@ export class SimpliciteInstanceController {
 			this.simpliciteInstances.set(instanceUrl, instance);
 			const success = await this.loginInstance(instanceUrl);
 			if(this.devInfo && success) {
-				if(!toDelete) {
-					await apiModule.createProject(this.devInfo);
-				}
+				await apiModule.createProject(this.devInfo);
 				//this.updateApiModuleState(apiModSave.instanceUrl, apiModSave.moduleName, true);
-				apiModule.saveApiModule();
+				const wkFolders = workspace.workspaceFolders ? workspace.workspaceFolders.length : 0;
+				if(wkFolders === 0) {
+					const ams: ApiModuleSave = { moduleName: moduleName, instanceUrl: instanceUrl };
+					this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, ams);
+				} else {
+					apiModule.saveAsToBeDeleted();
+				}
 				WorkspaceController.addWorkspaceFolder(apiModule.apiModuleName);
 			} else {
 				this.simpliciteInstances.delete(instanceUrl);
@@ -189,12 +169,32 @@ export class SimpliciteInstanceController {
 		}
 	}
 
-	private async clearExpiredApiModules() {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
-		console.log('clear');
-		console.log(saved);
-		saved.forEach(async (apiMS) => {
+	// VS Code restarts when one folder is added in an empty workspace
+	// this method create the instance and module object instances
+	private async setApiModuleAfterReset() {
+		const emptyWk: ApiModuleSave | undefined = this._globalState.get(API_MODULE_ADDED_IN_EMPTY_WK);
+		if(emptyWk) {
+			const	instance = await SimpliciteInstance.build([], emptyWk.instanceUrl, this._globalState);
+			if(instance) {
+				const apiModule = new ApiModule(emptyWk.moduleName, emptyWk.instanceUrl, instance.app, this._globalState);
+				instance.modules.set(ApiModule.getApiModuleName(emptyWk.moduleName, emptyWk.instanceUrl), apiModule);
+				this.simpliciteInstances.set(emptyWk.instanceUrl, instance);
+				await this.loginInstance(emptyWk.instanceUrl);
+				apiModule.saveAsToBeDeleted();
+			}
+			this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
+		}
+	}
 
+	// clear workspace from api modules on vs code start (cannot delete them on deactivate because of its unreliability https://code.visualstudio.com/api/get-started/extension-anatomy#extension-entry-file)
+	private async clearExpiredApiModules() {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_TO_DELETE) || [];
+		// reverse so we get a lifo. the last modules are more likely to not be the first folder in the worskpace. 
+		// this gives the ability to remove the modules and their workspaces without potentialy reloading vs code multiple times which can be a (very) long process
+		saved.slice().reverse().forEach(async (apiMS) => {
+			if(WorkspaceController.isApiModuleInWorkspace(apiMS.moduleName, apiMS.instanceUrl)) WorkspaceController.removeApiFileSystemFromWorkspace(apiMS.moduleName, apiMS.instanceUrl);
+			ApiModule.deleteFiles(apiMS.instanceUrl, apiMS.moduleName);
+			this.removeExpiredPersistence(apiMS.moduleName, apiMS.instanceUrl);
 		});
 	}
 
@@ -203,18 +203,18 @@ export class SimpliciteInstanceController {
 		if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
 		const module = instance.modules.get(moduleName);
 		if(!module || !(module instanceof ApiModule)) throw new Error('Cannot delete Api module, module '+moduleName+' does not exist, or is not an Api module');
-		module.deleteFiles();
+		ApiModule.deleteFiles(instanceUrl, moduleName);
 		instance.modules.delete(moduleName);
 		this.removeExpiredPersistence(moduleName, instanceUrl);
 	}
 
 	private removeExpiredPersistence(moduleName: string, instanceUrl: string) {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || []; // check
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_TO_DELETE) || [];
 		const index = saved.findIndex((apiMS) => {
 			apiMS.instanceUrl === instanceUrl && apiMS.moduleName === moduleName;
 		})
 		saved.splice(index, 1);
-		this._globalState.update(API_MODULES_STORAGE, saved);
+		this._globalState.update(API_MODULES_TO_DELETE, saved);
 	}
 
 	async removeModule(moduleName: string) {

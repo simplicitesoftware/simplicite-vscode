@@ -23,7 +23,9 @@ export class ApiModule extends Module {
 	
 	public static getApiModuleName (moduleName: string, instanceUrl: string) {
 		let withoutHttp = instanceUrl.replace('https://', '');
-		withoutHttp = withoutHttp.replace('http://', '');  
+		withoutHttp = withoutHttp.replace('http://', '');
+		// remove forbidden ":" char for localhost folder creation cause format is localhost:<port>
+		withoutHttp = withoutHttp.replace(':', '');
 		return moduleName + '@' + withoutHttp;
 	}
 	
@@ -68,19 +70,15 @@ export class ApiModule extends Module {
 		}
 	}
 
-	public saveApiModule(): void {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_STORAGE) || [];
-		// if workspaceFolders is undefined then vscode needs to restart, delete will be set on true on restart
-		let toDelete = true;
-		if(!workspace.workspaceFolders) {
-			toDelete = false;
-		}
-		saved.push({moduleName: this.name, instanceUrl: this._instanceUrl, toDelete: toDelete});
-		this._globalState.update(API_MODULES_STORAGE, saved);
+	public saveAsToBeDeleted(): void {
+		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES_TO_DELETE) || [];
+		saved.push({moduleName: this.name, instanceUrl: this._instanceUrl});
+		this._globalState.update(API_MODULES_TO_DELETE, saved);
 	}
 
-	public deleteFiles() {
-		const uri = Uri.file(STORAGE_PATH + this.apiModuleName);
+	public static deleteFiles(instanceUrl: string, moduleName: string) {
+		const apiModuleName = ApiModule.getApiModuleName(moduleName, instanceUrl);
+		const uri = Uri.file(STORAGE_PATH + apiModuleName);
 		try {
 			workspace.fs.delete(uri, { recursive: true });
 		} catch(e) {

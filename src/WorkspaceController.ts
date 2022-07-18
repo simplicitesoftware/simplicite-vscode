@@ -1,22 +1,31 @@
 'use strict';
 
-import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent } from 'vscode';
+import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window } from 'vscode';
+import { ApiModule } from './ApiModule';
 import { logger } from './Log';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
 export class WorkspaceController {
-	// public static async removeApiFileSystemFromWorkspace (module: ApiModule) {
-	// 	try {
-	// 		if (!workspace.workspaceFolders) throw new Error(`Simplicite: Attempted to remove ${module.apiModuleName} but the current workspace seems to be empty`);
-	// 		const wkName = workspace.name;
-	// 		workspace.workspaceFolders.forEach((wk: WorkspaceFolder, i: number) => {
-	// 			if (wk.uri.path === module.workspaceFolderPath) workspace.updateWorkspaceFolders(i, 1);
-	// 		});
-	// 	} catch (e: any) {
-	// 		logger.error(e);
-	// 		window.showErrorMessage(e);
-	// 	}
-	// }
+	public static async removeApiFileSystemFromWorkspace (moduleName: string, instanceUrl: string) {
+		try {
+			if (!workspace.workspaceFolders) throw new Error(`Simplicite: Attempted to remove ${moduleName} but the current workspace seems to be empty`);
+			workspace.workspaceFolders.forEach((wk: WorkspaceFolder, i: number) => {
+				if (wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl)) workspace.updateWorkspaceFolders(i, 1);
+			});
+		} catch (e: any) {
+			logger.error(e);
+			window.showErrorMessage(e);
+		}
+	}
+
+	public static isApiModuleInWorkspace(moduleName: string, instanceUrl: string): boolean {
+		if (!workspace.workspaceFolders) throw new Error(`Simplicite: Attempted to remove ${moduleName} but the current workspace seems to be empty`);
+		const wk = workspace.workspaceFolders.find((wk: WorkspaceFolder, i: number) => {
+			if (wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl)) return true;
+		});
+		if(wk) return true;
+		return false;
+	}
 	
 	public static addWorkspaceFolder(apiModuleName: string): void {
 		let isProjectAlreadyInWorkspace = false;

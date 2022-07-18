@@ -15,7 +15,7 @@ import { FileItem } from './treeView/treeViewClasses';
 // import { WorkspaceController } from './WorkspaceController';
 import { ApiModule } from './ApiModule';
 // import { BarItem } from './BarItem';
-import { Prompt } from './Prompt';
+import { Prompt, PromptValue } from './Prompt';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { SimpliciteInstance } from './SimpliciteInstance';
 import { WorkspaceController } from './WorkspaceController';
@@ -85,6 +85,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
     try {
       const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
       await simpliciteInstanceController.loginInstance(instanceUrl);
+			prompt.addElement(PromptValue.url, instanceUrl);
     } catch(e) {
       logger.error(e);
     }
@@ -94,6 +95,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
       const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
       await simpliciteInstanceController.logoutInstance(instanceUrl);
+			prompt.addElement(PromptValue.url, instanceUrl);
 		} catch(e) {
       logger.error(e);
     }
@@ -187,8 +189,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
  			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module to add to the workspace', 'module name');
-			await simpliciteInstanceController.initApiModule(instanceUrl, moduleName, false);
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			await simpliciteInstanceController.initApiModule(instanceUrl, moduleName);
+			prompt.addElement(PromptValue.url, instanceUrl);
+			prompt.addElement(PromptValue.name, moduleName);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -196,11 +200,12 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	
 	const removeApiModule = commands.registerCommand('simplicite-vscode-tools.removeApiModule', async () => {
 		try {
-			const apiModuleName = await prompt.getUserSelectedValue('apiName','Simplicite: Type in the api module name', 'moduleName@instance.url');
-			const reg = new RegExp("/^([a-zA-Z0-9_-]+)@([a-zA-Z._-]+)$/");
-			const res = reg.exec(apiModuleName);
-			const test = 1;
-			//simpliciteInstanceController.deleteApiModule();
+			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
+	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			simpliciteInstanceController.deleteApiModule(moduleName, instanceUrl);
+			prompt.addElement(PromptValue.url, instanceUrl);
+			prompt.addElement(PromptValue.name, moduleName);
 		} catch(e: any) {
 			logger.error(e);
 			if(e.message !== 'Simplicité: input cancelled') window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
@@ -212,7 +217,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	// RESET
 	const resetExtensionData = commands.registerCommand('simplicite-vscode-tools.resetExtensionData', async () => {
 		try {
-			globalState.update(API_MODULES_STORAGE, undefined);
+			globalState.update(API_MODULES_TO_DELETE, undefined);
 			globalState.update(AUTHENTICATION_STORAGE, undefined);
 			globalState.update(FILES_STATUS_STORAGE, undefined);
 			//prompt.resetValues(); 
@@ -225,7 +230,6 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			logger.error(e);	
 		}
 	});
-
 
 	// public command can be used by other dev if needed
 	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, initApiModule, removeApiModule];
