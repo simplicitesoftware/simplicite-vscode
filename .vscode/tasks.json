@@ -5,16 +5,25 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "vscode:watch",
-			"group": "build",
-			"isBackground": true,
-			"problemMatcher": "$ts-webpack-watch"
+			"script": "compile-web",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$ts-webpack",
+				"$tslint-webpack"
+			]
 		},
 		{
 			"type": "npm",
-			"script": "theia:watch",
+			"script": "watch-web",
 			"group": "build",
 			"isBackground": true,
+			"problemMatcher": [
+				"$ts-webpack-watch",
+				"$tslint-webpack-watch"
+			]
 		}
 	]
 }

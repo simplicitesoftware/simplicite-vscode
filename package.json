@@ -4,12 +4,12 @@
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
 	"version": "1.0.21",
+	"license": "Apache-2.0",
+	"icon": "https://github.com/simplicitesoftware/simplicite-vscode/blob/main/icon.png",
 	"engines": {
-		"vscode": "^1.52.0",
+		"vscode": "^1.69.0",
 		"node": ">=12"
 	},
-	"license": "Apache-2.0",
-	"icon": "icon.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
@@ -27,8 +27,7 @@
 	"activationEvents": [
 		"onStartupFinished"
 	],
-	"browser": "./dist/vscode-extension.js",
-	"main": "./dist/theia-extension.js",
+	"browser": "./dist/web/extension.js",
 	"contributes": {
 		"snippets": [
 			{
@@ -246,59 +245,46 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run package",
-		"package": "npm run vscode:package && npm run theia:package",
-		"vscode:compile": "webpack --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode:watch": "webpack --watch --config ./webpackConfig/webpack.config.vscode.js",
-		"vscode:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.vscode.js",
-		"theia:compile": "webpack --config ./webpackConfig/webpack.config.theia.js",
-		"theia:watch": "webpack --watch --config ./webpackConfig/webpack.config.theia.js",
-		"theia:package": "webpack --devtool hidden-source-map --config ./webpackConfig/webpack.config.theia.js",
+		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
+		"pretest": "npm run compile-web",
+		"vscode:prepublish": "npm run package-web",
+		"compile-web": "webpack --stats-error-details",
+		"watch-web": "webpack --watch",
+		"package-web": "webpack --mode production --devtool hidden-source-map",
 		"lint": "eslint src --ext ts",
-		"ncu": "ncu"
+		"run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
 	},
 	"devDependencies": {
-		"@theia/plugin": "^1.24.0",
-		"@types/copy-paste": "^1.1.30",
-		"@types/glob": "^7.2.0",
-		"@types/mocha": "^9.1.0",
-		"@types/node": "17.x",
+		"@types/mocha": "^9.1.1",
 		"@types/valid-url": "^1.0.3",
-		"@types/vscode": "^1.52.0",
-		"@types/xml2js": "^0.4.9",
-		"@typescript-eslint/eslint-plugin": "^5.18.0",
-		"@typescript-eslint/parser": "^5.18.0",
+		"@types/vscode": "^1.69.0",
+		"@types/webpack-env": "^1.17.0",
+		"@types/xml2js": "^0.4.11",
+		"@typescript-eslint/eslint-plugin": "^5.30.0",
+		"@typescript-eslint/parser": "^5.30.0",
+		"@vscode/test-web": "^0.0.26",
 		"assert": "^2.0.0",
-		"eslint": "^8.12.0",
-		"glob": "^7.2.0",
-		"mocha": "^9.2.2",
-		"npm-check-updates": "^12.5.8",
-		"ovsx": "^0.3.0",
+		"eslint": "^8.18.0",
+		"mocha": "^10.0.0",
 		"process": "^0.11.10",
-		"ts-loader": "^9.2.8",
-		"typescript": "^4.6.3",
-		"vsce": "^2.7.0",
-		"vscode-test": "^1.6.1",
-		"webpack": "^5.72.0",
-		"webpack-cli": "^4.9.2"
+		"ts-loader": "^9.3.1",
+		"typescript": "^4.7.4",
+		"webpack": "^5.73.0",
+		"webpack-cli": "^4.10.0"
 	},
 	"dependencies": {
 		"browserify-zlib": "^0.2.0",
-		"buffer": "^6.0.3",
+		"clear": "^0.1.0",
 		"https-browserify": "^1.0.0",
-		"latest": "^0.2.0",
 		"os-browserify": "^0.3.0",
 		"path-browserify": "^1.0.1",
-		"process": "^0.11.10",
-		"simplicite": "^2.2.22",
-		"stream": "^0.0.2",
+		"simplicite": "^2.2.24",
 		"stream-browserify": "^3.0.0",
 		"stream-http": "^3.2.0",
 		"timers-browserify": "^2.0.12",
 		"url": "^0.11.0",
 		"valid-url": "^1.0.9",
-		"vscode-uri": "^3.0.3",
-		"winston": "^3.7.2",
+		"winston": "^3.8.1",
 		"xml2js": "^0.4.23"
 	}
 }

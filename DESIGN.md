@@ -2,7 +2,7 @@ Lien api VSCode : https://code.visualstudio.com/api/
 
 ## package.json :
 Manifeste d'extension, contient les informations relatives à l'extension (nom, version, repository), les points de contributions (commandes, options de paramétrages, tree view) ainsi que les attributs de nodejs (dependances).
-Les attributs "browser" et "main" sont les points d'entrés de l'extension lorsque cette dernière est packagée sous forme de vsix (https://marketplace.visualstudio.com/items?itemName=onlyutkarsh.vsix-viewer --> pour regarder le contenu d'un vsix)
+Les attributs "browser" et "main" sont les points d'entrés de l'extension lorsque cette dernière est packagée sous forme de vsix (https://marketplace.visualstudio.com/items?itemName=onlyutkarsh.vsix-viewer --> pour inspecter le contenu d'un vsix)
 
 ## Paramètres de l'extension :
 Définis dans le package.json, ils sont accessibles directement dans les paramètres VSCode (*File > Preferences > Settings > Extensions > Simplicite VSCode tools > Api: Send File On Save*). Exemple pour accéder à la valeur d'un paramètre : workspace.getConfiguration `('simplicite-vscode-tools').get('api.autoAuthentication')`.
