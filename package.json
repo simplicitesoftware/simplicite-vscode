@@ -1,0 +1,290 @@
+{
+	"name": "simplicite-vscode-tools",
+	"publisher": "simpliciteSoftware",
+	"displayName": "Simplicite VSCode tools",
+	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
+	"version": "1.0.21",
+	"license": "Apache-2.0",
+	"icon": "https://github.com/simplicitesoftware/simplicite-vscode/blob/main/icon.png",
+	"engines": {
+		"vscode": "^1.69.0",
+		"node": ">=12"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simplicitesoftware/simplicite-vscode.git"
+	},
+	"bugs": "https://github.com/simplicitesoftware/simplicite-vscode/issues",
+	"categories": [
+		"Snippets",
+		"Other"
+	],
+	"keywords": [
+		"simplicite",
+		"simplicite extension",
+		"low code"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"browser": "./dist/web/extension.js",
+	"contributes": {
+		"snippets": [
+			{
+				"language": "java",
+				"path": "./resources/snippets/disposition.json"
+			},
+			{
+				"language": "java",
+				"path": "./resources/snippets/extobject.json"
+			}
+		],
+		"views": {
+			"explorer": [
+				{
+					"id": "simpliciteModuleInfo",
+					"name": "Simplicite module info"
+				},
+				{
+					"id": "simpliciteFile",
+					"name": "Simplicite file handler",
+					"when": "config.simplicite-vscode-tools.api.sendFileOnSave == false"
+				}
+			]
+		},
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "simplicite-vscode-tools.copyLogicalName",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyPhysicalName",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyJsonName",
+					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
+					"when": "false"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "simplicite-vscode-tools.copyLogicalName",
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName || viewItem == label&description || viewItem == label"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyPhysicalName",
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName || viewItem == label&description"
+				},
+				{
+					"command": "simplicite-vscode-tools.copyJsonName",
+					"when": "view == simpliciteModuleInfo && viewItem == label&description&jsonName"
+				},
+				{
+					"command": "simplicite-vscode-tools.untrackFile",
+					"when": "view == simpliciteFile && viewItem == file",
+					"group": "inline"
+				},
+				{
+					"command": "simplicite-vscode-tools.trackFile",
+					"when": "view == simpliciteFile && viewItem == untrackedFile",
+					"group": "inline"
+				},
+				{
+					"command": "simplicite-vscode-tools.applySpecificModule",
+					"when": "view == simpliciteFile && viewItem == module",
+					"group": "inline"
+				}
+			],
+			"view/title": [
+				{
+					"command": "simplicite-vscode-tools.refreshModuleTree",
+					"when": "view == simpliciteModuleInfo",
+					"group": "navigation"
+				},
+				{
+					"command": "simplicite-vscode-tools.refreshFileHandler",
+					"when": "view == simpliciteFile",
+					"group": "navigation"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "simpliciteFile",
+				"contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your disk."
+			},
+			{
+				"view": "simpliciteModuleInfo",
+				"contents": "No module info available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nIf you already have imported your modules click on the following button\n[Log into all modules in workspace](command:simplicite-vscode-tools.logIn)"
+			}
+		],
+		"commands": [
+			{
+				"command": "simplicite-vscode-tools.applyChanges",
+				"title": "Simplicite: Apply changes"
+			},
+			{
+				"command": "simplicite-vscode-tools.applySpecificInstance",
+				"title": "Simplicite: Apply specific instance changes"
+			},
+			{
+				"command": "simplicite-vscode-tools.applySpecificModule",
+				"title": "Simplicite: Apply specific module changes",
+				"icon": {
+					"light": "resources/light/file-upload.svg",
+					"dark": "resources/dark/file-upload.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.login",
+				"title": "Simplicite: Log into every instances"
+			},
+			{
+				"command": "simplicite-vscode-tools.logIntoInstance",
+				"title": "Simplicite: Log into instance"
+			},
+			{
+				"command": "simplicite-vscode-tools.logout",
+				"title": "Simplicite: Log out from every instances"
+			},
+			{
+				"command": "simplicite-vscode-tools.logoutFromInstance",
+				"title": "Simplicite: Log out from instance"
+			},
+			{
+				"command": "simplicite-vscode-tools.copyLogicalName",
+				"title": "copy logical name"
+			},
+			{
+				"command": "simplicite-vscode-tools.copyPhysicalName",
+				"title": "copy physical name"
+			},
+			{
+				"command": "simplicite-vscode-tools.copyJsonName",
+				"title": "copy json name"
+			},
+			{
+				"command": "simplicite-vscode-tools.refreshModuleTree",
+				"title": "Simplicite: Refresh the Module Info tree view",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.refreshFileHandler",
+				"title": "Simplicite: Refresh the File Handler tree view",
+				"icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.trackFile",
+				"title": "Simplicite: Track file",
+				"icon": {
+					"light": "resources/light/add.svg",
+					"dark": "resources/dark/add.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.untrackFile",
+				"title": "Simplicite: Untrack file",
+				"icon": {
+					"light": "resources/light/remove.svg",
+					"dark": "resources/dark/remove.svg"
+				}
+			},
+			{
+				"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
+				"title": "double click trigger command"
+			},
+			{
+				"command": "simplicite-vscode-tools.initApiModule",
+				"title": "Simplicite: Initialize API module"
+			},
+			{
+				"command": "simplicite-vscode-tools.removeApiModule",
+				"title": "Simplicite: Remove API module"
+			},
+			{
+				"command": "simplicite-vscode-tools.resetPromptCache",
+				"title": "Simplicite: Reset prompt cache"
+			},
+			{
+				"command": "simplicite-vscode-tools.resetExtensionData",
+				"title": "Simplicite: Wipe extension data"
+			}
+		],
+		"configuration": {
+			"properties": {
+				"simplicite-vscode-tools.api.autoAuthentication": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable the automatic authentication on the simplicite extension launch. Note that you have to be authenticated in order to take profit of most of the extension features."
+				},
+				"simplicite-vscode-tools.api.sendFileOnSave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable sending modified file on save."
+				}
+			}
+		},
+		"keybindings": [
+			{
+				"command": "simplicite-vscode-tools.showSimpliciteCommands",
+				"key": "Ctrl+Shift+space",
+				"mac": "Ctrl+Shift+space",
+				"linux": "Ctrl+Shift+space"
+			}
+		]
+	},
+	"scripts": {
+		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
+		"pretest": "npm run compile-web",
+		"vscode:prepublish": "npm run package-web",
+		"compile-web": "webpack --stats-error-details",
+		"watch-web": "webpack --watch",
+		"package-web": "webpack --mode production --devtool hidden-source-map",
+		"lint": "eslint src --ext ts",
+		"run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+	},
+	"devDependencies": {
+		"@types/mocha": "^9.1.1",
+		"@types/valid-url": "^1.0.3",
+		"@types/vscode": "^1.69.0",
+		"@types/webpack-env": "^1.17.0",
+		"@types/xml2js": "^0.4.11",
+		"@typescript-eslint/eslint-plugin": "^5.30.0",
+		"@typescript-eslint/parser": "^5.30.0",
+		"@vscode/test-web": "^0.0.26",
+		"assert": "^2.0.0",
+		"eslint": "^8.18.0",
+		"mocha": "^10.0.0",
+		"process": "^0.11.10",
+		"ts-loader": "^9.3.1",
+		"typescript": "^4.7.4",
+		"webpack": "^5.73.0",
+		"webpack-cli": "^4.10.0"
+	},
+	"dependencies": {
+		"browserify-zlib": "^0.2.0",
+		"clear": "^0.1.0",
+		"https-browserify": "^1.0.0",
+		"os-browserify": "^0.3.0",
+		"path-browserify": "^1.0.1",
+		"simplicite": "^2.2.24",
+		"stream-browserify": "^3.0.0",
+		"stream-http": "^3.2.0",
+		"timers-browserify": "^2.0.12",
+		"url": "^0.11.0",
+		"valid-url": "^1.0.9",
+		"winston": "^3.8.1",
+		"xml2js": "^0.4.23"
+	}
+}
