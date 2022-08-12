@@ -19,13 +19,7 @@ export class FileService {
 		this.simpliciteInstanceController = simpliciteInstanceController;
 	}
 
-	public static async build(simpliciteInstanceController: SimpliciteInstanceController): Promise<FileService> {
-		const fileService = new FileService(simpliciteInstanceController);
-		await fileService.fileListener();
-		return fileService;
-	}
-
-	private async fileListener() {
+	async fileListener() {
 		// get a trace of simplicité modified files
 		workspace.onDidChangeTextDocument((doc: TextDocumentChangeEvent) => {
 			const fileUrl = this.simpliciteInstanceController.getFileAndInstanceUrlFromPath(doc.document.uri);
@@ -34,18 +28,20 @@ export class FileService {
 		});
 
 		// check if saved file is in trace of modified files
-		workspace.onDidSaveTextDocument(async (doc: TextDocument) => {
+		workspace.onDidSaveTextDocument(this.onDidSaveTextDocument);
+		
+	}
 
-			const file = this.getModifiedFile(doc.uri);
-			if(!file) return;
-			file.saveFileAsTracked();
-			++this.savedCpt;
-			if(this.savedCpt === this.countModifiedFiles()) { // if all files have been saved
-				if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) await this.simpliciteInstanceController.sendAllFiles();
-				this.savedCpt = 0;
-				this.modifiedFiles = new Map();
-			}
-		});
+	private async onDidSaveTextDocument(doc: TextDocument) {
+		const file = this.getModifiedFile(doc.uri);
+		if(!file) return;
+		file.saveFileAsTracked();
+		++this.savedCpt;
+		if(this.savedCpt === this.countModifiedFiles()) { // if all files have been saved
+			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) await this.simpliciteInstanceController.sendAllFiles();
+			this.savedCpt = 0;
+			this.modifiedFiles = new Map();
+		}
 	}
 
 	private setModifiedFile(fileUrl: FileInstance): void {

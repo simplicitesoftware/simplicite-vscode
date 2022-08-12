@@ -34,7 +34,8 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	new QuickPick(context.subscriptions);
 
-	await FileService.build(simpliciteInstanceController);
+	const fileService = new FileService(simpliciteInstanceController);
+	await fileService.fileListener();
 		
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
 	// const barItem = new BarItem();

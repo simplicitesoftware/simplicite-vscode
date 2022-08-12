@@ -40,7 +40,7 @@ export class Module {
 			return returnWk;
 		};
 		const wk = getWk();
-		if (!wk) throw new Error('Unexpected behavior. Cannot init files because module folder is not in workspace');
+		if (!wk) throw new Error('Cannot init files because module folder is not in workspace');
 		const relativePattern = new RelativePattern(wk, '**/*');
 		let files = await workspace.findFiles(relativePattern);
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension

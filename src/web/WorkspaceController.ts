@@ -19,12 +19,19 @@ export class WorkspaceController {
 	}
 
 	public static isApiModuleInWorkspace(moduleName: string, instanceUrl: string): boolean {
-		if (!workspace.workspaceFolders) throw new Error(`Simplicite: Attempted to remove ${moduleName} but the current workspace seems to be empty`);
+		if (!workspace.workspaceFolders) return false;
 		const wk = workspace.workspaceFolders.find((wk: WorkspaceFolder) => {
 			if (wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl)) return true;
 		});
 		if(wk) return true;
 		return false;
+	}
+
+	public static getApiModuleWorkspacePath(moduleName: string, instanceUrl: string): string {
+		if (!workspace.workspaceFolders) return 'Untitled (Workspace)';
+		const wk = workspace.workspaceFolders.find((wk: WorkspaceFolder) => wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl));
+		if(!wk) return 'Untitled (Workspace)';
+		return wk.uri.path;
 	}
 	
 	public static addWorkspaceFolder(apiModuleName: string): void {

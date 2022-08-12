@@ -13,6 +13,7 @@ declare global { // has to be declared to asign value globally, these value are 
 	var API_MODULES: string;
 	var PROMPT_CACHE: string;
 	var API_MODULE_ADDED_IN_EMPTY_WK: string;
+	var API_MODULE_CLEAR_FILES: string;
 }
 
 export const initGlobalValues = function(storagePath: string): void {
@@ -37,4 +38,6 @@ export const initGlobalValues = function(storagePath: string): void {
 	global.PROMPT_CACHE = 'simplicite-prompt-cache';
 
 	global.API_MODULE_ADDED_IN_EMPTY_WK = 'simplicite_handle_special_api_module';
+
+	global.API_MODULE_CLEAR_FILES = 'simplicite_clear_files';
 };

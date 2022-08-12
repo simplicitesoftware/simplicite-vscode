@@ -231,10 +231,21 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		}
 	});
 
+	// enable debug command if in development, see command when clause in package.json
+	// inconstant behavior in debug env, need to test on production
+	let nodeEnv: String;
+	process.env.NODE_ENV === 'production' ? nodeEnv = 'production' : nodeEnv = 'development';    
+	commands.executeCommand('setContext', 'simplicite-vscode-tools.NODE_ENV', nodeEnv);
+	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {		
+		const _savedModules = globalState.get(API_MODULES);
+		const _authenticationStorage = globalState.get(AUTHENTICATION_STORAGE);
+		const _filesStorage = globalState.get(FILES_STATUS_STORAGE);
+	});
+
 	// public command can be used by other dev if needed
 	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, initApiModule, removeApiModule];
 	// private commands are needed for the tree views, it's not relevant to expose them
-	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, resetExtensionData];
+	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, resetExtensionData, debug];
 	context.subscriptions.concat(publicCommand, privateCommand);
 	return publicCommand;
 };

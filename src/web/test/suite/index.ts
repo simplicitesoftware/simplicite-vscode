@@ -1,5 +1,6 @@
 // imports mocha for the browser, defining the `mocha` global.
-require('mocha/mocha');
+// require('mocha/mocha');
+// test command not working, mocha import is broken and creates a warning
 
 export function run(): Promise<void> {
 

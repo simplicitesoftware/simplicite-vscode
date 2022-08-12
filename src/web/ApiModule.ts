@@ -74,11 +74,17 @@ export class ApiModule extends Module {
 
 	public saveApiModule(): void {
 		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
-		const index = saved.findIndex((ams) => {
-			ams.instanceUrl === this._instanceUrl && ams.moduleName === this.name;
-		});
-		if(index !== -1) saved[index] = {moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName};
-		else saved.push({moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName}); 
+		const index = saved.findIndex((ams: ApiModuleSave) => ams.instanceUrl === this._instanceUrl && ams.moduleName === this.name);
+		let logActionMsg: String;
+		if(index !== -1) {
+			saved[index] = {moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName};
+			logActionMsg = 'Updated';
+		}
+		else {
+			saved.push({moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName});
+			logActionMsg = 'Added';
+		} 
+		logger.info(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);
 		this._globalState.update(API_MODULES, saved);
 	}
 
