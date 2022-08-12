@@ -5,7 +5,7 @@
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
 	"version": "1.0.21",
 	"license": "Apache-2.0",
-	"icon": "https://github.com/simplicitesoftware/simplicite-vscode/blob/main/icon.png",
+	"icon": "icon.png",
 	"engines": {
 		"vscode": "^1.69.0",
 		"node": ">=12"
@@ -69,6 +69,10 @@
 				{
 					"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
 					"when": "false"
+				},
+				{
+					"command": "simplicite-vscode-tools.debug",
+					"when": "simplicite-vscode-tools.NODE_ENV == development"
 				}
 			],
 			"view/item/context": [
@@ -219,6 +223,10 @@
 			{
 				"command": "simplicite-vscode-tools.resetExtensionData",
 				"title": "Simplicite: Wipe extension data"
+			},
+			{
+				"command": "simplicite-vscode-tools.debug",
+				"title": "Simplicite: Debug"
 			}
 		],
 		"configuration": {
@@ -248,7 +256,7 @@
 		"test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
 		"pretest": "npm run compile-web",
 		"vscode:prepublish": "npm run package-web",
-		"compile-web": "webpack --stats-error-details",
+		"compile-web": "webpack",
 		"watch-web": "webpack --watch",
 		"package-web": "webpack --mode production --devtool hidden-source-map",
 		"lint": "eslint src --ext ts",
@@ -264,6 +272,7 @@
 		"@typescript-eslint/parser": "^5.30.0",
 		"@vscode/test-web": "^0.0.26",
 		"assert": "^2.0.0",
+		"dotenv-webpack": "^8.0.0",
 		"eslint": "^8.18.0",
 		"mocha": "^10.0.0",
 		"process": "^0.11.10",
