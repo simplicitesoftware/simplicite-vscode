@@ -207,6 +207,7 @@ export class SimpliciteInstanceController {
 			if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
 			const module = instance.modules.get(ApiModule.getApiModuleName(moduleName, instanceUrl));
 			if(!module || !(module instanceof ApiModule)) throw new Error('Cannot delete Api module, module '+moduleName+' does not exist, or is not an Api module');
+			if(instance.modules.size === 1) this.removeTokenPersistence(instanceUrl);
 			instance.modules.delete(moduleName);
 			this.deleteApiModulePersistence(moduleName, instanceUrl);
 			WorkspaceController.removeApiFileSystemFromWorkspace(moduleName, instanceUrl);
@@ -214,6 +215,13 @@ export class SimpliciteInstanceController {
 			logger.error(e.message + '. ');
 			//logger.info('Trying to remove module '+instanceUrl+' folder from workspace');		
 		}
+	}
+
+	private removeTokenPersistence(instanceUrl: string) {
+		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
+		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instanceUrl);
+		if(index !== -1) authenticationValues.splice(index, 1);
+		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
 	// cannot be a method of api module because if module does not exist then cannot remove persistence (which is safier to do)
