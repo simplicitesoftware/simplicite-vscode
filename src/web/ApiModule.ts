@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 'use strict';
 
 import { Module } from './Module';
-import { workspace, Uri, Memento } from 'vscode';
+import { workspace, Uri, Memento, env } from 'vscode';
 import { logger } from './Log';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
@@ -76,12 +77,12 @@ export class ApiModule extends Module {
 		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
 		const index = saved.findIndex((ams: ApiModuleSave) => ams.instanceUrl === this._instanceUrl && ams.moduleName === this.name);
 		let logActionMsg: String;
+		const ams: ApiModuleSave = {moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName/*, sessionId: env.sessionId*/}; 
 		if(index !== -1) {
-			saved[index] = {moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName};
+			saved[index] = ams;
 			logActionMsg = 'Updated';
-		}
-		else {
-			saved.push({moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName});
+		} else {
+			saved.push(ams);
 			logActionMsg = 'Added';
 		} 
 		logger.info(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);

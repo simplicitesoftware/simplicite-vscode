@@ -1,7 +1,7 @@
 'use strict';
 
 import { SimpliciteInstance } from './SimpliciteInstance';
-import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri, SnippetString } from 'vscode';
+import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri, SnippetString, env } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { ApiModuleSave, FileInstance, NameAndWorkspacePath, UrlAndName } from './interfaces';
 import { logger } from './Log';
@@ -192,9 +192,8 @@ export class SimpliciteInstanceController {
 	private async setApiModules() {
 		if(!this.apiModuleReset) {
 			const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
-			
 			saved.forEach(async (ams) => {
-				if(ams.workspaceName === workspace.name) {
+				if(ams.workspaceName === workspace.name /*&& ams.sessionId === env.sessionId*/) {
 					await this.createApiModule(ams.instanceUrl, ams.moduleName);
 				}
 			});

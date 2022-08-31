@@ -51,5 +51,10 @@ export interface ApiModuleSave {
 	workspaceName: string | undefined;
 }
 
+export interface SessionIdSave {
+	sessionId: string;
+	apiModules: Array<UrlAndName>
+}
+
 
 
