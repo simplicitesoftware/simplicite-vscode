@@ -105,3 +105,7 @@ Key bindings
 ------------
 
 - `simplicite-vscode-tools.showSimpliciteCommands` : Open a Quick Pick menu displaying every command of the extension. The shortcut can be edited in *File > Preferences > Keyboard shortcuts > simplicite-vscode-tools.showSimpliciteCommands*.
+
+
+Known limitations :
+When initializing an api module in a VS Code instance on destkop and opening another instance will cause the api module to initialize in both instances.
