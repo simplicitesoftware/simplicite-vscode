@@ -1,6 +1,8 @@
 /* eslint-disable no-var */
 'use strict';
 
+import { Uri } from "vscode";
+
 declare global { // has to be declared to asign value globally, these value are not changed during runtime, declared as var instead of const because global is an old boy
 	var EXTENSION_ID: string;
 	var TEMPLATE: { scheme: string, language: string };
@@ -14,6 +16,7 @@ declare global { // has to be declared to asign value globally, these value are 
 	var PROMPT_CACHE: string;
 	var API_MODULE_ADDED_IN_EMPTY_WK: string;
 	var API_MODULE_CLEAR_FILES: string;
+	var SESSION_ID_JSON: Uri;
 }
 
 export const initGlobalValues = function(storagePath: string): void {
@@ -40,4 +43,6 @@ export const initGlobalValues = function(storagePath: string): void {
 	global.API_MODULE_ADDED_IN_EMPTY_WK = 'simplicite_handle_special_api_module';
 
 	global.API_MODULE_CLEAR_FILES = 'simplicite_clear_files';
+
+	global.SESSION_ID_JSON = Uri.file(STORAGE_PATH + 'sessionId.json'); 
 };
