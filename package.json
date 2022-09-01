@@ -231,11 +231,6 @@
 		],
 		"configuration": {
 			"properties": {
-				"simplicite-vscode-tools.api.autoAuthentication": {
-					"type": "boolean",
-					"default": true,
-					"description": "Enable the automatic authentication on the simplicite extension launch. Note that you have to be authenticated in order to take profit of most of the extension features."
-				},
 				"simplicite-vscode-tools.api.sendFileOnSave": {
 					"type": "boolean",
 					"default": true,
