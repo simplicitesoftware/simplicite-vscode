@@ -90,7 +90,7 @@ export class File {
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(item, { inlineDocuments: true });
 			const lowerPath = this.uri.path.toLowerCase();
-			this._globalState.update(lowerPath, undefined);
+			await this._globalState.update(lowerPath, undefined);
 			if (!res) {
 				const msg = this.uri.path;
 				logger.error('Simplicite: Cannot synchronize ' + msg);
@@ -104,9 +104,9 @@ export class File {
 		return true;
 	}
 
-	public saveFileAsTracked() {
+	public async saveFileAsTracked() {
 		const lowerPath = this.uri.path.toLowerCase();
-		this._globalState.update(lowerPath, true);
+		await this._globalState.update(lowerPath, true);
 	}
 
 	public getTrackedStatus() {

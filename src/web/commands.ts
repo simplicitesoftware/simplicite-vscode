@@ -35,7 +35,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
 			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
 			const res = await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
-			prompt.addElement('url', instanceUrl);
+			await prompt.addElement('url', instanceUrl);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -45,9 +45,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
 			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
 			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
-			const res = await simpliciteInstanceController.sendModuleFilesOnCommand(moduleName, instanceUrl);
-			prompt.addElement('url', instanceUrl);
-			prompt.addElement('name', moduleName);
+			await simpliciteInstanceController.sendModuleFilesOnCommand(moduleName, instanceUrl);
+			await prompt.addElement('url', instanceUrl);
+			await prompt.addElement('name', moduleName);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -85,7 +85,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
     try {
       const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
       await simpliciteInstanceController.loginInstance(instanceUrl);
-			prompt.addElement(PromptValue.url, instanceUrl);
+			await prompt.addElement(PromptValue.url, instanceUrl);
     } catch(e) {
       logger.error(e);
     }
@@ -95,7 +95,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
       const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
       await simpliciteInstanceController.logoutInstance(instanceUrl);
-			prompt.addElement(PromptValue.url, instanceUrl);
+			await prompt.addElement(PromptValue.url, instanceUrl);
 		} catch(e) {
       logger.error(e);
     }
@@ -105,34 +105,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	// 	const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
 	// 	const module = moduleHandler.getFirstModuleFromInstance(instanceUrl);
 	// 	if (!module) throw new Error('No module affiliated with instance ' + instanceUrl);
-	// 	prompt.addElement('url', instanceUrl);
+	// 	await prompt.addElement('url', instanceUrl);
 	// 	return module;
 	// }
-	
-	
-
-	// const resetPersistence = commands.registerCommand('simplicite-vscode-tools.resetPersistence', () => {
-	// 	context.globalState.update('simplicite-modules-info', undefined);
-	// 	barItem.show(moduleHandler.modules, moduleHandler.connectedInstances);
-	// });
-	
-	// ------------------------------
-	// File handling commands
-	// const trackFile = commands.registerCommand('simplicite-vscode-tools.trackFile', async function (element: FileItem) {
-	// 	try {
-	// 		await trackAction(fileHandler, moduleHandler.modules, element, true);
-	// 	} catch (e) {
-	// 		logger.error(e);
-	// 	}
-	// });
-	
-	// const untrackFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', async function (element: FileItem) {
-	// 	try {
-	// 		await trackAction(fileHandler, moduleHandler.modules, element, false);
-	// 	} catch (e) {
-	// 		logger.error(e);
-	// 	}
-	// });
 	
 	// // ------------------------------
 	// // Refresh Tree views commands
@@ -191,8 +166,8 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
 			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
 			await simpliciteInstanceController.createApiModule(instanceUrl, moduleName);
-			prompt.addElement(PromptValue.url, instanceUrl);
-			prompt.addElement(PromptValue.name, moduleName);
+			await prompt.addElement(PromptValue.url, instanceUrl);
+			await prompt.addElement(PromptValue.name, moduleName);
 		} catch(e) {
 			logger.error(e);
 		}
@@ -204,8 +179,8 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
 			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
 			simpliciteInstanceController.removeApiModule(moduleName, instanceUrl);
-			prompt.addElement(PromptValue.url, instanceUrl);
-			prompt.addElement(PromptValue.name, moduleName);
+			await prompt.addElement(PromptValue.url, instanceUrl);
+			await prompt.addElement(PromptValue.name, moduleName);
 		} catch(e: any) {
 			logger.error(e);
 			//if(e.message !== 'Simplicité: input cancelled') window.showInformationMessage('Simplicite: ' + e.message ? e.message : e);
@@ -217,10 +192,10 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	// RESET
 	const resetExtensionData = commands.registerCommand('simplicite-vscode-tools.resetExtensionData', async () => {
 		try {
-			globalState.update(API_MODULES, undefined);
-			globalState.update(AUTHENTICATION_STORAGE, undefined);
-			globalState.update(FILES_STATUS_STORAGE, undefined);
-			//prompt.resetValues();
+			await globalState.update(API_MODULES, undefined);
+			await globalState.update(AUTHENTICATION_STORAGE, undefined);
+			await globalState.update(FILES_STATUS_STORAGE, undefined);
+			//prompt.resetValues(); // todo
 			try {
 				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true});
 			} catch(e) {

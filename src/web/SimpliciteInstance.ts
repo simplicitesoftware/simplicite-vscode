@@ -66,12 +66,20 @@ export class SimpliciteInstance {
 		try {
 			await this.app.logout();
 			const msg = 'Simplicite: Logged out from ' + this.app.parameters.url;
+			await this.removeTokenPersistence();
 			window.showInformationMessage(msg);
 			logger.info(msg);
 		} catch (e: any) {
 			logger.error(e);
 			window.showErrorMessage('Simplicite: ' + e.message);
 		}
+	}
+
+	private async removeTokenPersistence() {
+		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
+		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === this.app.parameters.url);
+		if(index !== -1) authenticationValues.splice(index, 1);
+		await this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
 	// FILES

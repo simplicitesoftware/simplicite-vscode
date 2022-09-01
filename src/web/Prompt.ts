@@ -15,8 +15,8 @@ export class Prompt {
 		return savedValues ? savedValues : new PromptCached();
 	}
 	
-	savePromptValues() {
-		this._globalState.update(PROMPT_CACHE, this.promptValues);
+	async savePromptValues() {
+		await this._globalState.update(PROMPT_CACHE, this.promptValues);
 	}
 	
 	private getValuesList(attributeName: string) {
@@ -36,7 +36,7 @@ export class Prompt {
 		}
 	}
 	
-	private setValuesList(attributeName: string, values: string[]) {
+	private async setValuesList(attributeName: string, values: string[]) {
 		switch(attributeName) {
 		case 'url':
 			this.promptValues.instanceUrls = values;
@@ -48,7 +48,7 @@ export class Prompt {
 			this.promptValues.moduleNames = values;
 			break;
 		}
-		this.savePromptValues();
+		await this.savePromptValues();
 	}
 	/*
 	* attributesName values are: 'url', 'apiName', 'name'
@@ -92,10 +92,10 @@ export class Prompt {
 		});
 	}
 	
-	addElement(attributeName: string, value: string) {
+	async addElement(attributeName: string, value: string) {
 		if (!this.getValuesList(attributeName).includes(value)) {
 			this.getValuesList(attributeName).push(value);
-			this.savePromptValues();
+			await this.savePromptValues();
 		} 
 	}
 	

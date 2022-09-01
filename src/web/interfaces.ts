@@ -9,12 +9,6 @@ export interface CustomMessage {
 	button: string;
 }
 
-// usefull object to bind files with their corresponding module
-export interface FileAndModule {
-	module: Module;
-	fileList: File[];
-}
-
 export interface UrlAndName {
 	instanceUrl: string;
 	name: string;

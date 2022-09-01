@@ -15,7 +15,11 @@ declare global { // has to be declared to asign value globally, these value are 
 	var API_MODULES: string;
 	var PROMPT_CACHE: string;
 	var API_MODULE_ADDED_IN_EMPTY_WK: string;
-	var API_MODULE_CLEAR_FILES: string;
+	// cannot delete files as long as they are in a workspace (resource is busy)
+	// API_MODULE_CLEAR_FILES keeps track of the removed module(s) so once they have been removed
+	// the clean up can process as expected
+	var API_MODULE_CLEAR_FILES: string; 
+	// see if there is a way to make deactivate work in consistent way
 	var SESSION_ID_JSON: Uri;
 }
 

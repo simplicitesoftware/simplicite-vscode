@@ -35,7 +35,7 @@ export class FileService {
 	private async onDidSaveTextDocument(doc: TextDocument) {
 		const file = this.getModifiedFile(doc.uri);
 		if(!file) return;
-		file.saveFileAsTracked();
+		await file.saveFileAsTracked();
 		++this.savedCpt;
 		if(this.savedCpt === this.countModifiedFiles()) { // if all files have been saved
 			if(workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) await this.simpliciteInstanceController.sendAllFiles();

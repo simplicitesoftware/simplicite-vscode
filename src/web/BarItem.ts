@@ -23,12 +23,12 @@ export class BarItem {
       connectedInstances.forEach((instance, index) => {
         this.barItem.tooltip += instance.app.parameters.url;
         if(index !== connectedInstances.length - 1) this.barItem.tooltip += ', ';
-      })
+      });
       if(disconnectedInstances.length > 0) this.barItem.tooltip = 'Disconnected instance(s): ';
       disconnectedInstances.forEach((instance, index) => {
         this.barItem.tooltip += instance.app.parameters.url;
         if(index !== disconnectedInstances.length - 1) this.barItem.tooltip += ', ';
-      })      
+      });     
 		} else {
 			this.barItem.tooltip = new MarkdownString(this.markdownGenerator(connectedInstances, disconnectedInstances));
 		}
@@ -39,9 +39,9 @@ export class BarItem {
     const connectedInstances: SimpliciteInstance[] = [];
     const disconnectedInstances: SimpliciteInstance[] = [];
     instances.forEach((instance) => {
-      if(instance.app.token) connectedInstances.push(instance);
+      if(instance.app.authtoken) connectedInstances.push(instance);
       else disconnectedInstances.push(instance);
-    })
+    });
     return {connectedInstances, disconnectedInstances};
   }
 
@@ -59,7 +59,7 @@ export class BarItem {
 				instance.modules.forEach((mod) => {
           moduleMarkdown += '- ';
           moduleMarkdown += mod.name + '\n\n';
-        })
+        });
 			}
 			moduleMarkdown += '\n\n---\n\n';
 		}

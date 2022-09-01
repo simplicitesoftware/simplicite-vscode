@@ -28,6 +28,7 @@ export class ApiModule extends Module {
 		let withoutHttp = instanceUrl.replace('https://', '');
 		withoutHttp = withoutHttp.replace('http://', '');
 		// remove forbidden ":" char for localhost folder creation cause format is localhost:<port>
+		// if not done it will result in a file system error => forbidden character 
 		withoutHttp = withoutHttp.replace(':', '');
 		return moduleName + '@' + withoutHttp;
 	}
@@ -35,7 +36,7 @@ export class ApiModule extends Module {
 	public async createProject(devInfo: DevInfo): Promise<boolean> {
 		const mdl = await this._app.getBusinessObject('Module');
 		// look for module row_id
-		const ms = await mdl.search({ mdl_name: ''} ); // todo
+		const ms = await mdl.search({ mdl_name: ''} );
 		const m = ms[0];
 		await this.createFiles(devInfo);
 		const pom = await mdl.print('Module-MavenModule', m.row_id);
@@ -73,7 +74,7 @@ export class ApiModule extends Module {
 		}
 	}
 
-	public saveApiModule(): void {
+	public async saveApiModule(): Promise<void> {
 		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
 		const index = saved.findIndex((ams: ApiModuleSave) => ams.instanceUrl === this._instanceUrl && ams.moduleName === this.name);
 		let logActionMsg: String;
@@ -86,7 +87,7 @@ export class ApiModule extends Module {
 			logActionMsg = 'Added';
 		} 
 		logger.info(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);
-		this._globalState.update(API_MODULES, saved);
+		await this._globalState.update(API_MODULES, saved);
 	}
 
 	public static deleteFiles(instanceUrl: string, moduleName: string) {

@@ -108,4 +108,4 @@ Key bindings
 
 
 Known limitations :
-When initializing an api module in a VS Code instance on destkop and opening another instance will cause the api module to initialize in both instances.
+When initializing an api module in a VS Code instance on destkop and opening another instance will cause the api module to initialize in both instances. (workspace)
