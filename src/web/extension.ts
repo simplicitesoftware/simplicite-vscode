@@ -1,14 +1,14 @@
 'use strict';
 
-import { logger } from './Log';
 import { workspace, ExtensionContext, TextDocument, env, languages, window, Disposable, Memento, debug } from 'vscode';
+import { logger } from './Log';
+import * as fs from 'fs';
 import { CompletionProvider } from './CompletionProvider';
-//import { BarItem } from './BarItem';
-//import { ModuleInfoTree } from './treeView/ModuleInfoTree';
+import { BarItem } from './BarItem';
+import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
 //import { FileTree } from './treeView/FileTree';
 import { FileService } from './FileService';
-//import { ModuleHandler } from './ModuleHandler';
 import { validFileExtension } from './utils';
 import { initGlobalValues } from './constants';
 import { File } from './File';
@@ -20,7 +20,6 @@ import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
 import { ApiModule } from './ApiModule';
 import { ApiModuleSave } from './interfaces';
-import { SessionIdService } from './SessionIdService';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
@@ -32,11 +31,11 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	if(debug.activeDebugSession) {
 		console.log('Api modules stored in memento', globalState.get(API_MODULES, []));
 	}
-	await SessionIdService.createJson();
 
 	const prompt = new Prompt(globalState);
 
-	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState);
+	const barItem = new BarItem();
+	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
 	await simpliciteInstanceController.initAll();
 
 	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState);
@@ -47,22 +46,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	await fileService.fileListener();
 		
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
-	// const barItem = new BarItem();
-
-	// const simpliciteApi = new SimpliciteApi(appHandler);
-	// const moduleHandler = await ModuleHandler.build(globalState, barItem, appHandler, simpliciteApi);
-	// const fileHandler = await FileHandler.build(globalState, moduleHandler);
 	
-	// const simpliciteApiController = new SimpliciteApiController(moduleHandler, simpliciteApi, appHandler, fileHandler);
-	// 
 
-	// if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
-	// 	const fileTree = new FileTree(context.extensionUri.path, moduleHandler.modules, fileHandler.fileList);
-	// 	window.registerTreeDataProvider('simpliciteFile', fileTree);
-	// 	fileHandler.fileTree = fileTree;
-	// }
-
-	// const moduleInfoTree = new ModuleInfoTree(moduleHandler.modules, simpliciteApi.devInfo, context.extensionUri.path);
+	const moduleInfoTree = new ModuleInfoTree(simpliciteInstanceController.getAllModules(), simpliciteInstanceController.devInfo, context.extensionUri.path);
 	// window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 	// simpliciteApiController.setModuleInfoTree(moduleInfoTree);
 
@@ -171,9 +157,10 @@ export async function activate(context: ExtensionContext): Promise<any> {
 // renderer process (which handles the memento) is unreliable at this point
 // handling this case only on desktop where memento values are shared over VS Code instances
 export function deactivate() {
-	if(env.appHost === 'desktop') {
-		//workspace.fs
-	}
+	console.log('test');
+	// if(env.appHost === 'desktop') {
+	// 	await workspace.fs.delete(SESSION_ID_JSON);
+	// }
 	//globalState.update(API_MODULES, undefined);
 	// session is closing, remove sessionId so the module can initiate in another instance
 	// const savedMod = globalState.get(API_MODULES, []);

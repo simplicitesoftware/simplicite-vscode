@@ -10,19 +10,23 @@ import { DevInfo } from './DevInfo';
 import { File } from './File';
 import { ApiModule } from './ApiModule';
 import { WorkspaceController } from './WorkspaceController';
+import { Module } from './Module';
+import { BarItem } from './BarItem';
 
 export class SimpliciteInstanceController {
 	private prompt: Prompt;
 	private _globalState: Memento;
 	private apiModuleReset: boolean;
+	private barItem: BarItem;
 	devInfo: DevInfo | undefined;
 	simpliciteInstances: Map<string, SimpliciteInstance>;
-	constructor(prompt: Prompt, globalState: Memento) {
+	constructor(prompt: Prompt, globalState: Memento, barItem: BarItem) {
 		this.prompt = prompt;
 		this._globalState = globalState;
 		this.devInfo = undefined;
 		this.simpliciteInstances = new Map();
-		this.apiModuleReset = false; 
+		this.apiModuleReset = false;
+		this.barItem = barItem;
 	}
 
 	async initAll() {
@@ -300,5 +304,13 @@ export class SimpliciteInstanceController {
 	private async getInstance(moduleNames: NameAndWorkspacePath[], instanceUrl: string): Promise<SimpliciteInstance> {
 		if(!this.simpliciteInstances.has(instanceUrl)) return await SimpliciteInstance.build(moduleNames, instanceUrl, this._globalState);
 		else return this.simpliciteInstances.get(instanceUrl)!;
+	}
+
+	public getAllModules() {
+		const modArray: (Module | ApiModule)[] = [];
+		this.simpliciteInstances.forEach((instance) => {
+			modArray.concat(instance.getModulesAsArray());
+		})
+		return modArray;
 	}
 }

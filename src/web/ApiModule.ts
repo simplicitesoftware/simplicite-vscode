@@ -16,7 +16,7 @@ export class ApiModule extends Module {
 	private _app: any;
 	private _globalState: Memento;
 	constructor(name: string, instanceUrl: string, app: any, globalState: Memento, workspaceName: string | undefined) {
-		super(name);
+		super(name, instanceUrl);
 		this.apiModuleName = ApiModule.getApiModuleName(name, instanceUrl);
 		this.workspaceName = workspaceName;
 		this._instanceUrl = instanceUrl;

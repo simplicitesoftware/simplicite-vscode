@@ -9,10 +9,12 @@ export class Module {
 	moduleDevInfo: any;
 	files: Map<string, File>;
 	name: string;
-	constructor(name: string) {
+	instanceUrl: string;
+	constructor(name: string, instanceUrl: string) {
 		this.moduleDevInfo = undefined;
 		this.files = new Map();
 		this.name = name;
+		this.instanceUrl = instanceUrl;
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {

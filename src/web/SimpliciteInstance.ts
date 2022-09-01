@@ -33,7 +33,7 @@ export class SimpliciteInstance {
 		const modules: Map<string, Module> = new Map();
 		for (const value of modulesName) {
 			if(!modules.has(value.name)) {
-				const module = new Module(value.name);
+				const module = new Module(value.name, this.app.parameters.url);
 				await module.initFiles(this.app, this._globalState, value.wkPath);
 				modules.set(value.name, module);
 			}
@@ -154,13 +154,18 @@ export class SimpliciteInstance {
 	
 // UTIL
  
- public deleteModule(moduleName: string) {
-	for (const key of this.modules.keys()) {
-		const module = this.modules.get(key)!;
-		if(module.name === moduleName || module instanceof ApiModule && module.apiModuleName === moduleName) {
-			this.modules.delete(key);
+ 	public deleteModule(moduleName: string) {
+		for (const key of this.modules.keys()) {
+			const module = this.modules.get(key)!;
+			if(module.name === moduleName || module instanceof ApiModule && module.apiModuleName === moduleName) {
+				this.modules.delete(key);
+			}
 		}
-	}
- }
+ 	}
 
+	public getModulesAsArray() {
+		const mods: (Module | ApiModule)[] = [];
+		this.modules.forEach((mod) => mods.push(mod));
+		return mods;
+	}
 }
