@@ -69,7 +69,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		return element;
 	}
 
-	// hell the second
+	// hell's little brother
 	async getChildren(element: CustomTreeItem): Promise<TreeItem[]> {
 		if (element === undefined) {
 			return Promise.resolve(this.getModulesItems());
