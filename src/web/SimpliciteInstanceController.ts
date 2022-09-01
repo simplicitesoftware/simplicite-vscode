@@ -32,10 +32,10 @@ export class SimpliciteInstanceController {
 	async initAll() {
 		await this.setApiModuleAfterReset();
 		await this.setSimpliciteInstancesFromWorkspace();
-		// login all at this point as Api module needs to have the responsability to login itself
+		// login all at this point as Api module needs to have the responsability to login itself	
 		await this.loginAll();
 		await this.setApiModules();
-		this.clearApiModulesFiles();
+		await this.clearApiModulesFiles();
 	}
 
 	// AUTHENTICATION 
@@ -56,7 +56,7 @@ export class SimpliciteInstanceController {
 			return true;
 		} catch(e: any) {
 			// delete token in persistance. Usefull when token is expired
-			this.deleteToken(instanceUrl);
+			await this.deleteToken(instanceUrl);
 			logger.error(e.message ? e.message : e);
 			return false;
 		}
@@ -69,15 +69,16 @@ export class SimpliciteInstanceController {
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instance.app.parameters.url);
 		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
 		else authenticationValues[index].authtoken = instance.app.authtoken;
-		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
+		await this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
+		this.barItem.show(Array.from(this.simpliciteInstances.values()));
 	}
 
-	private deleteToken(instanceUrl: string) {
+	private async deleteToken(instanceUrl: string) {
 		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instanceUrl);
 		//if(index === -1) return;
 		authenticationValues.splice(index, 1);
-		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
+		await this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 	}
 
 	async logoutAll() {
@@ -91,6 +92,7 @@ export class SimpliciteInstanceController {
 			const instance = this.simpliciteInstances.get(instanceUrl);
 			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url');
 			await instance.logout();
+			this.barItem.show(Array.from(this.simpliciteInstances.values()));
 		} catch(e) {
 			logger.error(e);
 		}
@@ -162,7 +164,7 @@ export class SimpliciteInstanceController {
 			const wkFoldersLength = workspace.workspaceFolders ? workspace.workspaceFolders.length : 0;
 			if(wkFoldersLength === 0) {
 				const ams: ApiModuleSave = { moduleName: moduleName, instanceUrl: instanceUrl, workspaceName: apiModule.workspaceName };
-				this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, ams);
+				await this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, ams);
 			} else {
 				apiModule.saveApiModule();
 			}
@@ -186,7 +188,7 @@ export class SimpliciteInstanceController {
 				instance.modules.set(ApiModule.getApiModuleName(ams.moduleName, ams.instanceUrl), apiModule);
 				this.simpliciteInstances.set(ams.instanceUrl, instance);
 				apiModule.saveApiModule();
-				this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
+				await this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
 			} catch(e) {
 				logger.error(e);
 			}
@@ -204,15 +206,15 @@ export class SimpliciteInstanceController {
 		}
 	}
 
-	public removeApiModule(moduleName: string, instanceUrl: string) {
+	public async removeApiModule(moduleName: string, instanceUrl: string) {
 		try {
 			let instance = this.simpliciteInstances.get(instanceUrl);
 			if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
 			const module = instance.modules.get(ApiModule.getApiModuleName(moduleName, instanceUrl));
 			if(!module || !(module instanceof ApiModule)) throw new Error('Cannot delete Api module, module '+moduleName+' does not exist, or is not an Api module');
-			if(instance.modules.size === 1) this.removeTokenPersistence(instanceUrl);
+			if(instance.modules.size === 1) await this.logoutInstance(instanceUrl); 
 			instance.modules.delete(moduleName);
-			this.deleteApiModulePersistence(moduleName, instanceUrl);
+			await this.deleteApiModulePersistence(moduleName, instanceUrl);
 			WorkspaceController.removeApiFileSystemFromWorkspace(moduleName, instanceUrl);
 		} catch(e: any) {
 			logger.error(e.message + '. ');
@@ -220,33 +222,26 @@ export class SimpliciteInstanceController {
 		}
 	}
 
-	private removeTokenPersistence(instanceUrl: string) {
-		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
-		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instanceUrl);
-		if(index !== -1) authenticationValues.splice(index, 1);
-		this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
-	}
-
 	// cannot be a method of api module because if module does not exist then cannot remove persistence (which is safier to do)
-	private deleteApiModulePersistence(moduleName: string, instanceUrl: string) {
+	private async deleteApiModulePersistence(moduleName: string, instanceUrl: string): Promise<void> {
 		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
 		const index = saved.findIndex((apiMS) => {
 			apiMS.instanceUrl === instanceUrl && apiMS.moduleName === moduleName;
 		});
 		saved.splice(index, 1);
-		this._globalState.update(API_MODULES, saved);
+		await this._globalState.update(API_MODULES, saved);
 		const clearFiles: UrlAndName[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
 		clearFiles.push({name: moduleName, instanceUrl: instanceUrl});
-		this._globalState.update(API_MODULE_CLEAR_FILES, clearFiles);
+		await this._globalState.update(API_MODULE_CLEAR_FILES, clearFiles);
 		logger.info(`Removed persistence of module ${moduleName} from ${instanceUrl}, clearing files on next VS Code start`);
 	}
 
-	private clearApiModulesFiles() {
+	private async clearApiModulesFiles() {
 		const clearFiles: UrlAndName[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
 		clearFiles.forEach((value) => {
 			ApiModule.deleteFiles(value.instanceUrl, value.name);
 		});
-		this._globalState.update(API_MODULE_CLEAR_FILES, undefined);
+		await this._globalState.update(API_MODULE_CLEAR_FILES, undefined);
 	}
 
 	async removeModule(moduleName: string) {
@@ -256,6 +251,9 @@ export class SimpliciteInstanceController {
 			if(instance.modules.size === 0) {
 				await instance.logout();
 				this.simpliciteInstances.delete(key);
+				// cannot delete instance before logout as instance has the responsability to disconnect
+				// barItem refresh will be called 2 times in this case, light process but it can be optimised
+				this.barItem.show(Array.from(this.simpliciteInstances.values()));
 			}
 		}
 	}
@@ -310,7 +308,18 @@ export class SimpliciteInstanceController {
 		const modArray: (Module | ApiModule)[] = [];
 		this.simpliciteInstances.forEach((instance) => {
 			modArray.concat(instance.getModulesAsArray());
-		})
+		});
 		return modArray;
+	}
+
+	public findInstanceUrlWithClue(moduleNameClue: string, urlClue: string): string | undefined {
+		for (const url of this.simpliciteInstances.keys()) {
+			if(url.includes(urlClue)) {
+				// if url looks good, check for the module to make sure the result is the right one
+				const instance = this.simpliciteInstances.get(url);
+				if(!instance) continue;
+				if(instance.modules.has(moduleNameClue)) return url;
+			}
+		}
 	}
 }

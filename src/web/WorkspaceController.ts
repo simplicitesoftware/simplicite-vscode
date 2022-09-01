@@ -3,6 +3,7 @@
 import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window } from 'vscode';
 import { ApiModule } from './ApiModule';
 import { logger } from './Log';
+import { SimpliciteApi } from './SimpliciteApi';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
 export class WorkspaceController {
@@ -53,13 +54,38 @@ export class WorkspaceController {
 		workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => {
 			if (event.removed.length > 0) {
 				event.removed.forEach(async (elem) => {
-					await simpliciteInstanceController.removeModule(elem.name);
+					const res = this.getFolderApiInstanceUrl(elem.name, simpliciteInstanceController);
+					if(res && res.url) await simpliciteInstanceController.removeApiModule(res.moduleName, res.url);
+					else await simpliciteInstanceController.removeModule(elem.name);
 				});
 			}
 			if (event.added.length > 0) {
 				await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
-				await simpliciteInstanceController.loginAll();	
+				await simpliciteInstanceController.loginAll();
 			}
 		});
+	}
+
+	// return the instance URL from the folder name if it exists, or return undefined
+	// if it encounters locahost or 127.0.0.1 it will add the ':' character between the adress and the used port (see getApiModuleName method in ApiModule.ts)
+	private static getFolderApiInstanceUrl(folderName: string, simpliciteInstanceController: SimpliciteInstanceController): { url: string | undefined; moduleName: string; } | undefined {
+		const reg = new RegExp('^([A-Za-z0-9_-]+@[A-Za-z0-9-_\.]+)$');
+		const res = reg.exec(folderName);
+		if(res) {
+			const split = res[0].split('@');
+			const moduleName = split[0];
+			let urlClue = split[1]; // taking the right part, using the module name to confirm the clue may be a good idea
+			// little bit tricky but it does the work
+			if(urlClue.includes('localhost')) {
+				urlClue = 'localhost' + urlClue.replace('localhost', ':'); 
+				console.log(urlClue);
+			} else if(urlClue.includes('127.0.0.1')) {
+				urlClue = '127.0.0.1' + urlClue.replace('127.0.0.1', ':'); 
+				console.log(urlClue);
+			}
+			const url = simpliciteInstanceController.findInstanceUrlWithClue(moduleName, urlClue);
+			return {url, moduleName};
+		}
+		return undefined;
 	}
 }
