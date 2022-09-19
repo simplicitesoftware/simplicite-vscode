@@ -5,14 +5,18 @@ import { logger } from './Log';
 
 // Quick pick shows a list of the extensions commands
 export class QuickPick {
+	excludedCommand: String[];
 	constructor(subscriptions: Disposable[]) {
+		this.excludedCommand = ['copy logical name', 'copy physical name', 'copy json name', 'double click trigger command', 
+			'Simplicite: Track file', 'Simplicite: Untrack file', 'Simplicite: Refresh the Module Info tree view', 'Simplicite: Refresh the File Handler tree view'
+		];
 		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
 	}
 
 	commandListQuickPick(commandList: Array<Command>): { label: string, commandId: string }[] {
 		const preparedList = [];
 		for (const command of commandList) {
-			if (command.title !== 'copy logical name' && command.title !== 'copy physical name' && command.title !== 'copy json name' && command.title !== 'double click trigger command') {
+			if (!this.excludedCommand.includes(command.title)) {
 				preparedList.push({ label: command.title, commandId: command.command });
 			}
 		}

@@ -11,11 +11,11 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private _modules: Array<Module> | undefined;
 	private _devInfo?: DevInfo;
 	private _runPath: string;
-	constructor(modules: Module[] | undefined, devInfo: DevInfo | undefined, runPath: string) {
+	constructor(runPath: string) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-		this._modules = modules;
-		this._devInfo = devInfo;
+		this._modules = [];
+		this._devInfo = undefined;
 		this._runPath = runPath;
 	}
 

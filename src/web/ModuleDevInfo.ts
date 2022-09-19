@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 'use strict';
 
 // attempt at typing ModuleDevInfo, not implemented yet because it implies many problems

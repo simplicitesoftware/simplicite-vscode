@@ -4,7 +4,7 @@ import { Module } from './Module';
 import { ApiModule } from './ApiModule';
 import { InstanceModules, ModulesFiles, NameAndWorkspacePath } from './interfaces';
 import simplicite from 'simplicite';
-import { Memento, window } from 'vscode';
+import { commands, Memento, window } from 'vscode';
 import { logger } from './Log';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
@@ -137,6 +137,7 @@ export class SimpliciteInstance {
 		try {
 			const moduleDevInfo = await this.getModuleDevInfo(moduleName);
 			module.setModuleDevInfo(moduleDevInfo, devInfo);
+			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 		} catch(e) {
 			logger.error(e);
 		}

@@ -28,10 +28,12 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	const barItem = new BarItem();
 	barItem.show([]);
-	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
-	await simpliciteInstanceController.initAll();
 
-	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState);
+	const moduleInfoTree = new ModuleInfoTree(context.extensionUri.path);
+
+	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
+	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, moduleInfoTree);
+	await simpliciteInstanceController.initAll();
 
 	new QuickPick(context.subscriptions);
 
@@ -40,8 +42,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
 
-	// moduleInfoTree needs to be refreshed todo
-	const moduleInfoTree = new ModuleInfoTree(simpliciteInstanceController.getAllModules(), simpliciteInstanceController.devInfo, context.extensionUri.path);
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
 	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
