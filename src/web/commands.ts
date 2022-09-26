@@ -1,42 +1,46 @@
 'use strict';
 
-import { commands, window, env, workspace, ExtensionContext, Memento, Uri } from 'vscode';
+import { commands, env, workspace, ExtensionContext, Memento, Uri } from 'vscode';
 import { logger } from './Log';
-// import { ModuleInfoTree } from './treeView/ModuleInfoTree';
-import { Module } from './Module';
-import { File } from './File';
 import { isHttpsUri, isHttpUri } from 'valid-url';
-import { ApiModule } from './ApiModule';
-// import { BarItem } from './BarItem';
 import { Prompt, PromptValue } from './Prompt';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
+import { compileJava } from './utils';
+import { FileItem, ModuleItem } from './treeView/treeViewClasses';
+import { FileTree } from './treeView/FileTree';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands
-export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, moduleInfoTree: ModuleInfoTree) {
+export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, moduleInfoTree: ModuleInfoTree, fileTree: FileTree | undefined) {
 
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
-		const res = await simpliciteInstanceController.sendAllFiles();
+		await simpliciteInstanceController.sendAllFiles();
 	});
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
 		try {
 			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
-			const res = await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
+			await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
 			await prompt.addElement('url', instanceUrl);
 		} catch(e) {
 			logger.error(e);
 		}
 	});
 	
-	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function () {
+	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (info: ModuleItem) {
 		try {
-			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
+			let instanceUrl;
+			let moduleName;
+			if(info) {
+				instanceUrl = info.description;
+				moduleName = info.apiName ? info.apiName : info.label;
+			}
+			if(!instanceUrl) instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
+			if(!moduleName) moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
 			await simpliciteInstanceController.sendModuleFilesOnCommand(moduleName, instanceUrl);
 			await prompt.addElement('url', instanceUrl);
 			await prompt.addElement('name', moduleName);
@@ -44,19 +48,16 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			logger.error(e);
 		}
 	});
-
 	
-	
-	// ------------------------------
+	//------------------------------
 	// Compiling commands
-	// const compileWorkspace = commands.registerCommand('simplicite-vscode-tools.compileWorkspace', async function () {
-	// 	try {
-	// 		const status = await simpliciteApiController.compileJava();
-	// 		logger.info(status);
-	// 	} catch (e) {
-	// 		logger.error(e);
-	// 	}
-	// });
+	const compileWorkspace = commands.registerCommand('simplicite-vscode-tools.compileWorkspace', async function () {
+		try {
+			await compileJava();
+		} catch (e) {
+			logger.error(e);
+		}
+	});
 	
 	// ------------------------------
 	// Reset prompt cache
@@ -92,14 +93,6 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
       logger.error(e);
     }
 	});
-
-	// async function logAction(): Promise<Module | ApiModule> {
-	// 	const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
-	// 	const module = moduleHandler.getFirstModuleFromInstance(instanceUrl);
-	// 	if (!module) throw new Error('No module affiliated with instance ' + instanceUrl);
-	// 	await prompt.addElement('url', instanceUrl);
-	// 	return module;
-	// }
 	
 	// // ------------------------------
 	// // Refresh Tree views commands
@@ -107,11 +100,9 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		moduleInfoTree.feedData(simpliciteInstanceController.devInfo, simpliciteInstanceController.getAllModules());
 	});
 	
-	// const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
-	// 	if (fileHandler.fileTree) {
-	// 		fileHandler.fileList = await fileHandler.FileDetector(moduleHandler);
-	// 	}
-	// });
+	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
+		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
+	});
 	
 	// ------------------------------
 	// Tree view commands
@@ -147,6 +138,18 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 				logger.error(e);
 			}
 		}
+	});
+
+	const setTrackedFile = commands.registerCommand('simplicite-vscode-tools.trackFile', (info: FileItem) => {
+		const lowerPath = info.resourceUri.path.toLowerCase();
+		globalState.update(lowerPath, true);
+		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
+	});
+
+	const unsetTrackedFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', (info) => {
+		const lowerPath = info.resourceUri.path.toLowerCase();
+		globalState.update(lowerPath, undefined);
+		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
 	});
 	
 	// ------------------------------
@@ -188,7 +191,11 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
 			await globalState.update(API_MODULES, undefined);
 			await globalState.update(AUTHENTICATION_STORAGE, undefined);
-			await globalState.update(FILES_STATUS_STORAGE, undefined);
+			for (const instance of simpliciteInstanceController.simpliciteInstances.values()) {
+				for(let file of instance.getTrackedFiles()) {
+					await globalState.update(file.uri.path.toLowerCase(), undefined);
+				}
+			}
 			try {
 				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true});
 			} catch(e) {
@@ -207,11 +214,15 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {		
 		const _savedModules = globalState.get(API_MODULES);
 		const _authenticationStorage = globalState.get(AUTHENTICATION_STORAGE);
-		const _filesStorage = globalState.get(FILES_STATUS_STORAGE);
+		const _trackedFiles = [];
+		for (const instance of simpliciteInstanceController.simpliciteInstances.values()) {
+			_trackedFiles.push(instance.getTrackedFiles());
+		}
 	});
 
 	// public command can be used by other dev if needed
-	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, initApiModule, removeApiModule, resetPromptCache, refreshModuleTree];
+	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, 
+		initApiModule, removeApiModule, resetPromptCache, refreshModuleTree, compileWorkspace, setTrackedFile, unsetTrackedFile, refreshFileHandler];
 	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, resetExtensionData, debug, itemDoubleClickTrigger];
 	context.subscriptions.concat(publicCommand, privateCommand);

@@ -112,6 +112,8 @@ export class SimpliciteInstanceController {
 				if(!value) continue;
 				const instance = await this.getInstance(value, key);
 				this.simpliciteInstances.set(key, instance);
+				await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
+				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 			}
 		}
 	}
@@ -145,7 +147,7 @@ export class SimpliciteInstanceController {
 	}
 
 	// api module states : is it already in workspace (might not be if workspace folder is empty)
-	public async createApiModule(instanceUrl: string, moduleName: string): Promise<void> {
+	public async createApiModule(instanceUrl: string, moduleName: string): Promise<boolean> {
 		logger.info(`Attempting to create module ${moduleName} from ${instanceUrl} in workspace ${workspace.name}`);
 		const instance = await this.getInstance([], instanceUrl);
 		
@@ -165,8 +167,10 @@ export class SimpliciteInstanceController {
 			}
 			WorkspaceController.addWorkspaceFolder(apiModule.apiModuleName);
 			await apiModule.initFiles(instance.app, this._globalState, WorkspaceController.getApiModuleWorkspacePath(moduleName, instanceUrl));
+			return true;
 		} else {
 			this.simpliciteInstances.delete(instanceUrl);
+			return false;
 		}
 	}
 
@@ -179,12 +183,13 @@ export class SimpliciteInstanceController {
 				this.apiModuleReset = true;
 				const	instance = await SimpliciteInstance.build([], ams.instanceUrl, this._globalState);
 				const apiModule = new ApiModule(ams.moduleName, ams.instanceUrl, instance.app, this._globalState, ams.workspaceName);
-				await apiModule.initFiles(instance.app, this._globalState, WorkspaceController.getApiModuleWorkspacePath(ams.moduleName, ams.instanceUrl));
 				instance.modules.set(ApiModule.getApiModuleName(ams.moduleName, ams.instanceUrl), apiModule);
 				this.simpliciteInstances.set(ams.instanceUrl, instance);
+				await apiModule.initFiles(instance.app, this._globalState, WorkspaceController.getApiModuleWorkspacePath(ams.moduleName, ams.instanceUrl));
 				apiModule.saveApiModule();
 				await this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
 			} catch(e) {
+				this.simpliciteInstances.delete(ams.instanceUrl);
 				logger.error(e);
 			}
 		}
@@ -194,7 +199,7 @@ export class SimpliciteInstanceController {
 		if(!this.apiModuleReset) {
 			const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
 			saved.forEach(async (ams) => {
-				if(ams.workspaceName === workspace.name /*&& ams.sessionId === env.sessionId*/) {
+				if(ams.workspaceName === workspace.name || ams.workspaceName === 'Untitled (Workspace)' && !workspace.name /*&& ams.sessionId === env.sessionId*/) {
 					await this.createApiModule(ams.instanceUrl, ams.moduleName);
 				}
 			});
@@ -205,13 +210,15 @@ export class SimpliciteInstanceController {
 		try {
 			let instance = this.simpliciteInstances.get(instanceUrl);
 			if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
-			const module = instance.modules.get(ApiModule.getApiModuleName(moduleName, instanceUrl));
+			const apiModuleName = ApiModule.getApiModuleName(moduleName, instanceUrl);
+			const module = instance.modules.get(apiModuleName);
 			if(!module || !(module instanceof ApiModule)) throw new Error('Cannot delete Api module, module '+moduleName+' does not exist, or is not an Api module');
 			if(instance.modules.size === 1) await this.logoutInstance(instanceUrl); 
-			instance.modules.delete(moduleName);
+			instance.modules.delete(apiModuleName);
 			await this.deleteApiModulePersistence(moduleName, instanceUrl);
-			WorkspaceController.removeApiFileSystemFromWorkspace(moduleName, instanceUrl);
 			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
+			WorkspaceController.removeApiFileSystemFromWorkspace(moduleName, instanceUrl);
+			logger.info(`Succesfully removed ${moduleName}`);
 			return true;
 		} catch(e: any) {
 			logger.error(e.message + '. ');
@@ -223,9 +230,8 @@ export class SimpliciteInstanceController {
 	// cannot be a method of api module because if module does not exist then cannot remove persistence (which is safer to do)
 	private async deleteApiModulePersistence(moduleName: string, instanceUrl: string): Promise<void> {
 		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
-		const index = saved.findIndex((apiMS) => {
-			apiMS.instanceUrl === instanceUrl && apiMS.moduleName === moduleName;
-		});
+		const index = saved.findIndex((apiMS) => apiMS.instanceUrl === instanceUrl && apiMS.moduleName === moduleName);
+		
 		saved.splice(index, 1);
 		await this._globalState.update(API_MODULES, saved);
 		const clearFiles: UrlAndName[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
@@ -253,6 +259,7 @@ export class SimpliciteInstanceController {
 				// barItem refresh will be called 2 times in this case, light process but it can be optimised
 				this.barItem.show(Array.from(this.simpliciteInstances.values()));
 			}
+			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 		}
 	}
 
@@ -268,9 +275,11 @@ export class SimpliciteInstanceController {
 		return undefined;
 	}
  
-	public async sendFiles(files: File[]) {
+	private async sendFiles(files: File[]) {
 		files.forEach(async (file: File) => {
-			await file.sendFile();
+			file.sendFile().then(async ()=> {
+				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+			});
 		});
 	}
 
@@ -285,8 +294,9 @@ export class SimpliciteInstanceController {
 		const instance = this.simpliciteInstances.get(url);
 		if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
 		const statusFiles: File[] = instance.getTrackedFiles();
-		await this.sendFiles(statusFiles);
-		instance.triggerBackendCompilation(); // todo , implement already compiling backend queue
+		this.sendFiles(statusFiles).then(() => {
+			//instance.triggerBackendCompilation();
+		});
 	}
 
 	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
@@ -310,13 +320,13 @@ export class SimpliciteInstanceController {
 		return modArray;
 	}
 
-	public findInstanceUrlWithClue(moduleNameClue: string, urlClue: string): string | undefined {
+	public findInstanceUrlWithClue(moduleNameClue: string, urlClue: string, apiUrlClue: string): string | undefined {
 		for (const url of this.simpliciteInstances.keys()) {
-			if(url.includes(urlClue)) {
+			if(url.includes(apiUrlClue)) {
 				// if url looks good, check for the module to make sure the result is the right one
 				const instance = this.simpliciteInstances.get(url);
 				if(!instance) continue;
-				if(instance.modules.has(moduleNameClue)) return url;
+				if(instance.modules.has(`${moduleNameClue}@${urlClue}`)) return url;
 			}
 		}
 	}

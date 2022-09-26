@@ -11,7 +11,6 @@ declare global { // has to be declared to asign value globally, these value are 
 	var EXCLUDED_FILES: string[];
 	var STORAGE_PATH: string;
 	var AUTHENTICATION_STORAGE: string;
-	var FILES_STATUS_STORAGE: string;
 	var API_MODULES: string;
 	var PROMPT_CACHE: string;
 	var API_MODULE_ADDED_IN_EMPTY_WK: string;
@@ -38,8 +37,6 @@ export const initGlobalValues = function(storagePath: string): void {
 
 	global.AUTHENTICATION_STORAGE = 'simplicite_authentication';
 
-	global.FILES_STATUS_STORAGE = 'simplicite_files';
-	
 	global.API_MODULES = 'simplicite_api_modules';
 
 	global.PROMPT_CACHE = 'simplicite-prompt-cache';

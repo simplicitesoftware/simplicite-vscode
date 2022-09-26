@@ -19,7 +19,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		this._runPath = runPath;
 	}
 
-	private async refresh() {
+	private refresh() {
 		this._onDidChangeTreeData.fire();
 	}
 

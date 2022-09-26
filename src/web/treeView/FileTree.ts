@@ -4,21 +4,23 @@ import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleSta
 import { UntrackedItem, ModuleItem, FileItem } from './treeViewClasses';
 import { SimpliciteInstance } from '../SimpliciteInstance';
 import path = require('path');
+import { ApiModule } from '../ApiModule';
 
 // File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // this attribute and the below one are mandatory to refresh the component
 	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
 	runPath: string;
-	instances: SimpliciteInstance[];
-	constructor(runPath: string, instances: SimpliciteInstance[]) {
+	instances: SimpliciteInstance[] | undefined;
+	constructor(runPath: string) {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 		this.runPath = runPath;
-		this.instances = instances;
+		this.instances;
 	}
 
-	private refresh(): void {
+	public refresh(instances: SimpliciteInstance[]): void {
+		this.instances = instances;
 		this._onDidChangeTreeData.fire();
 	}
 
@@ -52,9 +54,9 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 
 	private async getModulesItem(): Promise<TreeItem[]> {
 		const moduleItems: TreeItem[] = [];
-		for (const instance of this.instances) {
+		for (const instance of this.instances || []) {
 			for(const mod of instance.modules.values()) {
-				const treeItem = new ModuleItem(mod.name, TreeItemCollapsibleState.Collapsed, mod.instanceUrl);
+				const treeItem = new ModuleItem(mod.name, TreeItemCollapsibleState.Collapsed, mod.instanceUrl, mod instanceof ApiModule ? mod.apiModuleName : undefined);
 				treeItem.iconPath = {
 					light: path.join(this.runPath, 'resources/light/module.svg'),
 					dark: path.join(this.runPath, 'resources/dark/module.svg')
@@ -69,7 +71,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	private getFilesItem(label: string | TreeItemLabel): FileItem[] | TreeItem[] {
 		const fileItems: FileItem[] = [];
 		let untrackedFlag = false;
-		for (const instance of this.instances) {
+		for (const instance of this.instances || []) {
 			for (const mod of instance.modules.values()) {
 				if (mod.name === label) {
 					for (const file of mod.files.values()) {
@@ -99,7 +101,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	// same as method above
 	private getUntrackedFiles(moduleName: string | TreeItemLabel): TreeItem[] {
 		const untrackedFiles = [];
-		for (const instance of this.instances) {
+		for (const instance of this.instances || []) {
 			for(const mod of instance.modules.values()) {
 				if (mod.name === moduleName) {
 					for (const file of mod.files.values()) {

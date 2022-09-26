@@ -5,9 +5,11 @@ export class ModuleItem extends TreeItem {
 		public readonly label: string,
 		public readonly collapsibleState: TreeItemCollapsibleState,
 		public readonly description: string,
+		public readonly apiName: string | undefined,
 	) {
 		super(label, collapsibleState);
 		this.description = description;
+		this.apiName = apiName;
 	}
 }
 

@@ -8,7 +8,7 @@ export class QuickPick {
 	excludedCommand: String[];
 	constructor(subscriptions: Disposable[]) {
 		this.excludedCommand = ['copy logical name', 'copy physical name', 'copy json name', 'double click trigger command', 
-			'Simplicite: Track file', 'Simplicite: Untrack file', 'Simplicite: Refresh the Module Info tree view', 'Simplicite: Refresh the File Handler tree view'
+			'Simplicite: Track file', 'Simplicite: Untrack file', 'Simplicite: Refresh the Module Info tree view', 'Simplicite: Refresh the File Handler tree view', 'Simplicite: Debug'
 		];
 		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
 	}

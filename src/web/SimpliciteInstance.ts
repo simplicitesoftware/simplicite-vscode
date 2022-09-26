@@ -34,8 +34,8 @@ export class SimpliciteInstance {
 		for (const value of modulesName) {
 			if(!modules.has(value.name)) {
 				const module = new Module(value.name, this.app.parameters.url);
-				await module.initFiles(this.app, this._globalState, value.wkPath);
 				modules.set(value.name, module);
+				await module.initFiles(this.app, this._globalState, value.wkPath);
 			}
 		}
 		this.modules = modules;
@@ -150,9 +150,11 @@ export class SimpliciteInstance {
 		try {
 			const obj = this.app.getBusinessObject('Script', 'ide_Script');
 			this.isBackendCompiling = true;
-			const res = await obj.action('CodeCompile', 0);
+			const _this = this;
+			const res = obj.action('CodeCompile', 0).then(() => {
+				_this.isBackendCompiling = false;
+			});
 			if(res !== 'OK#INFO') throw new Error(res);
-			this.isBackendCompiling = false; // check for this
 			logger.info('Backend compilation completed');
 		} catch(e: any) {
 			this.isBackendCompiling = false;

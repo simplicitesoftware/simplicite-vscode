@@ -6,7 +6,7 @@ import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
-import { FileService } from './FileService';
+import { fileService } from './FileService';
 import { initGlobalValues } from './constants';
 import { commandInit } from './commands';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
@@ -30,24 +30,25 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	barItem.show([]);
 
 	const moduleInfoTree = new ModuleInfoTree(context.extensionUri.path);
+	let fileTree;
+	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
+		fileTree = new FileTree(context.extensionUri.path);
+		window.registerTreeDataProvider('simpliciteFile', fileTree);
+	}
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
-	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, moduleInfoTree);
+	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, moduleInfoTree, fileTree);
 	await simpliciteInstanceController.initAll();
 
 	new QuickPick(context.subscriptions);
 
-	const fileService = new FileService(simpliciteInstanceController);
-	await fileService.fileListener();
+	fileService(simpliciteInstanceController);
 		
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
 
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
-	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
-		const fileTree = new FileTree(context.extensionUri.path, Array.from(simpliciteInstanceController.simpliciteInstances.values()));
-		window.registerTreeDataProvider('simpliciteFile', fileTree);
-	}
+	
 
 	return publicCommand;
 }
