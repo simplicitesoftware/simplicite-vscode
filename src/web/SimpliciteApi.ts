@@ -50,10 +50,10 @@ export class SimpliciteApi {
 	// 	return true;
 	// }
 
-	private async searchForUpdate(file: File, obj: any): Promise<any> {
-		const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
-		return item;
-	}
+	// private async searchForUpdate(file: File, obj: any): Promise<any> {
+	// 	const item = await obj.getForUpdate(file.rowId, { inlineDocuments: true });
+	// 	return item;
+	// }
 
 	// async getRemoteFileContent (file: File): Promise<Uint8Array | undefined> {
 	// 	const obj = this.appAndBusinessObject(file);

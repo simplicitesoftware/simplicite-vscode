@@ -3,8 +3,8 @@
 import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window } from 'vscode';
 import { ApiModule } from './ApiModule';
 import { logger } from './Log';
-import { SimpliciteApi } from './SimpliciteApi';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
+import { recreateLocalUrl } from './utils';
 
 export class WorkspaceController {
 	public static removeApiFileSystemFromWorkspace(moduleName: string, instanceUrl: string) {
@@ -75,15 +75,10 @@ export class WorkspaceController {
 			const split = res[0].split('@');
 			const moduleName = split[0];
 			let urlClue = split[1]; // taking the right part, using the module name to confirm the clue may be a good idea
-			// little bit tricky but it does the work
-			if(urlClue.includes('localhost')) {
-				urlClue = 'localhost' + urlClue.replace('localhost', ':'); 
-				console.log(urlClue);
-			} else if(urlClue.includes('127.0.0.1')) {
-				urlClue = '127.0.0.1' + urlClue.replace('127.0.0.1', ':'); 
-				console.log(urlClue);
-			}
-			const url = simpliciteInstanceController.findInstanceUrlWithClue(moduleName, urlClue);
+			let apiUrlClue = urlClue;
+			// does the trick
+			apiUrlClue = recreateLocalUrl(urlClue);
+			const url = simpliciteInstanceController.findInstanceUrlWithClue(moduleName, urlClue, apiUrlClue);
 			return {url, moduleName};
 		}
 		return undefined;

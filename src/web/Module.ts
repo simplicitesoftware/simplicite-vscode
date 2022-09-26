@@ -1,6 +1,6 @@
 'use strict';
 
-import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento } from 'vscode';
+import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 
