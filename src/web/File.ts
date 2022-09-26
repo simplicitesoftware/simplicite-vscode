@@ -10,7 +10,6 @@ export class File {
 	type: string | undefined;
 	scriptField: string | undefined;
 	fieldName: string | undefined;
-	rowId: string | undefined;
 	extension: string;
 	private _app: any;
 	private _globalState: Memento;
@@ -37,22 +36,20 @@ export class File {
 
 	setInfoFromModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		if (!this.type && !this.scriptField && !this.fieldName) {
-			const {type, id} = this.getBusinessObjectInfo(moduleDevInfo);
-			this.rowId = id;
-			this.type = type;
+			this.type = this.getBusinessObjectType(moduleDevInfo);
 			this.scriptField = this.getProperScriptField(devInfo);
 			this.fieldName = this.getProperNameField(devInfo);
 		}
 	}
 
-	private getBusinessObjectInfo(moduleDevInfo: any): {type: string, id: string} {
+	private getBusinessObjectType(moduleDevInfo: any): string {
 		for (const type in moduleDevInfo) {
 			for(const devInfoObject of moduleDevInfo[type]) {
 				if (!devInfoObject.sourcepath) continue; // no sourcepath == no code file associated
-				if (this.uri.path.includes(devInfoObject.sourcepath)) return {type: type, id: devInfoObject.id};
+				if (this.uri.path.includes(devInfoObject.sourcepath)) return type;
 			}
 		}
-		return {type: '', id: ''};
+		return '';
 	}
 
 	private getProperScriptField(devInfo: DevInfo) {
@@ -79,9 +76,8 @@ export class File {
 	public async sendFile() {
 		try {
 			const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
-			//const test = await obj.get(this.rowId);
-			//test.;
-			const item = await obj.getForUpdate(this.rowId, { inlineDocuments: true });
+
+			const item = await obj.getForUpdate(await this.getObjectId(obj), { inlineDocuments: true });
 			const doc = obj.getFieldDocument(this.scriptField);
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
@@ -102,6 +98,12 @@ export class File {
 			return false;
 		}
 		return true;
+	}
+
+	async getObjectId(obj: any): Promise<string> {
+		const list = await obj.search({ [this.fieldName!]: this.name });
+		if(!list || list.length === 0) throw new Error(`Cannot retrieve row_id of object ${this.name}`);
+		return list[0].row_id;
 	}
 
 	public async saveFileAsTracked() {
