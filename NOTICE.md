@@ -72,8 +72,6 @@ Ne pas afficher les commandes inutiles lorsque le parametre sendFileOnSave est t
 Tester l'extension sur mac, versions web, Theia.
 
 ## Note diverses :
-Impossible pour le moment d'ajouter des icones autres que les product icons (https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) dans la barre de status.
-
 A ce jour, les extensions java (redhat et microsoft) ne sont pas compatibles avec VS Code web.
 
 Comparatif de la compatibilité de l'api VS Code avec Api Theia: https://eclipse-theia.github.io/vscode-theia-comparator/status.html
