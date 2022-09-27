@@ -31,7 +31,7 @@ export const initGlobalValues = function(storagePath: string): void {
 
 	global.SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
     
-	global.EXCLUDED_FILES = ['BUILD', 'README', '.xml', '.min.', '/Theme/', '/docs/', '/files/', '/target/', '.json']; // todo
+	global.EXCLUDED_FILES = ['BUILD', 'README', '.xml', '.min.', '/Theme/', '/files/', '/target/', '.json']; // todo
 
 	global.STORAGE_PATH = storagePath + '/';
 
