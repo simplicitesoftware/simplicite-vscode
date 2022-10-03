@@ -12,13 +12,13 @@ import { commandInit } from './commands';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
+import { completionProviderService } from './CompletionProvider';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
 	initGlobalValues(context.globalStorageUri.path);
-	
-
 	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
+	
 	const globalState = context.globalState;
 	if(debug.activeDebugSession) {
 		console.log('Api modules stored in memento', globalState.get(API_MODULES, []));
@@ -48,7 +48,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
-	
+	await completionProviderService(simpliciteInstanceController, context);	
 
 	return publicCommand;
 }
