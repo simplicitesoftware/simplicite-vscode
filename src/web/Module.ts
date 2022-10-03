@@ -3,17 +3,20 @@
 import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
+import { HashService } from './HashService';
 
 export class Module {
 	moduleDevInfo: any;
 	files: Map<string, File>;
 	name: string;
 	instanceUrl: string;
-	constructor(name: string, instanceUrl: string) {
+	globalState: Memento;
+	constructor(name: string, instanceUrl: string, globalState: Memento) {
 		this.moduleDevInfo = undefined;
 		this.files = new Map();
 		this.name = name;
 		this.instanceUrl = instanceUrl;
+		this.globalState = globalState;
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {
@@ -50,6 +53,7 @@ export class Module {
 			const lowerCasePath = uri.path.toLowerCase();
 			this.files.set(lowerCasePath, new File(uri, app, globalState));
 		});
+		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
 	}
 
 	public getFileFromPath(uri: Uri): File | undefined {
@@ -57,7 +61,7 @@ export class Module {
 		return this.files.get(lowerCasePath);
 	}
 
-	public getFilesAsArray(): string[] {
+	public getFilesPathAsArray(): string[] {
 		const files: string[] = [];
 		this.files.forEach((file: File) => {
 			files.push(file.uri.path);
@@ -71,5 +75,12 @@ export class Module {
 			if(file.getTrackedStatus()) fileList.push(file);
 		});
 		return fileList;
+	}
+
+	public async sendFiles() {
+		const files = this.getTrackedFiles();
+		files.forEach(async (file) => {
+			await file.sendFile(this.instanceUrl, this.name);
+		});
 	}
 }

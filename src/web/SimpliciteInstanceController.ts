@@ -4,7 +4,7 @@ import { SimpliciteInstance } from './SimpliciteInstance';
 import { workspace, WorkspaceFolder, RelativePattern, Memento, Uri, SnippetString, env, commands } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { ApiModuleSave, FileInstance, NameAndWorkspacePath, UrlAndName } from './interfaces';
-import { logger } from './Log';
+import { logger } from './log';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
@@ -274,36 +274,35 @@ export class SimpliciteInstanceController {
 		}
 		return undefined;
 	}
- 
-	private async sendFiles(files: File[]) {
-		files.forEach(async (file: File) => {
-			file.sendFile().then(async ()=> {
-				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-			});
-		});
-	}
 
 	public async sendAllFiles(): Promise<void> {
-		const instanceUrls = this.simpliciteInstances.keys();
-		for (const url of instanceUrls) {
-			await this.sendInstanceFilesOnCommand(url);
+		for(const instance of this.simpliciteInstances.values()) {
+			for(const module of instance.modules.values()) {
+				module.sendFiles().then(async () => {
+					await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+				});
+			}
 		}
 	}
 
 	public async sendInstanceFilesOnCommand(url: string) {
 		const instance = this.simpliciteInstances.get(url);
 		if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
-		const statusFiles: File[] = instance.getTrackedFiles();
-		this.sendFiles(statusFiles).then(() => {
-			//instance.triggerBackendCompilation();
-		});
+		for(const module of instance.modules.values()) {
+			module.sendFiles().then(async () => {
+				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+			});
+		}
 	}
 
 	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
 		const instance = this.simpliciteInstances.get(instanceUrl);
 		if(!instance) throw new Error('Cannot send files. ' + instanceUrl + ' is not a known instance');
-		const statusFiles = instance.getModuleTrackedFiles(moduleName);
-		await this.sendFiles(statusFiles);
+		const module = instance.modules.get(moduleName);
+		if(!module) throw new Error('Cannot send files. ' + moduleName + ' is not a known module');
+		module.sendFiles().then(async () => {
+			await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+		});
 	}
 
 	// get or create instance if it doesnt exist, set instance on map is still necessary

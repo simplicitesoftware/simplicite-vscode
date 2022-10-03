@@ -2,7 +2,8 @@
 
 import { Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
-import { logger } from './Log';
+import { HashService } from './HashService';
+import { logger } from './log';
 
 export class File {
 	uri: Uri;
@@ -73,7 +74,7 @@ export class File {
 		return content;
 	}
 
-	public async sendFile() {
+	public async sendFile(instance: string, module: string) {
 		try {
 			const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
 
@@ -92,6 +93,7 @@ export class File {
 				logger.error('Simplicite: Cannot synchronize ' + msg);
 				window.showErrorMessage(msg);
 			}
+			await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 			logger.info(`${this.uri.path} has been successfully applied`);
 		} catch(e) {
 			logger.error(e);
