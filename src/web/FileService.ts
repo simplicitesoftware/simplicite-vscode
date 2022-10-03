@@ -63,13 +63,6 @@ export async function fileService(simpliciteInstanceController: SimpliciteInstan
 	}
 }
 
-	
-
-	
-
-
-	
-
 	// 	// create temp folder and copy files to store the initial state of a file (for conflict resolution)
 	// 	async initTempFolder(fileModule: FileAndModule[]) {
 	// 		try {

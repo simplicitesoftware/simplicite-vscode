@@ -5,7 +5,6 @@ import { DevInfo } from './DevInfo';
 import { File } from './File';
 
 export class Module {
-	// remove name as it should be in map
 	moduleDevInfo: any;
 	files: Map<string, File>;
 	name: string;

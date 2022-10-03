@@ -163,7 +163,7 @@ export class SimpliciteInstance {
 		}
 	}
 	
-// UTIL
+	// UTIL
  
  	public deleteModule(moduleName: string) {
 		for (const key of this.modules.keys()) {

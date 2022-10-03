@@ -242,20 +242,6 @@ function doubleClickTrigger(): boolean {
 	}
 }
 
-// async function trackAction(fileHandler: FileHandler, modules: Module[], element: FileItem, trackedValue: boolean) {
-// 	const file = await getInputFile(fileHandler, element);
-// 	await fileHandler.setTrackedStatus(file.uri, trackedValue, modules);
-// }
-
-// async function getInputFile(fileHandler: FileHandler, element: FileItem): Promise<File> {
-// 	if (!element.resourceUri) {
-// 		const input = await simpleInput('Simplicite: Type in the file\'s absolute path', 'path');
-// 		return fileHandler.getFileFromFullPath(input);
-// 	} else {
-// 		return fileHandler.getFileFromFullPath(element.resourceUri.path);		
-// 	}
-// }
-
 
 
 

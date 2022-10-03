@@ -14,8 +14,10 @@ export const logger = createLogger({
 	]
 });
 
-// not working, try another implementation
+// function does not work because the extension is set in a web context
+// fs is required but does not exist
 export const addFileTransportOnDesktop = (tempPath: string) => {
+	const debugVar = env;
 	if (env.appHost === 'desktop') {
 		logger.add(new transports.File({ filename: tempPath + 'simplicite.log' }));
 	}

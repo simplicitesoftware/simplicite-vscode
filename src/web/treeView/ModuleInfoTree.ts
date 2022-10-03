@@ -34,12 +34,11 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		const addedModules: string[] = []; // avoid adding the same module
 		for (const module of modules) {	
 			if (addedModules.includes(module.name)) continue;
-			this._modules?.push(module);
+			this._modules.push(module);
 			addedModules.push(module.name);
 		}
 	}
 
-	// this is hell, sorry
 	getTreeItem(element: CustomTreeItem | TreeItem): CustomTreeItem | TreeItem {
 		if (element instanceof CustomTreeItem) {
 			if (element.objectType === ItemType.module) {
@@ -69,7 +68,6 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		return element;
 	}
 
-	// hell's little brother
 	async getChildren(element: CustomTreeItem): Promise<TreeItem[]> {
 		if (element === undefined) {
 			return Promise.resolve(this.getModulesItems());
