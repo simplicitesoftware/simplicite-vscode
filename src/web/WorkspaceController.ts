@@ -2,7 +2,7 @@
 
 import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window } from 'vscode';
 import { ApiModule } from './ApiModule';
-import { logger } from './Log';
+import { logger } from './log';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { recreateLocalUrl } from './utils';
 

@@ -1,7 +1,7 @@
 'use strict';
 
 import { commands, Command, extensions, window, Disposable } from 'vscode';
-import { logger } from './Log';
+import { logger } from './log';
 
 // Quick pick shows a list of the extensions commands
 export class QuickPick {

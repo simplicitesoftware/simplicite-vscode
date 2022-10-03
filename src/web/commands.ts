@@ -1,7 +1,7 @@
 'use strict';
 
 import { commands, env, workspace, ExtensionContext, Memento, Uri } from 'vscode';
-import { logger } from './Log';
+import { logger } from './log';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { Prompt, PromptValue } from './Prompt';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';

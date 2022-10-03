@@ -5,7 +5,7 @@ import { ApiModule } from './ApiModule';
 import { InstanceModules, ModulesFiles, NameAndWorkspacePath } from './interfaces';
 import simplicite from 'simplicite';
 import { commands, Memento, window } from 'vscode';
-import { logger } from './Log';
+import { logger } from './log';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 
@@ -33,7 +33,7 @@ export class SimpliciteInstance {
 		const modules: Map<string, Module> = new Map();
 		for (const value of modulesName) {
 			if(!modules.has(value.name)) {
-				const module = new Module(value.name, this.app.parameters.url);
+				const module = new Module(value.name, this.app.parameters.url, this._globalState);
 				modules.set(value.name, module);
 				await module.initFiles(this.app, this._globalState, value.wkPath);
 			}
@@ -102,7 +102,7 @@ export class SimpliciteInstance {
 	public getFilesAssiociatedToModules(): Array<{moduleName: string, files: string[]}> {
 		const modFiles : Array<{moduleName: string, files: string[]}> = [];
 		this.modules.forEach((mod: Module | ApiModule, name: string) => {
-			modFiles.push({moduleName: name, files: mod.getFilesAsArray()});
+			modFiles.push({moduleName: name, files: mod.getFilesPathAsArray()});
 		});
 		return modFiles;
 	}

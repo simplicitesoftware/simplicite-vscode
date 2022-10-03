@@ -62,23 +62,3 @@ export async function fileService(simpliciteInstanceController: SimpliciteInstan
 		return x;
 	}
 }
-
-	// 	// create temp folder and copy files to store the initial state of a file (for conflict resolution)
-	// 	async initTempFolder(fileModule: FileAndModule[]) {
-	// 		try {
-	// 			for (const fm of fileModule) {
-	// 				const modulePath = STORAGE_PATH + 'temp/' + fm.module.name + '/';
-	// 				await workspace.fs.createDirectory(Uri.parse(modulePath));
-	// 				for (const file of fm.fileList) {
-	// 					const tempFilePath = File.tempPathMaker(file);
-	// 					const localFileContent = await File.getContent(file.uri);
-	// 					if (!localFileContent) {
-	// 						throw new Error('Cannot get content from ' + file.uri.path);
-	// 					}
-	// 					await workspace.fs.writeFile(Uri.file(tempFilePath), localFileContent);
-	// 				}
-	// 			}
-	// 		} catch(e) {
-	// 			logger.warn(e);
-	// 		}
-	// 	}

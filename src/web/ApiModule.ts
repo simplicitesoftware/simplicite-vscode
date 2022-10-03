@@ -3,7 +3,7 @@
 
 import { Module } from './Module';
 import { workspace, Uri, Memento, env } from 'vscode';
-import { logger } from './Log';
+import { logger } from './log';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
 import { ApiModuleSave } from './interfaces';
@@ -16,7 +16,7 @@ export class ApiModule extends Module {
 	private _app: any;
 	private _globalState: Memento;
 	constructor(name: string, instanceUrl: string, app: any, globalState: Memento, workspaceName: string | undefined) {
-		super(name, instanceUrl);
+		super(name, instanceUrl, globalState);
 		this.apiModuleName = ApiModule.getApiModuleName(name, instanceUrl);
 		this.workspaceName = workspaceName;
 		this._instanceUrl = instanceUrl;
