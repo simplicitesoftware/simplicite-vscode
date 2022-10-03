@@ -1,7 +1,7 @@
 'use strict';
 
 import { ExtensionContext, env, debug, languages, Disposable, window, workspace } from 'vscode';
-import { logger } from './Log';
+import { logger } from './log';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -12,7 +12,7 @@ import { commandInit } from './commands';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
-import { completionProviderService } from './CompletionProvider';
+import { completionProviderService } from './CompletionService';
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	logger.info('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
