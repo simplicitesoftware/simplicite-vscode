@@ -1,9 +1,11 @@
 'use strict';
 
-import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands } from 'vscode';
+import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 import { HashService } from './HashService';
+import { ConflictAction } from './interfaces';
+import { logger } from './log';
 
 export class Module {
 	moduleDevInfo: any;
@@ -11,12 +13,14 @@ export class Module {
 	name: string;
 	instanceUrl: string;
 	globalState: Memento;
+	conflictStatus: boolean;
 	constructor(name: string, instanceUrl: string, globalState: Memento) {
 		this.moduleDevInfo = undefined;
 		this.files = new Map();
 		this.name = name;
 		this.instanceUrl = instanceUrl;
 		this.globalState = globalState;
+		this.conflictStatus = false;
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {
@@ -80,7 +84,43 @@ export class Module {
 	public async sendFiles() {
 		const files = this.getTrackedFiles();
 		files.forEach(async (file) => {
-			await file.sendFile(this.instanceUrl, this.name);
+			HashService.checkForConflict(file, this.instanceUrl, this.name, this.globalState).then(async (res) => {
+				if(res.action === ConflictAction.conflict && res.remoteContent) {
+					await this.notifyAndSetConflict(file, res.remoteContent);
+				} else if(res.action === ConflictAction.sendFile) {
+					await file.sendFile(this.instanceUrl, this.name);
+				} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
+					await workspace.fs.writeFile(file.uri, res.remoteContent);
+					await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
+				} else if(res.action === ConflictAction.nothing) {
+					logger.info('No changes detected on ' + file.name);
+				} else {
+					logger.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
+				}
+			});
+		});
+	}
+
+	private async notifyAndSetConflict(file: File, remoteContent: Uint8Array) {
+		const tempFile = Uri.file(STORAGE_PATH + 'remoteFile.java');
+		await workspace.fs.writeFile(tempFile, remoteContent);
+		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), tempFile);
+		window.showWarningMessage('Simplicite: Conflict detected, click the following button to choose which file to override.', 'Choose action').then(async (click) => {
+			if (click === 'Choose action') {
+				const choice = await window.showQuickPick([{ label: 'Override remote content' }, { label: 'Override local content' }]);
+				if (!choice) { 
+					const msg = 'No file has been chosen';
+					window.showInformationMessage('Simplicite: ' + msg);
+					throw new Error(msg);
+				} else if (choice.label === 'Override local content') { // write remote content on local
+					await workspace.fs.writeFile(Uri.file(file.uri.path), remoteContent);
+					await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
+					await workspace.fs.delete(tempFile);
+				} else if (choice.label === 'Override remote content') { // write local content on remote
+					await file.sendFile(this.instanceUrl, this.name);
+					await workspace.fs.delete(tempFile);
+				}
+			}
 		});
 	}
 }

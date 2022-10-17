@@ -1,9 +1,11 @@
 'use strict';
 
-import { Memento, Uri } from 'vscode';
+import { Memento, Uri, window } from 'vscode';
 import { File } from './File';
+import { ConflictAction } from './interfaces';
 import { logger } from './log';
 const MD5 = require('md5.js');
+const Buffer = require('buffer/').Buffer;
 
 export class HashService {
     
@@ -27,14 +29,45 @@ export class HashService {
         globalState.update(stateId, filesHash);
     }
 
-    // returns true if files hash are the same, otherwise returns false
-    public static async compareFilesHash() {
+    private static getFileHash(instance: string, module: string, uri: Uri, globalState: Memento) {
+        const stateId = HashService.getStateId(instance, module);
+        const filesHash: FileHash[] = globalState.get(stateId, []);
+        const fileIndex = filesHash.findIndex((fileHash) => fileHash.path === uri.path);
+        if(fileIndex === -1) {
+            logger.error('File does not exist, cannot update hash');
+            return null;
+        }
+        return filesHash[fileIndex].hash;
+    }
 
+    // returns true if there is a conflict, otherwise returns false
+    public static async checkForConflict(file: File, instance: string, module: string, globalState: Memento): Promise<ConflictReturn> {
+        
+        const localHash = HashService.getFileHash(instance, module, file.uri, globalState);
+        const currentHash = await HashService.computeFileHash(file.uri);
+        const remoteContent = await file.getRemoteFileContent();
+        if (!remoteContent) {
+            logger.warning('Cannot compare local file content with remote content');
+            return {action: ConflictAction.sendFile, remoteContent: null};
+        }
+        const remoteHash = new MD5().update(remoteContent.toString()).digest('hex');
+        if(localHash === currentHash && localHash !== remoteHash) {
+            const msg = 'No local changes detected, but remote is different, fetching remote version, ' + file.name;
+            logger.info(msg);
+            window.showInformationMessage(msg);
+            return {action: ConflictAction.fetchRemote, remoteContent: remoteContent};
+        } else if(localHash !== currentHash && localHash !== remoteHash) {
+            logger.info('Local changes have been made and remote content differs, opening conflict editor');
+            return {action: ConflictAction.conflict, remoteContent: remoteContent};
+        } else if(localHash === currentHash && currentHash === remoteHash) {
+            return {action: ConflictAction.nothing, remoteContent: null};
+        }
+        return {action: ConflictAction.sendFile, remoteContent: null};
     }
 
     private static async computeFileHash(uri: Uri): Promise<string> {
-        const content = (await File.getContent(uri)).toString();
-        const hash = new MD5().update(content).digest('hex');
+        const content = (await File.getContent(uri));
+        const hash = new MD5().update(content.toString()).digest('hex');
         return hash;
     }
 
@@ -46,4 +79,9 @@ export class HashService {
 interface FileHash {
     path: string,
     hash: string
+}
+
+interface ConflictReturn {
+    action: ConflictAction,
+    remoteContent: Uint8Array | null
 }

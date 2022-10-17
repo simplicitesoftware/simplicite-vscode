@@ -4,6 +4,7 @@ import { Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { HashService } from './HashService';
 import { logger } from './log';
+const buffer = require('buffer/').Buffer;
 
 export class File {
 	uri: Uri;
@@ -71,7 +72,18 @@ export class File {
 
 	static async getContent(fileUri: Uri): Promise<Uint8Array> {
 		const content = await workspace.fs.readFile(fileUri);
-		return content;
+		return buffer.from(content, 'base64');
+	}
+
+	public async getRemoteFileContent (): Promise<Uint8Array | undefined> {
+		const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
+		await obj.get(await this.getObjectId(obj), { inlineDocuments: [ true ] });
+		const doc = obj.getFieldDocument(this.scriptField);
+
+		if (!doc.content) {
+			return undefined;
+		}
+		return buffer.from(doc.content, 'base64');
 	}
 
 	public async sendFile(instance: string, module: string) {

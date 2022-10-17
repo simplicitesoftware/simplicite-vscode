@@ -50,5 +50,12 @@ export interface SessionIdSave {
 	apiModules: Array<UrlAndName>
 }
 
+export enum ConflictAction {
+	sendFile,
+	fetchRemote,
+	conflict,
+	nothing
+}
+
 
 
