@@ -205,10 +205,6 @@
 				}
 			},
 			{
-				"command": "simplicite-vscode-tools.compileWorkspace",
-				"title": "Simplicite: Compile workspace (Red Hat Java extension required)"
-			},
-			{
 				"command": "simplicite-vscode-tools.itemDoubleClickTrigger",
 				"title": "double click trigger command"
 			},
@@ -219,6 +215,10 @@
 			{
 				"command": "simplicite-vscode-tools.removeApiModule",
 				"title": "Simplicite: Remove API module"
+			},
+			{
+				"command": "simplicite-vscode-tools.compileWorkspace",
+				"title": "Simplicite: Compile workspace (Red Hat Java extension required)"
 			},
 			{
 				"command": "simplicite-vscode-tools.resetPromptCache",

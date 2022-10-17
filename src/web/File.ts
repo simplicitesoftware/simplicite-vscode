@@ -95,7 +95,6 @@ export class File {
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
 			const content = await File.getContent(this.uri);
-			const test = content.toString();
 			doc.setContentFromText(content);
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(item, { inlineDocuments: true });

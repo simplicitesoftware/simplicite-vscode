@@ -1,10 +1,17 @@
 'use strict';
 
-import { commands, Command, extensions, window, Disposable } from 'vscode';
+import { commands, Command, extensions, window, Disposable, QuickPickItemKind, QuickPickItem } from 'vscode';
 import { logger } from './log';
 
 // Quick pick shows a list of the extensions commands
 export class QuickPick {
+	static separatorCoordinates = [
+		{index: 0, label: 'Apply Changes'}, 
+		{index: 3, label: 'Authentication'},
+		{index: 7, label: 'Api Module'},
+		{index: 9, label: 'Others'}
+	];
+
 	excludedCommand: String[];
 	constructor(subscriptions: Disposable[]) {
 		this.excludedCommand = ['copy logical name', 'copy physical name', 'copy json name', 'double click trigger command', 
@@ -13,12 +20,22 @@ export class QuickPick {
 		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
 	}
 
-	commandListQuickPick(commandList: Array<Command>): { label: string, commandId: string }[] {
+	private getSeperatorFromIndex(index: number) {
+		return QuickPick.separatorCoordinates.find(val => val.index === index);
+	}
+
+	commandListQuickPick(commandList: Array<Command>): CustomItem[] {
 		const preparedList = [];
+		let i = 0;
 		for (const command of commandList) {
+			const separator = this.getSeperatorFromIndex(i);
+			if(separator) {
+				preparedList.push({ label: separator.label, kind: QuickPickItemKind.Separator});
+			}
 			if (!this.excludedCommand.includes(command.title)) {
 				preparedList.push({ label: command.title, commandId: command.command });
-			}
+				i++;
+			}		
 		}
 		return preparedList;
 	}
@@ -32,7 +49,7 @@ export class QuickPick {
 			const commandList = simpliciteExtension.packageJSON.contributes.commands;
 			const commandQuickPick = this.commandListQuickPick(commandList);
 			const target = await window.showQuickPick(commandQuickPick);
-			if (target) {
+			if (target && target.commandId) {
 				try {
 					await commands.executeCommand(target.commandId);
 				} catch (e) {
@@ -42,5 +59,16 @@ export class QuickPick {
 		} catch (e) {
 			logger.error(e);
 		}
+	}
+}
+
+class CustomItem implements QuickPickItem {
+	label: string;
+	commandId?: string;
+	kind?: QuickPickItemKind;
+	constructor(label: string, commandId?: string, kind?: QuickPickItemKind) {
+		this.label = label;
+		this.commandId = commandId;
+		this.kind = kind;
 	}
 }
