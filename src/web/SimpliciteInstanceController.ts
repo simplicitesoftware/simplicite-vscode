@@ -125,12 +125,14 @@ export class SimpliciteInstanceController {
 				const name = wk.name;
 				const re = new RegExp('^([A-Za-z0-9_-]+@[A-Za-z0-9-_\.]+)$');
 				const folderName = re.exec(name);
-				if(folderName) throw new Error(`Ignoring API Module ${folderName[0]} during module initialization`);
+				if(folderName) {
+					logger.info(`Local module initialization ignored ${folderName[0]} as it seems to be an api module`);
+				}  
 				const res: UrlAndName = await this.getModuleUrlAndNameFromWorkspace(wk);
 				if(!list.has(res.instanceUrl)) list.set(res.instanceUrl, [{name: res.name, wkPath: wk.uri.path}]);
 				else list.get(res.instanceUrl)?.push({name: res.name, wkPath: wk.uri.path});
 			} catch(e) {
-				logger.warn(e);
+				logger.error(e);
 			}
 		}
 		return list;

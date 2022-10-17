@@ -43,7 +43,7 @@ function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context
 	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, file);
 	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
-	logger.info('completion ready');
+	logger.info('Completion ready on ' + file.name);
 	return completionProvider;
 }
 
