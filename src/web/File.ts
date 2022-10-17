@@ -95,6 +95,7 @@ export class File {
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
 			const content = await File.getContent(this.uri);
+			const test = content.toString();
 			doc.setContentFromText(content);
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(item, { inlineDocuments: true });
@@ -105,13 +106,12 @@ export class File {
 				logger.error('Simplicite: Cannot synchronize ' + msg);
 				window.showErrorMessage(msg);
 			}
-			await HashService.updateFileHash(instance, module, this.uri, this._globalState);
-			logger.info(`${this.uri.path} has been successfully applied`);
-		} catch(e) {
-			logger.error(e);
-			return false;
+			logger.info(`${this.name} has been successfully applied`);
+		} catch(e: any) {
+			window.showErrorMessage(e.message);
+			logger.error(e.message);
 		}
-		return true;
+		await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 	}
 
 	async getObjectId(obj: any): Promise<string> {
