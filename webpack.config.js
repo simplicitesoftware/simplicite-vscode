@@ -48,7 +48,8 @@ const webExtensionConfig = {
 			fs: require.resolve('path-browserify'),
 			stream: require.resolve('stream-browserify'),
 			path: require.resolve('path-browserify'),
-			url: require.resolve('url')
+			url: require.resolve('url'),
+			buffer: require.resolve('buffer/'),
 		}
 	},
 	module: {
@@ -64,6 +65,9 @@ const webExtensionConfig = {
 		new webpack.ProvidePlugin({
 			process: 'process/browser', // provide a shim for the global `process` variable
 		}),
+		new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+        }),
 	],
 	externals: {
 		'vscode': 'commonjs vscode', // ignored because it doesn't exist
