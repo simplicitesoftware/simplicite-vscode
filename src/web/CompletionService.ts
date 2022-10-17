@@ -19,7 +19,6 @@ export async function completionProviderService(simpliciteInstanceController: Si
 
 const prodiverMaker = async function (simpliciteInstanceController: SimpliciteInstanceController, context: ExtensionContext): Promise<Disposable | undefined> {
     try {
-        const debugtest = window.activeTextEditor;
         if(!window.activeTextEditor) return undefined;
         const fileUri = window.activeTextEditor.document.uri;
         simpliciteInstanceController.simpliciteInstances.forEach(instance => {
