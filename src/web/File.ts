@@ -13,6 +13,7 @@ export class File {
 	scriptField: string | undefined;
 	fieldName: string | undefined;
 	extension: string;
+	rowId: string;
 	private _app: any;
 	private _globalState: Memento;
 	constructor(uri: Uri, app: any, globalState: Memento) {
@@ -21,6 +22,7 @@ export class File {
 		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 		this._app = app;
 		this._globalState = globalState;
+		this.rowId = '';
 	}
 
 	// todo , check for URI
@@ -38,20 +40,22 @@ export class File {
 
 	setInfoFromModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
 		if (!this.type && !this.scriptField && !this.fieldName) {
-			this.type = this.getBusinessObjectType(moduleDevInfo);
+			const {type, id} = this.getBusinessObjectInfo(moduleDevInfo);
+			this.type = type;
+			this.rowId = id;
 			this.scriptField = this.getProperScriptField(devInfo);
 			this.fieldName = this.getProperNameField(devInfo);
 		}
 	}
 
-	private getBusinessObjectType(moduleDevInfo: any): string {
+	private getBusinessObjectInfo(moduleDevInfo: any): {type: string, id: string} {
 		for (const type in moduleDevInfo) {
 			for(const devInfoObject of moduleDevInfo[type]) {
 				if (!devInfoObject.sourcepath) continue; // no sourcepath == no code file associated
-				if (this.uri.path.includes(devInfoObject.sourcepath)) return type;
+				if (this.uri.path.includes(devInfoObject.sourcepath)) return {type: type, id: devInfoObject.id};
 			}
 		}
-		return '';
+		return {type: '', id: ''};
 	}
 
 	private getProperScriptField(devInfo: DevInfo) {
@@ -77,7 +81,7 @@ export class File {
 
 	public async getRemoteFileContent (): Promise<Uint8Array | undefined> {
 		const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
-		await obj.get(await this.getObjectId(obj), { inlineDocuments: [ true ] });
+		await obj.get(this.rowId, { inlineDocuments: [ true ] });
 		const doc = obj.getFieldDocument(this.scriptField);
 
 		if (!doc.content) {
@@ -90,14 +94,14 @@ export class File {
 		try {
 			const obj = await this._app.getBusinessObject(this.type, 'ide_' + this.type);
 
-			const item = await obj.getForUpdate(await this.getObjectId(obj), { inlineDocuments: true });
+			const item = await obj.getForUpdate(this.rowId, { inlineDocuments: true });
 			const doc = obj.getFieldDocument(this.scriptField);
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
 			const content = await File.getContent(this.uri);
 			doc.setContentFromText(content);
 			obj.setFieldValue(this.scriptField, doc);
-			const res = await obj.update(item, { inlineDocuments: true });
+			const res = await obj.update(null, { inlineDocuments: true });
 			const lowerPath = this.uri.path.toLowerCase();
 			await this._globalState.update(lowerPath, undefined);
 			if (!res) {
@@ -111,12 +115,6 @@ export class File {
 			logger.error(e.message);
 		}
 		await HashService.updateFileHash(instance, module, this.uri, this._globalState);
-	}
-
-	async getObjectId(obj: any): Promise<string> {
-		const list = await obj.search({ [this.fieldName!]: this.name });
-		if(!list || list.length === 0) throw new Error(`Cannot retrieve row_id of object ${this.name}`);
-		return list[0].row_id;
 	}
 
 	public async saveFileAsTracked() {
