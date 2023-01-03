@@ -3,7 +3,6 @@
 import { Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { HashService } from './HashService';
-import { logger } from './log';
 const buffer = require('buffer/').Buffer;
 
 export class File {
@@ -106,13 +105,13 @@ export class File {
 			await this._globalState.update(lowerPath, undefined);
 			if (!res) {
 				const msg = this.uri.path;
-				logger.error('Simplicite: Cannot synchronize ' + msg);
+				console.error('Simplicite: Cannot synchronize ' + msg);
 				window.showErrorMessage(msg);
 			}
-			logger.info(`${this.name} has been successfully applied`);
+			console.log(`${this.name} has been successfully applied`);
 		} catch(e: any) {
 			window.showErrorMessage(e.message);
-			logger.error(e.message);
+			console.error(e.message);
 		}
 		await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 	}

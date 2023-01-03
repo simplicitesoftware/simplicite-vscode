@@ -1,7 +1,6 @@
 'use strict';
 
 import { commands, env, workspace, ExtensionContext, Memento, Uri } from 'vscode';
-import { logger } from './log';
 import { isHttpsUri, isHttpUri } from 'valid-url';
 import { Prompt, PromptValue } from './Prompt';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
@@ -15,7 +14,7 @@ import { FileTree } from './treeView/FileTree';
 
 // ------------------------------
 // Apply commands
-export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, moduleInfoTree: ModuleInfoTree, fileTree: FileTree | undefined) {
+export const commandInit = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, fileTree: FileTree | undefined, moduleInfoTree: ModuleInfoTree) {
 
 	const applyChanges = commands.registerCommand('simplicite-vscode-tools.applyChanges', async function () {
 		await simpliciteInstanceController.sendAllFiles();
@@ -27,7 +26,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
 			await prompt.addElement('url', instanceUrl);
 		} catch(e) {
-			logger.error(e);
+			console.error(e);
 		}
 	});
 	
@@ -45,7 +44,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			await prompt.addElement('url', instanceUrl);
 			await prompt.addElement('name', moduleName);
 		} catch(e) {
-			logger.error(e);
+			console.error(e);
 		}
 	});
 	
@@ -55,7 +54,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 		try {
 			await compileJava();
 		} catch (e) {
-			logger.error(e);
+			console.error(e);
 		}
 	});
 	
@@ -80,7 +79,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
       await simpliciteInstanceController.loginInstance(instanceUrl);
 			await prompt.addElement(PromptValue.url, instanceUrl);
     } catch(e) {
-      logger.error(e);
+      console.error(e);
     }
 	});
 
@@ -90,14 +89,14 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
       await simpliciteInstanceController.logoutInstance(instanceUrl);
 			await prompt.addElement(PromptValue.url, instanceUrl);
 		} catch(e) {
-      logger.error(e);
+      console.error(e);
     }
 	});
 	
-	// // ------------------------------
-	// // Refresh Tree views commands
+	// ------------------------------
+	// Refresh Tree views commands
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
-		moduleInfoTree.feedData(simpliciteInstanceController.devInfo, simpliciteInstanceController.getAllModules());
+		moduleInfoTree.refresh(simpliciteInstanceController.devInfo, simpliciteInstanceController.getAllModules());
 	});
 	
 	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
@@ -108,7 +107,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	// Tree view commands
 	const copyLogicalName = commands.registerCommand('simplicite-vscode-tools.copyLogicalName', (element) => {
 		if (!element.label) {
-			logger.error('cannot copy logical name: label is undefined');
+			console.error('cannot copy logical name: label is undefined');
 		} else {
 			env.clipboard.writeText(element.label);
 		}
@@ -116,7 +115,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	
 	const copyPhysicalName = commands.registerCommand('simplicite-vscode-tools.copyPhysicalName', (element) => {
 		if (!element.description) {
-			logger.error('cannot copy copy physical name: description is undefined');
+			console.error('cannot copy copy physical name: description is undefined');
 		} else {
 			env.clipboard.writeText(element.description);
 		}
@@ -124,7 +123,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 	
 	const copyJsonName = commands.registerCommand('simplicite-vscode-tools.copyJsonName', (element) => {
 		if (!element.additionalInfo) {
-			logger.error('cannot copy jsonName: additionalInfo is undefined');
+			console.error('cannot copy jsonName: additionalInfo is undefined');
 		} else {
 			env.clipboard.writeText(element.additionalInfo);
 		}
@@ -135,7 +134,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			try {
 				moduleInfoTree.insertFieldInDocument(logicName);
 			} catch (e) {
-				logger.error(e);
+				console.error(e);
 			}
 		}
 	});
@@ -165,7 +164,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 				await prompt.addElement(PromptValue.name, moduleName);
 			}
 		} catch(e) {
-			logger.error(e);
+			console.error(e);
 		}
 	});
 	
@@ -180,7 +179,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 				await prompt.addElement(PromptValue.name, moduleName);
 			}
 		} catch(e: any) {
-			logger.error(e);
+			console.error(e);
 		}
 	});
 	
@@ -198,11 +197,11 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 			}
 			try {
 				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true});
-			} catch(e) {
-				logger.error(e);
+			} catch(e: any) {
+				console.error(e.message);
 			}
 		} catch(e: any) {
-			logger.error(e);	
+			console.error(e.message);	
 		}
 	});
 
@@ -222,7 +221,7 @@ export const commandInit = function (context: ExtensionContext, simpliciteInstan
 
 	// public command can be used by other dev if needed
 	const publicCommand = [login, logout, logIntoInstance, logoutFromInstance, applyChanges, applySpecificInstance, applySpecificModule, 
-		initApiModule, removeApiModule, resetPromptCache, refreshModuleTree, compileWorkspace, setTrackedFile, unsetTrackedFile, refreshFileHandler];
+		initApiModule, removeApiModule, resetPromptCache, compileWorkspace, setTrackedFile, unsetTrackedFile, refreshFileHandler, refreshModuleTree];
 	// private commands are needed for the tree views, it's not relevant to expose them
 	const privateCommand = [copyLogicalName, copyPhysicalName, copyJsonName, resetExtensionData, debug, itemDoubleClickTrigger];
 	context.subscriptions.concat(publicCommand, privateCommand);

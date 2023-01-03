@@ -3,7 +3,6 @@
 
 import { Module } from './Module';
 import { workspace, Uri, Memento, env } from 'vscode';
-import { logger } from './log';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
 import { ApiModuleSave } from './interfaces';
@@ -58,7 +57,7 @@ export class ApiModule extends Module {
 					const uri = Uri.file(STORAGE_PATH + this.apiModuleName + '/' + moduleObj.sourcepath);
 					workspace.fs.writeFile(uri, Buffer.from(res[0][devInfo.getSourceField(type)].content, 'base64'));
 				} catch(e) {
-					logger.error(e);
+					console.error(e);
 				}
 			}
 		}
@@ -69,7 +68,7 @@ export class ApiModule extends Module {
 			const content = resObj[devInfo.getSourceField(type)].content;
 			return content;
 		} catch (e) {
-			logger.error(e);
+			console.error(e);
 			return undefined;
 		}
 	}
@@ -86,7 +85,7 @@ export class ApiModule extends Module {
 			saved.push(ams);
 			logActionMsg = 'Added';
 		} 
-		logger.info(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);
+		console.log(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);
 		await this._globalState.update(API_MODULES, saved);
 	}
 
@@ -96,8 +95,8 @@ export class ApiModule extends Module {
 		try {
 			workspace.fs.delete(uri, { recursive: true });
 		} catch(e) {
-			logger.error(e);
+			console.error(e);
 		}
-		logger.info('removed api module from workspace');
+		console.log('removed api module from workspace');
 	}
 }

@@ -3,9 +3,7 @@
 import { Memento, Uri, window } from 'vscode';
 import { File } from './File';
 import { ConflictAction } from './interfaces';
-import { logger } from './log';
 const MD5 = require('md5.js');
-const Buffer = require('buffer/').Buffer;
 
 export class HashService {
     
@@ -22,7 +20,7 @@ export class HashService {
         const filesHash: FileHash[] = globalState.get(stateId, []);
         const fileIndex = filesHash.findIndex((fileHash) => fileHash.path === uri.path);
         if(fileIndex === -1) {
-            logger.error('File does not exist, cannot update hash');
+            console.error('File does not exist, cannot update hash');
             return null;
         }
         filesHash[fileIndex].hash = await this.computeFileHash(uri);
@@ -34,7 +32,7 @@ export class HashService {
         const filesHash: FileHash[] = globalState.get(stateId, []);
         const fileIndex = filesHash.findIndex((fileHash) => fileHash.path === uri.path);
         if(fileIndex === -1) {
-            logger.error('File does not exist, cannot update hash');
+            console.error('File does not exist, cannot update hash');
             return null;
         }
         return filesHash[fileIndex].hash;
@@ -47,17 +45,17 @@ export class HashService {
         const currentHash = await HashService.computeFileHash(file.uri);
         const remoteContent = await file.getRemoteFileContent();
         if (!remoteContent) {
-            logger.warning('Cannot compare local file content with remote content');
+            console.warn('Cannot compare local file content with remote content');
             return {action: ConflictAction.sendFile, remoteContent: null};
         }
         const remoteHash = new MD5().update(remoteContent.toString()).digest('hex');
         if(localHash === currentHash && localHash !== remoteHash) {
             const msg = 'No local changes detected, but remote is different, fetching remote version, ' + file.name;
-            logger.info(msg);
+            console.log(msg);
             window.showInformationMessage(msg);
             return {action: ConflictAction.fetchRemote, remoteContent: remoteContent};
         } else if(localHash !== currentHash && localHash !== remoteHash) {
-            logger.info('Local changes have been made and remote content differs, opening conflict editor');
+            console.log('Local changes have been made and remote content differs, opening conflict editor');
             return {action: ConflictAction.conflict, remoteContent: remoteContent};
         } else if(localHash === currentHash && currentHash === remoteHash) {
             return {action: ConflictAction.nothing, remoteContent: null};

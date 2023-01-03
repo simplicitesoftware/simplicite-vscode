@@ -1,7 +1,6 @@
 'use strict';
 
 import { CompletionItem, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, CancellationToken, CompletionContext, CompletionItemKind, window, Disposable, languages, ExtensionContext } from 'vscode';
-import { logger } from './log';
 import { Completion, DevInfo, DevInfoObject } from './DevInfo';
 import { removeFileExtension } from './utils';
 import { File } from './File';
@@ -34,7 +33,7 @@ const prodiverMaker = async function (simpliciteInstanceController: SimpliciteIn
             });
         });
     } catch(e) {
-        logger.error(e);
+        console.error(e);
         return undefined;
     }
 };
@@ -43,7 +42,7 @@ function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context
 	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, file);
 	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
-	logger.info('Completion ready on ' + file.name);
+	console.log('Completion ready on ' + file.name);
 	return completionProvider;
 }
 
@@ -105,7 +104,7 @@ class CompletionProvider implements CompletionItemProvider {
 					}
 				}
 			} catch (e) {
-				logger.error(`provideCompletionItems: ${e}`);
+				console.error(`provideCompletionItems: ${e}`);
 			}
 		}
 		return [];

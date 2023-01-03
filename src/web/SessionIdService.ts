@@ -16,9 +16,9 @@
 //     if(this.isDesktop()) {
 //       try {
 //         const content = await this.readJson();
-//         logger.info(SESSION_ID_JSON.path + ' exists and contains ' + content.length + ' session id(s)');
+//         console.log(SESSION_ID_JSON.path + ' exists and contains ' + content.length + ' session id(s)');
 //       } catch(e) {
-//         logger.error('Could not read file ' + SESSION_ID_JSON.path);
+//         console.error('Could not read file ' + SESSION_ID_JSON.path);
 //         await workspace.fs.writeFile(SESSION_ID_JSON, enc.encode(JSON.stringify([])));
 //       }
 //     }
@@ -39,7 +39,7 @@
 //       }
 //       await this.writeJson(content);
 //     } catch(e: any) {
-//       logger.error('Error while saving sessionId in json ' + e.message);
+//       console.error('Error while saving sessionId in json ' + e.message);
 //     }
 //   }
 

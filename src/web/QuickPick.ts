@@ -1,7 +1,6 @@
 'use strict';
 
 import { commands, Command, extensions, window, Disposable, QuickPickItemKind, QuickPickItem } from 'vscode';
-import { logger } from './log';
 
 // Quick pick shows a list of the extensions commands
 export class QuickPick {
@@ -53,11 +52,11 @@ export class QuickPick {
 				try {
 					await commands.executeCommand(target.commandId);
 				} catch (e) {
-					logger.error(e + 'Error occured while executing command');
+					console.error(e + 'Error occured while executing command');
 				}
 			}
 		} catch (e) {
-			logger.error(e);
+			console.error(e);
 		}
 	}
 }
