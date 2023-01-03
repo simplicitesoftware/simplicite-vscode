@@ -7,7 +7,7 @@ import { QuickPick } from './QuickPick';
 import { FileTree } from './treeView/FileTree';
 import { fileService } from './FileService';
 import { initGlobalValues } from './constants';
-import { commandInit } from './commands';
+import { initCommands } from './commands';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
@@ -34,7 +34,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	}
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
-	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
+	const publicCommand = initCommands(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
 
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 

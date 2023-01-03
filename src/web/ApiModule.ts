@@ -2,7 +2,7 @@
 'use strict';
 
 import { Module } from './Module';
-import { workspace, Uri, Memento, env } from 'vscode';
+import { workspace, Uri, Memento } from 'vscode';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
 import { ApiModuleSave } from './interfaces';
