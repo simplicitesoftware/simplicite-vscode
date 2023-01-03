@@ -10,14 +10,16 @@
 			"type": "extensionHost",
 			"debugWebWorkerHost": true,
 			"request": "launch",
+			"trace": true,
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionDevelopmentKind=web"
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/web/**/*.js"
+				"${workspaceFolder}/dist/web/**/*.js",
+				"${workspaceFolder}/node_modules/**"
 			],
-			"preLaunchTask": "npm: watch-web"
+			"preLaunchTask": "npm: watch"
 		},
 		{
 			"name": "Extension Tests",
