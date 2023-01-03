@@ -1,8 +1,7 @@
 'use strict';
 
-import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window } from 'vscode';
+import { workspace, Uri, WorkspaceFolder, WorkspaceFoldersChangeEvent, window, RelativePattern, commands } from 'vscode';
 import { ApiModule } from './ApiModule';
-import { logger } from './log';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { recreateLocalUrl } from './utils';
 
@@ -14,7 +13,7 @@ export class WorkspaceController {
 				if (wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl)) workspace.updateWorkspaceFolders(i, 1);
 			});
 		} catch (e: any) {
-			logger.error(e);
+			console.error(e);
 			window.showErrorMessage(e);
 		}
 	}
@@ -28,11 +27,23 @@ export class WorkspaceController {
 		return false;
 	}
 
-	public static getApiModuleWorkspacePath(moduleName: string, instanceUrl: string): string {
-		if (!workspace.workspaceFolders) return 'Untitled (Workspace)';
-		const wk = workspace.workspaceFolders.find((wk: WorkspaceFolder) => wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl));
-		if(!wk) return 'Untitled (Workspace)';
-		return wk.uri.path;
+	public static async getApiModuleWorkspacePath(moduleName: string, instanceUrl: string): Promise<Uri> {
+		if (workspace.workspaceFolders) {
+			const wk = workspace.workspaceFolders.find((wk: WorkspaceFolder) => wk.name === ApiModule.getApiModuleName(moduleName, instanceUrl));
+			if(!wk) {
+				for(const wk of workspace.workspaceFolders) {
+					const relativePattern = new RelativePattern(wk, '**/pom.xml');
+					const files = await workspace.findFiles(relativePattern);
+					for(const file of files) {
+						// get api module name and compare with moduleName
+						console.log(file);
+					}
+				}
+			} else {
+				return wk.uri;
+			}
+		}
+		throw new Error('Unable to find the project folder of module ' + moduleName);
 	}
 	
 	public static addWorkspaceFolder(apiModuleName: string): void {
@@ -45,7 +56,7 @@ export class WorkspaceController {
 			try {
 				workspace.updateWorkspaceFolders(workspaceFolderCount, 0, { uri: Uri.parse(STORAGE_PATH + apiModuleName), name: apiModuleName });
 			} catch(e) {
-				logger.error('Simplicité: ' + e);
+				console.error('Simplicité: ' + e);
 			}
 		}
 	}
@@ -63,6 +74,7 @@ export class WorkspaceController {
 				await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
 				await simpliciteInstanceController.loginAll();
 			}
+			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 		});
 	}
 

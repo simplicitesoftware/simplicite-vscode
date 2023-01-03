@@ -5,7 +5,6 @@ import { DevInfo } from './DevInfo';
 import { File } from './File';
 import { HashService } from './HashService';
 import { ConflictAction } from './interfaces';
-import { logger } from './log';
 
 export class Module {
 	moduleDevInfo: any;
@@ -14,6 +13,7 @@ export class Module {
 	instanceUrl: string;
 	globalState: Memento;
 	conflictStatus: boolean;
+	subModules: Map<string, Module>;
 	constructor(name: string, instanceUrl: string, globalState: Memento) {
 		this.moduleDevInfo = undefined;
 		this.files = new Map();
@@ -21,6 +21,13 @@ export class Module {
 		this.instanceUrl = instanceUrl;
 		this.globalState = globalState;
 		this.conflictStatus = false;
+		this.subModules = new Map();
+	}
+
+	static async build(name: string, instanceUrl: string, globalState: Memento, app: any, wkUri: Uri): Promise<Module> {
+		const module = new Module(name, instanceUrl, globalState);
+		await module.initFiles(app, globalState, wkUri);
+		return module;
 	}
 
 	private isStringInTemplate(uri: Uri, stringList: string[]) {
@@ -30,26 +37,29 @@ export class Module {
 		return false;
 	}
 
-	public setModuleDevInfo(moduleDevInfo: any, devInfo: DevInfo) {
-		this.moduleDevInfo = moduleDevInfo;
+	public async setModuleDevInfo(devInfo: DevInfo, app: any) {
+		this.moduleDevInfo = await this.getModuleDevInfo(app);
+		// get subModules module dev info
+		for(const sMod of this.subModules.values()) {
+			await sMod.setModuleDevInfo(devInfo, app);
+		}
 		this.files.forEach((f: File) => {
-			f.setInfoFromModuleDevInfo(moduleDevInfo, devInfo);
+			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
 		});
 	}
 
+	private async getModuleDevInfo(app: any) {
+		try {
+			const moduleDevInfo = await app.getDevInfo(this.name);
+			return moduleDevInfo;
+		} catch(e: any) {
+			throw new Error(e);
+		}
+	}
+
 	// FILES
-	async initFiles(app: any, globalState: Memento, workspaceFolderPath: string) {
-		const getWk = (): WorkspaceFolder | undefined => {
-			if (!workspace.workspaceFolders) return undefined;
-			let returnWk = undefined;
-			workspace.workspaceFolders.forEach(wk => {
-				if (wk.uri.path === workspaceFolderPath) returnWk = wk;
-			});
-			return returnWk;
-		};
-		const wk = getWk();
-		if (!wk) throw new Error('Cannot init files because module folder is not in workspace');
-		const relativePattern = new RelativePattern(wk, '**/*');
+	async initFiles(app: any, globalState: Memento, wkUri: Uri) {
+		const relativePattern = new RelativePattern(wkUri, '**/*');
 		let files = await workspace.findFiles(relativePattern);
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
@@ -57,6 +67,7 @@ export class Module {
 			const lowerCasePath = uri.path.toLowerCase();
 			this.files.set(lowerCasePath, new File(uri, app, globalState));
 		});
+		if(this.files.size === 0) console.warn(`No file(s) found in module ${this.name}`);
 		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
 	}
 
@@ -93,9 +104,9 @@ export class Module {
 					await workspace.fs.writeFile(file.uri, res.remoteContent);
 					await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
 				} else if(res.action === ConflictAction.nothing) {
-					logger.info('No changes detected on ' + file.name);
+					console.log('No changes detected on ' + file.name);
 				} else {
-					logger.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
+					console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
 				}
 			});
 		});

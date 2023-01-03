@@ -4,6 +4,7 @@ import { TreeItemCollapsibleState, EventEmitter, TreeItem, Event, TreeDataProvid
 import { Module } from '../Module';
 import * as path from 'path';
 import { DevInfo, DevInfoObject,  } from '../DevInfo';
+import { ApiModule } from '../ApiModule';
 
 export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // see comment on FileTree.ts for these 2 attributes
@@ -19,14 +20,10 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		this._runPath = runPath;
 	}
 
-	private refresh() {
-		this._onDidChangeTreeData.fire();
-	}
-
-	feedData(devInfo: any, modules: Module[]) {
+	public refresh(devInfo: any, modules: Module[]) {
 		this._devInfo = devInfo;
 		this.setModules(modules);
-		this.refresh();
+		this._onDidChangeTreeData.fire();
 	}
 
 	private setModules(modules: Array<Module>): void {
@@ -72,6 +69,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		if (element === undefined) {
 			return Promise.resolve(this.getModulesItems());
 		} else if (element.objectType === ItemType.module) {
+			if(element.itemInfo.subModules.size !== 0) return Promise.resolve(this.getSubModules(element.itemInfo.subModules));
 			return Promise.resolve(this.getObjectTypesItems(element.itemInfo));
 		} else if (element.objectType === ItemType.objectType) {
 			if (typeof element.label !== 'string') {
@@ -100,6 +98,14 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 			modulesItems.push(new CustomTreeItem(module.name, TreeItemCollapsibleState.Collapsed, module.instanceUrl, ItemType.module, module, 'module', undefined, this._runPath));
 		}
 		return modulesItems;
+	}
+
+	private getSubModules(subModules: Map<String, Module | ApiModule>): CustomTreeItem[] {
+		const moduleItems = [];
+		for(const mod of subModules.values()) {
+			moduleItems.push(new CustomTreeItem(mod.name, TreeItemCollapsibleState.Collapsed, mod.instanceUrl, ItemType.module, mod, 'module', undefined, this._runPath));
+		}
+		return moduleItems;
 	}
 
 	private getObjectTypesItems(module: Module): TreeItem[] {

@@ -1,7 +1,6 @@
 'use strict';
 
 import { ExtensionContext, env, debug, languages, Disposable, window, workspace } from 'vscode';
-import { logger } from './log';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -15,15 +14,13 @@ import { WorkspaceController } from './WorkspaceController';
 import { completionProviderService } from './CompletionService';
 
 export async function activate(context: ExtensionContext): Promise<any> {
-	logger.info('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
+	console.log('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
 	initGlobalValues(context.globalStorageUri.path);
-	//addFileTransportOnDesktop(STORAGE_PATH); // write a log file only on desktop context, on other contexts logs are written in the console
 	
 	const globalState = context.globalState;
 	if(debug.activeDebugSession) {
 		console.log('Api modules stored in memento', globalState.get(API_MODULES, []));
 	}
-
 	const prompt = new Prompt(globalState);
 
 	const barItem = new BarItem();
@@ -37,19 +34,23 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	}
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
-	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, moduleInfoTree, fileTree);
-	await simpliciteInstanceController.initAll();
-
-	new QuickPick(context.subscriptions);
-
-	fileService(simpliciteInstanceController);
-		
-	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
+	const publicCommand = commandInit(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
 
 	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
-	await completionProviderService(simpliciteInstanceController, context);	
+	try {
+		await simpliciteInstanceController.initAll();
+	} catch(e) {
+		console.error(e);
+	}
+	new QuickPick(context.subscriptions);
 
+	fileService(simpliciteInstanceController);
+	
+	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
+
+	await completionProviderService(simpliciteInstanceController, context);	
+	
 	return publicCommand;
 }
 
@@ -68,9 +69,9 @@ export function deactivate() {
 	// });
 	// try {
 	// 	await globalState.update(API_MODULES, savedMod);
-	// 	logger.info('Successfully updated globalState on deactivate');
+	// 	console.log('Successfully updated globalState on deactivate');
 	// } catch(e) {
-	// 	logger.error('Unable to update globalState on deactivate');
+	// 	console.error('Unable to update globalState on deactivate');
 	// }
 }
 

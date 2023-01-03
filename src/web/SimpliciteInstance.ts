@@ -2,10 +2,9 @@
 
 import { Module } from './Module';
 import { ApiModule } from './ApiModule';
-import { InstanceModules, ModulesFiles, NameAndWorkspacePath } from './interfaces';
+import { ModuleInfo } from './interfaces';
 import simplicite from 'simplicite';
 import { commands, Memento, window } from 'vscode';
-import { logger } from './log';
 import { DevInfo } from './DevInfo';
 import { File } from './File';
 
@@ -22,21 +21,29 @@ export class SimpliciteInstance {
 		this.isBackendCompiling = false;
 	}
 
-	static async build(modulesName: NameAndWorkspacePath[], url: string, globalState: Memento): Promise<SimpliciteInstance> {
+	static async build(moduleInfos: ModuleInfo[], url: string, globalState: Memento): Promise<SimpliciteInstance> {
 		const simpliciteInstance = new SimpliciteInstance(url, globalState);
 		simpliciteInstance.setAuthtoken();
-		await simpliciteInstance.initModules(modulesName);
+		await simpliciteInstance.initModules(moduleInfos);
 		return simpliciteInstance;
 	}
 
-	async initModules(modulesName: NameAndWorkspacePath[]): Promise<void> {
-		const modules: Map<string, Module> = new Map();
-		for (const value of modulesName) {
-			if(!modules.has(value.name)) {
-				const module = new Module(value.name, this.app.parameters.url, this._globalState);
-				modules.set(value.name, module);
-				await module.initFiles(this.app, this._globalState, value.wkPath);
+	async initModules(moduleInfos: ModuleInfo[]): Promise<void> {
+		if(moduleInfos.length === 0) return;
+
+		const subModulesCreator = async(module: Module, minfo: ModuleInfo) => {
+			for(const mod of minfo.modules) {
+				const subMod = await Module.build(mod.name, this.app.parameters.url, this._globalState, this.app, mod.wkUri);
+				module.subModules.set(mod.name, subMod);
+				await subModulesCreator(subMod, mod);
 			}
+		};
+
+		const modules: Map<string, Module> = new Map();
+		for(const minfo of moduleInfos) {
+			const module = await Module.build(minfo.name, this.app.parameters.url, this._globalState, this.app, minfo.wkUri);
+			await subModulesCreator(module, minfo);
+			modules.set(minfo.name, module);
 		}
 		this.modules = modules;
 	}
@@ -54,7 +61,7 @@ export class SimpliciteInstance {
 			this.app.setPassword('');
 			const msg  = 'Logged in as ' + res.login + ' at: ' + this.app.parameters.url;
 			window.showInformationMessage('Simplicite: ' + msg);
-			logger.info(msg);
+			console.log(msg);
 		} catch (e: any) {
 			this.app.setAuthToken('');
 			window.showErrorMessage('Simplicite: ' + e.message ? e.message : e);
@@ -68,9 +75,9 @@ export class SimpliciteInstance {
 			const msg = 'Simplicite: Logged out from ' + this.app.parameters.url;
 			await this.removeTokenPersistence();
 			window.showInformationMessage(msg);
-			logger.info(msg);
+			console.log(msg);
 		} catch (e: any) {
-			logger.error(e);
+			console.error(e);
 			window.showErrorMessage('Simplicite: ' + e.message);
 		}
 	}
@@ -114,34 +121,13 @@ export class SimpliciteInstance {
 			const devInfo = await this.app.getDevInfo();
 			return new DevInfo(devInfo);
 		} catch(e) {
-			logger.error(e);
-		}
-	}
-
-	private async getModuleDevInfo(moduleName: string) {
-		try {
-			const moduleDevInfo = await this.app.getDevInfo(moduleName);
-			return moduleDevInfo;
-		} catch(e: any) {
-			throw new Error(e);
+			console.error(e);
 		}
 	}
 
 	public async setModulesDevInfo(devInfo: DevInfo) {
-		this.modules.forEach(async (m: Module | ApiModule, name: string) => {
-			await this.setSingleModuleDevInfo(devInfo, m instanceof ApiModule ? m.name : name, m);
-		});
-	}
-
-	public async setSingleModuleDevInfo(devInfo: DevInfo, moduleName: string, module: Module | ApiModule) {
-		try {
-			const moduleDevInfo = await this.getModuleDevInfo(moduleName);
-			module.setModuleDevInfo(moduleDevInfo, devInfo);
-			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
-		} catch(e) {
-			logger.error(e);
-		}
-		
+		this.modules.forEach(async (m: Module | ApiModule) => await m.setModuleDevInfo(devInfo, this.app));
+		await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 	}
 
 	// BACKEND COMPILATION
@@ -155,11 +141,11 @@ export class SimpliciteInstance {
 				_this.isBackendCompiling = false;
 			});
 			if(res !== 'OK#INFO') throw new Error(res);
-			logger.info('Backend compilation completed');
+			console.log('Backend compilation completed');
 		} catch(e: any) {
 			this.isBackendCompiling = false;
 			window.showErrorMessage('Simplicite: ' + e.message ? e.message : e);
-			logger.error(e);
+			console.error(e);
 		}
 	}
 	

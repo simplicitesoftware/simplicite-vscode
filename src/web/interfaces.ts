@@ -14,9 +14,10 @@ export interface UrlAndName {
 	name: string;
 }
 
-export interface NameAndWorkspacePath {
+export interface ModuleInfo {
 	name: string;
-	wkPath: string;
+	wkUri: Uri;
+	modules: ModuleInfo[];
 }
 
 export interface Credentials {
