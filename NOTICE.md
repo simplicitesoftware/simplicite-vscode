@@ -75,3 +75,5 @@ Tester l'extension sur mac, versions web, Theia.
 A ce jour, les extensions java (redhat et microsoft) ne sont pas compatibles avec VS Code web.
 
 Comparatif de la compatibilité de l'api VS Code avec Api Theia: https://eclipse-theia.github.io/vscode-theia-comparator/status.html
+
+<!-- TODO => Local docker failed to fetch error how to fix-->
