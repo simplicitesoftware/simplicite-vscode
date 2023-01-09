@@ -16,12 +16,13 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 		this.runPath = runPath;
-		this.instances;
+		this.instances = undefined;
 	}
 
 	public refresh(instances: SimpliciteInstance[]): void {
 		this.instances = instances;
 		this._onDidChangeTreeData.fire();
+		console.log("Refreshed file tree");
 	}
 
 	// sets the viewItem value, use in package.json to handle the commands linked to a specific item type
@@ -71,9 +72,11 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	private getFilesItem(label: string | TreeItemLabel): FileItem[] | TreeItem[] {
 		const fileItems: FileItem[] = [];
 		let untrackedFlag = false;
+		
 		for (const instance of this.instances || []) {
 			for (const mod of instance.modules.values()) {
 				if (mod.name === label) {
+					if(mod.files.size === 0) return [new TreeItem('Module has no file', TreeItemCollapsibleState.None)];
 					for (const file of mod.files.values()) {
 						if (file.getTrackedStatus()) {
 							const legibleFileName = this.legibleFileName(file.uri.path);
@@ -92,7 +95,6 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			const orderedItems = this.orderAlphab(fileItems);
 			const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.file(''), false, label);
 			orderedItems.push(treeItem);
-			untrackedFlag = false;
 			return orderedItems;
 		}
 		return this.orderAlphab(fileItems);

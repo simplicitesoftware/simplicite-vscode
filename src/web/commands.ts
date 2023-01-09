@@ -8,7 +8,6 @@ import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { compileJava } from './utils';
 import { FileItem, ModuleItem } from './treeView/treeViewClasses';
 import { FileTree } from './treeView/FileTree';
-import { SimpliciteInstance } from './SimpliciteInstance';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json

@@ -69,6 +69,7 @@ export class Module {
 		});
 		if(this.files.size === 0) console.warn(`No file(s) found in module ${this.name}`);
 		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
+		console.log(`Initialized ${this.files.size} files for module ${this.name}`);
 	}
 
 	public getFileFromPath(uri: Uri): File | undefined {

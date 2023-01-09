@@ -127,7 +127,6 @@ export class SimpliciteInstance {
 
 	public async setModulesDevInfo(devInfo: DevInfo) {
 		this.modules.forEach(async (m: Module | ApiModule) => await m.setModuleDevInfo(devInfo, this.app));
-		await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 	}
 
 	// BACKEND COMPILATION

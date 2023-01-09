@@ -120,7 +120,7 @@
 		"viewsWelcome": [
 			{
 				"view": "simpliciteFile",
-				"contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your disk."
+				"contents": "No files available.\n[Add a Simplicite module to your workspace](command:vscode.openFolder)\nNote that this tree view is only available for modules that have been imported from your filesystem."
 			},
 			{
 				"view": "simpliciteModuleInfo",

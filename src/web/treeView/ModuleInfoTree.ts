@@ -24,6 +24,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 		this._devInfo = devInfo;
 		this.setModules(modules);
 		this._onDidChangeTreeData.fire();
+		console.log("Refreshed module info tree");
 	}
 
 	private setModules(modules: Array<Module>): void {
