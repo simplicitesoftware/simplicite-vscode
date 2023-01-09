@@ -1,6 +1,6 @@
 'use strict';
 
-import { ExtensionContext, env, debug, languages, Disposable, window, workspace } from 'vscode';
+import { ExtensionContext, env, debug, Disposable, window, workspace } from 'vscode';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -27,11 +27,22 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	barItem.show([]);
 
 	const moduleInfoTree = new ModuleInfoTree(context.extensionUri.path);
-	let fileTree;
-	if (!workspace.getConfiguration('simplicite-vscode-tools').get('api.sendFileOnSave')) {
-		fileTree = new FileTree(context.extensionUri.path);
-		window.registerTreeDataProvider('simpliciteFile', fileTree);
-	}
+	const fileTree = new FileTree(context.extensionUri.path);
+	
+	// register file tree
+	let fileTreeDisposable: Disposable | undefined = undefined;
+	// listen for settings change
+	workspace.onDidChangeConfiguration(event => {
+        let sendFileOnSave = event.affectsConfiguration("simplicite-vscode-tools.api.sendFileOnSave");
+		console.log("Configuration changed, simplicite-vscode-tools.api.sendFileOnSave: " + sendFileOnSave);
+		if(!sendFileOnSave) {
+			fileTreeDisposable = window.registerTreeDataProvider('simpliciteFile', fileTree);
+		} else {
+			if(fileTreeDisposable) {
+				fileTreeDisposable.dispose();
+			}
+		}
+    });
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
 	const publicCommand = initCommands(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
@@ -43,6 +54,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	} catch(e) {
 		console.error(e);
 	}
+
 	new QuickPick(context.subscriptions);
 
 	fileService(simpliciteInstanceController);
