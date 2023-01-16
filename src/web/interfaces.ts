@@ -1,7 +1,7 @@
 'use strict';
 
 import { Uri } from 'vscode';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { Module } from './Module';
 
 export interface CustomMessage {
@@ -36,7 +36,7 @@ export interface InstanceModules {
 }
 
 export interface FileInstance {
-	file: File;
+	file: CustomFile;
 	url: string;
 }
 

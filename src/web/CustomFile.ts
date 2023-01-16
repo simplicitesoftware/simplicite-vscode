@@ -5,7 +5,7 @@ import { DevInfo } from './DevInfo';
 import { HashService } from './HashService';
 const buffer = require('buffer/').Buffer;
 
-export class File {
+export class CustomFile {
 	uri: Uri;
 	name: string;
 	type: string | undefined;
@@ -17,8 +17,8 @@ export class File {
 	private _globalState: Memento;
 	constructor(uri: Uri, app: any, globalState: Memento) {
 		this.uri = uri;
-		this.name = File.computeFileNameFromPath(uri.path);
-		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
+		this.name = CustomFile.computeFileNameFromPath(uri.path);
+		this.extension = CustomFile.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 		this._app = app;
 		this._globalState = globalState;
 		this.rowId = '';
@@ -97,7 +97,7 @@ export class File {
 			const doc = obj.getFieldDocument(this.scriptField);
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
-			const content = await File.getContent(this.uri);
+			const content = await CustomFile.getContent(this.uri);
 			doc.setContentFromText(content);
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(null, { inlineDocuments: true });

@@ -2,13 +2,13 @@
 
 import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
 import { DevInfo } from './DevInfo';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { HashService } from './HashService';
 import { ConflictAction } from './interfaces';
 
 export class Module {
 	moduleDevInfo: any;
-	files: Map<string, File>;
+	files: Map<string, CustomFile>;
 	name: string;
 	instanceUrl: string;
 	globalState: Memento;
@@ -43,7 +43,7 @@ export class Module {
 		for(const sMod of this.subModules.values()) {
 			await sMod.setModuleDevInfo(devInfo, app);
 		}
-		this.files.forEach((f: File) => {
+		this.files.forEach((f: CustomFile) => {
 			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
 		});
 	}
@@ -65,29 +65,29 @@ export class Module {
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase();
-			this.files.set(lowerCasePath, new File(uri, app, globalState));
+			this.files.set(lowerCasePath, new CustomFile(uri, app, globalState));
 		});
 		if(this.files.size === 0) console.warn(`No file(s) found in module ${this.name}`);
 		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
 		console.log(`Initialized ${this.files.size} files for module ${this.name}`);
 	}
 
-	public getFileFromPath(uri: Uri): File | undefined {
+	public getFileFromPath(uri: Uri): CustomFile | undefined {
 		const lowerCasePath = uri.path.toLowerCase();
 		return this.files.get(lowerCasePath);
 	}
 
 	public getFilesPathAsArray(): string[] {
 		const files: string[] = [];
-		this.files.forEach((file: File) => {
+		this.files.forEach((file: CustomFile) => {
 			files.push(file.uri.path);
 		});
 		return files;
 	}
 
-	public getTrackedFiles(): File[] {
-		const fileList: File[] = [];
-		this.files.forEach((file: File) => {
+	public getTrackedFiles(): CustomFile[] {
+		const fileList: CustomFile[] = [];
+		this.files.forEach((file: CustomFile) => {
 			if(file.getTrackedStatus()) fileList.push(file);
 		});
 		return fileList;
@@ -113,7 +113,7 @@ export class Module {
 		});
 	}
 
-	private async notifyAndSetConflict(file: File, remoteContent: Uint8Array) {
+	private async notifyAndSetConflict(file: CustomFile, remoteContent: Uint8Array) {
 		const tempFile = Uri.file(STORAGE_PATH + 'remoteFile.java');
 		await workspace.fs.writeFile(tempFile, remoteContent);
 		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), tempFile);

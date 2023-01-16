@@ -1,14 +1,14 @@
 'use strict';
 
 import { workspace, TextDocument, Uri, TextDocumentChangeEvent } from 'vscode';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { FileInstance } from './interfaces';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
 // listens to saved files.
 // compatible with the vscode feature save all
 export async function fileService(simpliciteInstanceController: SimpliciteInstanceController) {
-	let modifiedFiles: Map<string, Map<string, File>> = new Map();; // key = url, modified simplicité files associated with their instances
+	let modifiedFiles: Map<string, Map<string, CustomFile>> = new Map();; // key = url, modified simplicité files associated with their instances
 	let savedCpt: number = 0; // not used when send on save option is disabled
 
 	// get a trace of simplicité modified files
@@ -43,7 +43,7 @@ export async function fileService(simpliciteInstanceController: SimpliciteInstan
 		}
 	}
 
-	function getModifiedFile(uri: Uri): File | undefined {
+	function getModifiedFile(uri: Uri): CustomFile | undefined {
 		// loop on instances
 		const value = modifiedFiles.values();
 		for(const instance of value) {

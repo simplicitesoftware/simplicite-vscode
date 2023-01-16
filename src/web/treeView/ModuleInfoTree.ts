@@ -13,7 +13,7 @@ export class ModuleInfoTree implements TreeDataProvider<TreeItem> {
 	private _devInfo?: DevInfo;
 	private _runPath: string;
 	constructor(runPath: string) {
-		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
+		this._onDidChangeTreeData = new EventEmitter<TreeItem>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 		this._modules = [];
 		this._devInfo = undefined;

@@ -18,12 +18,12 @@ export class SimpliciteInstanceController {
 	private apiModuleReset: boolean;
 	private barItem: BarItem;
 	devInfo: DevInfo | undefined;
-	simpliciteInstances: Map<string, SimpliciteInstance>;
+	instances: Map<string, SimpliciteInstance>;
 	constructor(prompt: Prompt, globalState: Memento, barItem: BarItem) {
 		this.prompt = prompt;
 		this._globalState = globalState;
 		this.devInfo = undefined;
-		this.simpliciteInstances = new Map();
+		this.instances = new Map();
 		this.apiModuleReset = false;
 		this.barItem = barItem;
 	}
@@ -43,7 +43,7 @@ export class SimpliciteInstanceController {
 
 	async loginAll(): Promise<void> {
 		return new Promise(async (resolve) => {
-			for(const instance of this.simpliciteInstances.values()) {
+			for(const instance of this.instances.values()) {
 				await this.loginInstance(instance.app.parameters.url);
 			}
 			resolve();
@@ -52,7 +52,7 @@ export class SimpliciteInstanceController {
 
 	async loginInstance(instanceUrl: string): Promise<boolean> {
 		try {
-			const instance = this.simpliciteInstances.get(instanceUrl);
+			const instance = this.instances.get(instanceUrl);
 			if (!instance) throw new Error(instanceUrl + ' cannot be found in known instances url');
 			if(!instance.app.authtoken) await this.setCredentials(instance.app);
 			await instance.login();
@@ -74,7 +74,7 @@ export class SimpliciteInstanceController {
 		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
 		else authenticationValues[index].authtoken = instance.app.authtoken;
 		await this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
-		this.barItem.show(Array.from(this.simpliciteInstances.values()));
+		this.barItem.show(Array.from(this.instances.values()));
 		await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 	}
 
@@ -87,7 +87,7 @@ export class SimpliciteInstanceController {
 
 	async logoutAll() {
 		const logoutAll = new Promise(async (resolve) => {
-			for(const inst of this.simpliciteInstances.values()) {
+			for(const inst of this.instances.values()) {
 				await this.logoutInstance(inst.app.parameters.url);
 			}
 			resolve(null);
@@ -99,10 +99,10 @@ export class SimpliciteInstanceController {
 
 	async logoutInstance(instanceUrl: string) {
 		try {
-			const instance = this.simpliciteInstances.get(instanceUrl);
+			const instance = this.instances.get(instanceUrl);
 			if (!instance) throw new Error(instanceUrl + 'cannot be found in known instances url');
 			await instance.logout();
-			this.barItem.show(Array.from(this.simpliciteInstances.values()));
+			this.barItem.show(Array.from(this.instances.values()));
 		} catch(e) {
 			console.error(e);
 		}
@@ -124,11 +124,11 @@ export class SimpliciteInstanceController {
 			console.log('Looking for valid modules in the workspace');
 			const res = await this.getInstancesAndModulesFromWorkspace();
 			for (const key of res.keys()) {
-				if(!this.simpliciteInstances.has(key)) {
+				if(!this.instances.has(key)) {
 					const value = res.get(key);
 					if(!value) continue;
 					const instance = await this.getInstance(value, key);
-					this.simpliciteInstances.set(key, instance);
+					this.instances.set(key, instance);
 				}
 			}
 			await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
@@ -186,7 +186,7 @@ export class SimpliciteInstanceController {
 			const apiModule = new ApiModule(moduleName, instanceUrl, instance.app, this._globalState, workspace.name);
 			instance.modules.set(ApiModule.getApiModuleName(moduleName, instanceUrl), apiModule);
 			// adding instance here, needs to be removed if process gets an error
-			this.simpliciteInstances.set(instanceUrl, instance);
+			this.instances.set(instanceUrl, instance);
 			const success = await this.loginInstance(instanceUrl);
 			if(this.devInfo && success) {
 				await apiModule.createProject(this.devInfo);
@@ -204,7 +204,7 @@ export class SimpliciteInstanceController {
 			}
 		} catch(e) {
 			console.error(e);
-			this.simpliciteInstances.delete(instanceUrl);
+			this.instances.delete(instanceUrl);
 			return false;
 		}
 		return false;
@@ -222,12 +222,12 @@ export class SimpliciteInstanceController {
 					const	instance = await SimpliciteInstance.build([], ams.instanceUrl, this._globalState);
 					const apiModule = new ApiModule(ams.moduleName, ams.instanceUrl, instance.app, this._globalState, ams.workspaceName);
 					instance.modules.set(ApiModule.getApiModuleName(ams.moduleName, ams.instanceUrl), apiModule);
-					this.simpliciteInstances.set(ams.instanceUrl, instance);
+					this.instances.set(ams.instanceUrl, instance);
 					await apiModule.initFiles(instance.app, this._globalState, await WorkspaceController.getApiModuleWorkspacePath(ams.moduleName, ams.instanceUrl));
 					apiModule.saveApiModule();
 					await this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
 				} catch(e) {
-					this.simpliciteInstances.delete(ams.instanceUrl);
+					this.instances.delete(ams.instanceUrl);
 					console.error(e);
 				}
 			}
@@ -250,7 +250,7 @@ export class SimpliciteInstanceController {
 
 	public async removeApiModule(moduleName: string, instanceUrl: string): Promise<boolean> {
 		try {
-			let instance = this.simpliciteInstances.get(instanceUrl);
+			let instance = this.instances.get(instanceUrl);
 			if(!instance) throw new Error('Cannot delete Api module, instance '+instanceUrl+' does not exist');
 			const apiModuleName = ApiModule.getApiModuleName(moduleName, instanceUrl);
 			const module = instance.modules.get(apiModuleName);
@@ -295,15 +295,15 @@ export class SimpliciteInstanceController {
 	}
 
 	async removeModule(moduleName: string) {
-		for (const key of this.simpliciteInstances.keys()) {
-			const instance = this.simpliciteInstances.get(key)!;
+		for (const key of this.instances.keys()) {
+			const instance = this.instances.get(key)!;
 			instance.deleteModule(moduleName);
 			if(instance.modules.size === 0) {
 				await instance.logout();
-				this.simpliciteInstances.delete(key);
+				this.instances.delete(key);
 				// cannot delete instance before logout as instance has the responsability to disconnect
 				// barItem refresh will be called 2 times in this case, light process but it can be optimised
-				this.barItem.show(Array.from(this.simpliciteInstances.values()));
+				this.barItem.show(Array.from(this.instances.values()));
 			}
 		}
 	}
@@ -311,7 +311,7 @@ export class SimpliciteInstanceController {
 	// FILES
 
 	public getFileAndInstanceUrlFromPath(uri: Uri): FileInstance | undefined {
-		for (const instance of this.simpliciteInstances.values()) {
+		for (const instance of this.instances.values()) {
 			for (const m of instance.modules.values()) {
 				const file = m.getFileFromPath(uri);
 				if(file) return {file: file, url: instance.app.parameters.url};
@@ -321,7 +321,7 @@ export class SimpliciteInstanceController {
 	}
 
 	public async sendAllFiles(): Promise<void> {
-		for(const instance of this.simpliciteInstances.values()) {
+		for(const instance of this.instances.values()) {
 			for(const module of instance.modules.values()) {
 				module.sendFiles().then(async () => {
 					await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
@@ -330,45 +330,33 @@ export class SimpliciteInstanceController {
 		}
 	}
 
-	public async sendInstanceFilesOnCommand(url: string) {
-		const instance = this.simpliciteInstances.get(url);
-		if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
-		for(const module of instance.modules.values()) {
-			module.sendFiles().then(async () => {
-				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-			});
-		}
-	}
-
 	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
-		const instance = this.simpliciteInstances.get(instanceUrl);
+		const instance = this.instances.get(instanceUrl);
 		if(!instance) throw new Error('Cannot send files. ' + instanceUrl + ' is not a known instance');
 		const module = instance.modules.get(moduleName);
 		if(!module) throw new Error('Cannot send files. ' + moduleName + ' is not a known module');
-		module.sendFiles().then(async () => {
-			await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-		});
+		
 	}
 
 	// get or create instance if it doesnt exist, set instance on map is still necessary
 	private async getInstance(moduleNames: ModuleInfo[], instanceUrl: string): Promise<SimpliciteInstance> {
-		if(!this.simpliciteInstances.has(instanceUrl)) return await SimpliciteInstance.build(moduleNames, instanceUrl, this._globalState);
-		else return this.simpliciteInstances.get(instanceUrl)!;
+		if(!this.instances.has(instanceUrl)) return await SimpliciteInstance.build(moduleNames, instanceUrl, this._globalState);
+		else return this.instances.get(instanceUrl)!;
 	}
 
 	public getAllModules() {
 		let modArray: (Module | ApiModule)[] = [];
-		this.simpliciteInstances.forEach((instance) => {
+		this.instances.forEach((instance) => {
 			modArray = modArray.concat(instance.getModulesAsArray());
 		});
 		return modArray;
 	}
 
 	public findInstanceUrlWithClue(moduleNameClue: string, urlClue: string, apiUrlClue: string): string | undefined {
-		for (const url of this.simpliciteInstances.keys()) {
+		for (const url of this.instances.keys()) {
 			if(url.includes(apiUrlClue)) {
 				// if url looks good, check for the module to make sure the result is the right one
-				const instance = this.simpliciteInstances.get(url);
+				const instance = this.instances.get(url);
 				if(!instance) continue;
 				if(instance.modules.has(`${moduleNameClue}@${urlClue}`)) return url;
 			}

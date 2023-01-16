@@ -6,7 +6,7 @@ import { ModuleInfo } from './interfaces';
 import simplicite from 'simplicite';
 import { commands, Memento, window } from 'vscode';
 import { DevInfo } from './DevInfo';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 
 // represent a simplicite instance
 export class SimpliciteInstance {
@@ -91,8 +91,8 @@ export class SimpliciteInstance {
 
 	// FILES
 
-	public getTrackedFiles(): File[] {
-		let trackedFiles: File[] = [];
+	public getTrackedFiles(): CustomFile[] {
+		let trackedFiles: CustomFile[] = [];
 		this.modules.forEach((mod: Module | ApiModule) => {
 			const files = mod.getTrackedFiles();
 			trackedFiles = trackedFiles.concat(files);
@@ -100,7 +100,7 @@ export class SimpliciteInstance {
 		return trackedFiles;
 	}
 
-	public getModuleTrackedFiles(moduleName: string): File[] {
+	public getModuleTrackedFiles(moduleName: string): CustomFile[] {
 		const mod = this.modules.get(moduleName);
 		if(!mod) return [];
 		return mod.getTrackedFiles();
