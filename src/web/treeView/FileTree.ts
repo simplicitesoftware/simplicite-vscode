@@ -1,39 +1,33 @@
 'use strict';
 
 import { EventEmitter, TreeItem, Event, TreeDataProvider, TreeItemCollapsibleState, TreeItemLabel, Uri } from 'vscode';
-import { UntrackedItem, ModuleItem, FileItem } from './treeViewClasses';
-import { SimpliciteInstance } from '../SimpliciteInstance';
+import { ModuleItem, FileItem, UntrackedRootItem } from './treeViewClasses';
+import { CustomFile } from '../CustomFile';
 import path = require('path');
-import { ApiModule } from '../ApiModule';
+import { Module } from '../Module';
 
 // File handler tree view
 export class FileTree implements TreeDataProvider<TreeItem> {
-	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | null | void>; // this attribute and the below one are mandatory to refresh the component
-	readonly onDidChangeTreeData: Event<TreeItem | undefined | null | void>;
+	// this attribute and the below one are mandatory to refresh the component
+	private _onDidChangeTreeData: EventEmitter<TreeItem | undefined | void>; 
+	readonly onDidChangeTreeData: Event<TreeItem | undefined | void>;
 	runPath: string;
-	instances: SimpliciteInstance[] | undefined;
+	modules: Module[];
 	constructor(runPath: string) {
-		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | null | void>();
+		this._onDidChangeTreeData = new EventEmitter<TreeItem | undefined | void>();
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 		this.runPath = runPath;
-		this.instances = undefined;
+		this.modules = [];
 	}
 
-	public refresh(instances: SimpliciteInstance[]): void {
-		this.instances = instances;
+	public refresh(modules: Module[]): void {
+		this.modules = modules;
 		this._onDidChangeTreeData.fire();
 		console.log("Refreshed file tree");
 	}
 
 	// sets the viewItem value, use in package.json to handle the commands linked to a specific item type
-	getTreeItem(element: UntrackedItem): UntrackedItem {
-		if (element.tracked === undefined && element.label !== 'Untracked files' && element.label !== 'No files to display' && element.label !== 'No file has been changed') {
-			element.contextValue = 'module';
-		} else if (!element.tracked && element.label !== 'Untracked files' && element.label !== 'No files to display' && element.label !== 'No file has been changed') {
-			element.contextValue = 'untrackedFile';
-		} else if (element.tracked && element.label !== 'Untracked files' && element.label !== 'No files to display' && element.label !== 'No file has been changed') {
-			element.contextValue = 'file';
-		}
+	getTreeItem(element: TreeItem): TreeItem {
 		return element;
 	}
 
@@ -41,79 +35,65 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	//   - on the component initialisation (automatically)
 	//   - when the items are clicked and the collapsible state collapsibleState !== None
 	//   - when refreshing the tree view 
-	getChildren(element: TreeItem): Thenable<TreeItem[]> {
-		if (element === undefined) {
-			return Promise.resolve(this.getModulesItem());
-		} else if (element.label && !(element instanceof UntrackedItem)) {
-			// todo , check if instanceUrl is available at this points
-			return Promise.resolve(this.getFilesItem(element.label));
-		} else if (element instanceof UntrackedItem) {
-			return Promise.resolve(this.getUntrackedFiles(element.moduleName));
-		}
-		return Promise.resolve([]);
+	getChildren(element?: ModuleItem | FileItem | UntrackedRootItem): Thenable<TreeItem[]> {
+		return new Promise((resolve) => {
+			if(element === undefined) {
+				resolve(this.getModulesItem(this.modules));
+			} else if(element instanceof ModuleItem) {
+				if(element.subModules.size > 0) {
+					resolve(this.getModulesItem(Array.from(element.subModules.values())));
+				} else if(element.files.size > 0) {
+					resolve(this.getFilesItem(element.files, element.module));
+				} else {
+					resolve([new TreeItem('Module has no file', TreeItemCollapsibleState.None)]);
+				}
+			} else if (element instanceof UntrackedRootItem) {
+				resolve(this.getUntrackedFiles(element.files, element.moduleName));
+			} else {
+				return resolve([]);
+			}
+		});
 	}
 
-	private async getModulesItem(): Promise<TreeItem[]> {
+	private async getModulesItem(modules: Module[]): Promise<TreeItem[]> {
 		const moduleItems: TreeItem[] = [];
-		for (const instance of this.instances || []) {
-			for(const mod of instance.modules.values()) {
-				const treeItem = new ModuleItem(mod.name, TreeItemCollapsibleState.Collapsed, mod.instanceUrl, mod instanceof ApiModule ? mod.apiModuleName : undefined);
-				treeItem.iconPath = {
-					light: path.join(this.runPath, 'resources/light/module.svg'),
-					dark: path.join(this.runPath, 'resources/dark/module.svg')
-				};
-				moduleItems.push(treeItem);
-			}
+		for(const mod of modules) {
+			const treeItem = new ModuleItem(mod, TreeItemCollapsibleState.Collapsed, this.runPath);
+			moduleItems.push(treeItem);
 		}
 		return moduleItems;
 	}
 
 	// check if map properties can be used to access values without having to loop
-	private getFilesItem(label: string | TreeItemLabel): FileItem[] | TreeItem[] {
-		const fileItems: FileItem[] = [];
+	private getFilesItem(files: Map<string, CustomFile>, module: Module): Array<FileItem | UntrackedRootItem> {
+		let fileItems: Array<FileItem> = [];
 		let untrackedFlag = false;
-		
-		for (const instance of this.instances || []) {
-			for (const mod of instance.modules.values()) {
-				if (mod.name === label) {
-					if(mod.files.size === 0) return [new TreeItem('Module has no file', TreeItemCollapsibleState.None)];
-					for (const file of mod.files.values()) {
-						if (file.getTrackedStatus()) {
-							const legibleFileName = this.legibleFileName(file.uri.path);
-							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, true, label);
-							fileItems.push(treeItem);
-						} else {
-							untrackedFlag = true;
-						}
-					}
-				}
+		for (const file of files.values()) {
+			if (file.getTrackedStatus()) {
+				const legibleFileName = this.legibleFileName(file.uri.path);
+				const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, true, module.name);
+				fileItems.push(treeItem);
+			} else {
+				untrackedFlag = true;
 			}
 		}
+		let orderedItems: Array<FileItem | UntrackedRootItem> = this.orderAlphab(fileItems);
 		// if there is at least one untracked file
 		// add a specific collapsible item to sort all the untracked files under the same category
 		if (untrackedFlag) {
-			const orderedItems = this.orderAlphab(fileItems);
-			const treeItem = new UntrackedItem('Untracked files', TreeItemCollapsibleState.Collapsed, Uri.file(''), false, label);
-			orderedItems.push(treeItem);
-			return orderedItems;
+			orderedItems = orderedItems.concat([new UntrackedRootItem('Untracked files', TreeItemCollapsibleState.Collapsed, module)]);
 		}
-		return this.orderAlphab(fileItems);
+		return orderedItems;
 	}
 
 	// same as method above
-	private getUntrackedFiles(moduleName: string | TreeItemLabel): TreeItem[] {
-		const untrackedFiles = [];
-		for (const instance of this.instances || []) {
-			for(const mod of instance.modules.values()) {
-				if (mod.name === moduleName) {
-					for (const file of mod.files.values()) {
-						if (!file.getTrackedStatus()) {
-							const legibleFileName = this.legibleFileName(file.uri.path);
-							const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, false, moduleName);
-							untrackedFiles.push(treeItem);
-						}
-					}
-				}
+	private getUntrackedFiles(files: Map<string, CustomFile>, moduleName: string): FileItem[] {
+		const untrackedFiles: FileItem[] = [];
+		for (const file of files.values()) {
+			if (!file.getTrackedStatus()) {
+				const legibleFileName = this.legibleFileName(file.uri.path);
+				const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, false, moduleName);
+				untrackedFiles.push(treeItem);
 			}
 		}
 		return this.orderAlphab(untrackedFiles);
@@ -128,7 +108,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		for (const item of fileItems) {
 			for (const extensionObject of extensionItemArray) {
 				if (this.getPathExtension(item.resourceUri.path) === extensionObject.extension) {
-					extensionObject.itemsPath.push(item.label.toLowerCase());
+					if(typeof(item.label) === 'string') extensionObject.itemsPath.push(item.label);
 				}
 			}
 		}
@@ -137,8 +117,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 			extensionObject.itemsPath.sort();
 			for (const itemPath of extensionObject.itemsPath) {
 				for (const item of fileItems) {
-					const lowerCaseValue = item.resourceUri.path;
-					if (lowerCaseValue.toLowerCase().includes(itemPath)) {
+					if (item.resourceUri.path.includes(itemPath)) {
 						orderedFileItems.push(item);
 					}
 				}
