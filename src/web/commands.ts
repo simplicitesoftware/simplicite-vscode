@@ -60,7 +60,7 @@ function getApplyCommands(simpliciteInstanceController: SimpliciteInstanceContro
 			} else {
 				const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
 				const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
-				module = simpliciteInstanceController.instances.get(instanceUrl)?.modules.get(moduleName);
+				module = simpliciteInstanceController.getModule(moduleName, instanceUrl);
 			}
 			if(module) {
 				await module.sendFiles();

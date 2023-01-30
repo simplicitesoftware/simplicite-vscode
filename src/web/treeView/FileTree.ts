@@ -70,7 +70,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		let untrackedFlag = false;
 		for (const file of files.values()) {
 			if (file.getTrackedStatus()) {
-				const legibleFileName = this.legibleFileName(file.uri.path);
+				const legibleFileName = CustomFile.legibleFileName(file.uri.path);
 				const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, true, module.name);
 				fileItems.push(treeItem);
 			} else {
@@ -91,7 +91,7 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 		const untrackedFiles: FileItem[] = [];
 		for (const file of files.values()) {
 			if (!file.getTrackedStatus()) {
-				const legibleFileName = this.legibleFileName(file.uri.path);
+				const legibleFileName = CustomFile.legibleFileName(file.uri.path);
 				const treeItem = new FileItem(legibleFileName, TreeItemCollapsibleState.None, file.uri, false, moduleName);
 				untrackedFiles.push(treeItem);
 			}
@@ -129,12 +129,5 @@ export class FileTree implements TreeDataProvider<TreeItem> {
 	private getPathExtension(template: string): string {
 		const decomposed = template.split('.');
 		return '.' + decomposed[decomposed.length - 1];
-	}
-
-	// returns a part of the file path for tree view readability
-	private legibleFileName(filePath: string) {
-		const decomposedPath = filePath.split('/');
-		const index = decomposedPath.length - 1;
-		return decomposedPath[index - 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
 	}
 }

@@ -1,7 +1,7 @@
 'use strict';
 
 import { SimpliciteInstance } from './SimpliciteInstance';
-import { workspace, Memento, Uri, RelativePattern, commands } from 'vscode';
+import { workspace, Memento, Uri, RelativePattern, commands, window } from 'vscode';
 import { parseStringPromise } from 'xml2js';
 import { ApiModuleSave, FileInstance, ModuleInfo, UrlAndName } from './interfaces';
 import { Prompt } from './Prompt';
@@ -198,7 +198,7 @@ export class SimpliciteInstanceController {
 					apiModule.saveApiModule();
 				}
 				WorkspaceController.addWorkspaceFolder(apiModule.apiModuleName);
-				await apiModule.initFiles(instance.app, this._globalState, await WorkspaceController.getApiModuleWorkspacePath(moduleName, instanceUrl));
+				await apiModule.initFiles(instance.app, this._globalState, await WorkspaceController.getApiModuleWorkspacePath(moduleName, instanceUrl), []);
 				
 				return true;
 			}
@@ -223,7 +223,7 @@ export class SimpliciteInstanceController {
 					const apiModule = new ApiModule(ams.moduleName, ams.instanceUrl, instance.app, this._globalState, ams.workspaceName);
 					instance.modules.set(ApiModule.getApiModuleName(ams.moduleName, ams.instanceUrl), apiModule);
 					this.instances.set(ams.instanceUrl, instance);
-					await apiModule.initFiles(instance.app, this._globalState, await WorkspaceController.getApiModuleWorkspacePath(ams.moduleName, ams.instanceUrl));
+					await apiModule.initFiles(instance.app, this._globalState, await WorkspaceController.getApiModuleWorkspacePath(ams.moduleName, ams.instanceUrl), []);
 					apiModule.saveApiModule();
 					await this._globalState.update(API_MODULE_ADDED_IN_EMPTY_WK, undefined);
 				} catch(e) {
@@ -313,7 +313,7 @@ export class SimpliciteInstanceController {
 	public getFileAndInstanceUrlFromPath(uri: Uri): FileInstance | undefined {
 		for (const instance of this.instances.values()) {
 			for (const m of instance.modules.values()) {
-				const file = m.getFileFromPath(uri);
+				const file = m.getFileFromUriRecursive(uri);
 				if(file) return {file: file, url: instance.app.parameters.url};
 			}
 		}
@@ -330,12 +330,17 @@ export class SimpliciteInstanceController {
 		Promise.all(promises).then(async () => await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler'));
 	}
 
-	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {
+	public getModule(moduleName: string, instanceUrl: string): Module | undefined {
 		const instance = this.instances.get(instanceUrl);
-		if(!instance) throw new Error('Cannot send files. ' + instanceUrl + ' is not a known instance');
-		const module = instance.modules.get(moduleName);
-		if(!module) throw new Error('Cannot send files. ' + moduleName + ' is not a known module');
-		
+		if(!instance) {
+			window.showErrorMessage(`Simplicite: ${instanceUrl} is not a known instance`);
+			return;
+		}
+		const module = instance.getModuleFromName(moduleName);
+		if(!module) {
+			window.showErrorMessage(`Simplicite: ${moduleName} is not a known module`);
+		}
+		return module;
 	}
 
 	// get or create instance if it doesnt exist, set instance on map is still necessary

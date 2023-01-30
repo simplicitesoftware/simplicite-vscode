@@ -24,9 +24,9 @@ export class Module {
 		this.subModules = new Map();
 	}
 
-	static async build(name: string, instanceUrl: string, globalState: Memento, app: any, wkUri: Uri): Promise<Module> {
+	static async build(name: string, instanceUrl: string, globalState: Memento, app: any, wkUri: Uri, ignoredModules: string[]): Promise<Module> {
 		const module = new Module(name, instanceUrl, globalState);
-		await module.initFiles(app, globalState, wkUri);
+		await module.initFiles(app, globalState, wkUri, ignoredModules);
 		return module;
 	}
 
@@ -58,23 +58,49 @@ export class Module {
 	}
 
 	// FILES
-	async initFiles(app: any, globalState: Memento, wkUri: Uri) {
+	async initFiles(app: any, globalState: Memento, wkUri: Uri, ignoredModules: string[]) {
 		const relativePattern = new RelativePattern(wkUri, '**/*');
-		let files = await workspace.findFiles(relativePattern);
+		let files: Uri[] = []; 
+		if(ignoredModules.length) {
+			const excludePattern = this.generateExcludePattern(wkUri, ignoredModules);
+			files = await workspace.findFiles(relativePattern, excludePattern);
+		} else {
+			files = await workspace.findFiles(relativePattern);
+		}
 		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
 		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase();
 			this.files.set(lowerCasePath, new CustomFile(uri, app, globalState));
 		});
-		if(this.files.size === 0) console.warn(`No file(s) found in module ${this.name}`);
 		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
 		console.log(`Initialized ${this.files.size} files for module ${this.name}`);
 	}
 
-	public getFileFromPath(uri: Uri): CustomFile | undefined {
+	private generateExcludePattern(wkUri: Uri, ignoredModules: string[]): RelativePattern {
+		let patternString = '**/{';
+		for(let i = 0; i < ignoredModules.length; i++) {
+			patternString += `${ignoredModules[i]}`;
+			if(i !== ignoredModules.length - 1) patternString += ',';
+		}
+		patternString += '}/**';
+		return new RelativePattern(wkUri, patternString);
+	}
+
+	private getFileFromUri(uri: Uri): CustomFile | undefined {
 		const lowerCasePath = uri.path.toLowerCase();
 		return this.files.get(lowerCasePath);
+	}
+
+	public getFileFromUriRecursive(fileUri: Uri): CustomFile | undefined {
+		let file = this.getFileFromUri(fileUri);
+		if(!file) {
+			for(const sub of this.subModules.values()) {
+				file = sub.getFileFromUriRecursive(fileUri);
+				if(file) return file;
+			}
+		}
+		return file;
 	}
 
 	public getFilesPathAsArray(): string[] {
@@ -94,8 +120,11 @@ export class Module {
 	}
 
 	public async sendFiles(): Promise<void> {
-		console.log('Module ' + this.name + ' sending files');
-		await this.sendFilesPromise(this.getTrackedFiles());
+		const trackedFiles = this.getTrackedFiles();
+		if(trackedFiles.length) {
+			console.log('Module ' + this.name + ' sending files');
+			await this.sendFilesPromise(trackedFiles);
+		}
 		await this.sendSubModulesPromise();
 	}
 
@@ -125,10 +154,13 @@ export class Module {
 
 	private async sendSubModulesPromise() {
 		const promises = [];
+		const sendModule = async function(mod: Module) {
+			await mod.sendFiles();
+		}; 
 		for(const mod of this.subModules.values()) {
-			promises.push(async () => await mod.sendFiles());
+			promises.push(sendModule(mod));
 		}
-		return Promise.all(promises);
+		return await Promise.all(promises);
 	}
 
 	private async notifyAndSetConflict(file: CustomFile, remoteContent: Uint8Array) {

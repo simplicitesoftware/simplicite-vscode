@@ -108,7 +108,7 @@ export class CustomFile {
 				console.error('Simplicite: Cannot synchronize ' + msg);
 				window.showErrorMessage(msg);
 			}
-			console.log(`${this.name} has been successfully applied`);
+			console.log(`${CustomFile.legibleFileName(this.uri.path)} has been successfully applied`);
 		} catch(e: any) {
 			window.showErrorMessage(e.message);
 			console.error(e.message);
@@ -125,5 +125,11 @@ export class CustomFile {
 	public getTrackedStatus() {
 		const lowerPath = this.uri.path.toLowerCase();
 		return this._globalState.get(lowerPath) ? true : false;
+	}
+
+	public static legibleFileName(filePath: string) {
+		const decomposedPath = filePath.split('/');
+		const index = decomposedPath.length - 1;
+		return decomposedPath[index - 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
 	}
 }

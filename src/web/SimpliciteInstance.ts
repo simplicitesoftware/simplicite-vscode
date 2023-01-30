@@ -31,21 +31,29 @@ export class SimpliciteInstance {
 	async initModules(moduleInfos: ModuleInfo[]): Promise<void> {
 		if(moduleInfos.length === 0) return;
 
-		const subModulesCreator = async(module: Module, minfo: ModuleInfo) => {
+		const subModulesCreator = async(minfo: ModuleInfo) => {
+			const subModules: Map<string, Module> = new Map();
 			for(const mod of minfo.modules) {
-				const subMod = await Module.build(mod.name, this.app.parameters.url, this._globalState, this.app, mod.wkUri);
-				module.subModules.set(mod.name, subMod);
-				await subModulesCreator(subMod, mod);
+				const subMod = await Module.build(mod.name, this.app.parameters.url, this._globalState, this.app, mod.wkUri, this.getSubModuleNames(mod));
+				subMod.subModules = await subModulesCreator(mod); 
+				subModules.set(mod.name, subMod);
 			}
+			return subModules;
 		};
 
 		const modules: Map<string, Module> = new Map();
 		for(const minfo of moduleInfos) {
-			const module = await Module.build(minfo.name, this.app.parameters.url, this._globalState, this.app, minfo.wkUri);
-			await subModulesCreator(module, minfo);
+			const module = await Module.build(minfo.name, this.app.parameters.url, this._globalState, this.app, minfo.wkUri, this.getSubModuleNames(minfo));
+			module.subModules = await subModulesCreator(minfo);
 			modules.set(minfo.name, module);
 		}
 		this.modules = modules;
+	}
+
+	private getSubModuleNames(module: ModuleInfo): string[] {
+		const moduleNames: string[] = [];
+		module.modules.forEach((sub) => moduleNames.push(sub.name));
+		return moduleNames;
 	}
 
 	private setAuthtoken() {
@@ -163,5 +171,23 @@ export class SimpliciteInstance {
 		const mods: (Module | ApiModule)[] = [];
 		this.modules.forEach((mod) => mods.push(mod));
 		return mods;
+	}
+
+	public getModuleFromName(moduleName: string): Module | undefined {
+		const recursive = function(module: Module): Module | undefined {
+			if(module.name === moduleName) return module;
+			for(const mod of module.subModules) {
+				if(mod[0] === moduleName) {
+					return mod[1];
+				} else if(mod[1].subModules.size) {
+					const foundMod = recursive(mod[1]);
+					if(foundMod) return foundMod;
+				}
+			}
+		};
+		for(const mod of this.modules) {
+			const foundModule = recursive(mod[1]);
+			if(foundModule) return foundModule;
+		}
 	}
 }
