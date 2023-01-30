@@ -42,6 +42,7 @@ export class FileItem extends TreeItem {
 		this.resourceUri = resourceUri;
 		this.moduleName = moduleName;
 		this.iconPath = ThemeIcon.File;
+		this.contextValue = tracked ? "trackedFile" : "untrackedFile";
 	}
 }
 

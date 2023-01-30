@@ -90,7 +90,7 @@
 				},
 				{
 					"command": "simplicite-vscode-tools.untrackFile",
-					"when": "view == simpliciteFile && viewItem == file",
+					"when": "view == simpliciteFile && viewItem == trackedFile",
 					"group": "inline"
 				},
 				{
