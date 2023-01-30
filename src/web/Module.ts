@@ -93,24 +93,42 @@ export class Module {
 		return fileList;
 	}
 
-	public async sendFiles() {
-		const files = this.getTrackedFiles();
-		files.forEach(async (file) => {
-			HashService.checkForConflict(file, this.instanceUrl, this.name, this.globalState).then(async (res) => {
-				if(res.action === ConflictAction.conflict && res.remoteContent) {
-					await this.notifyAndSetConflict(file, res.remoteContent);
-				} else if(res.action === ConflictAction.sendFile) {
-					await file.sendFile(this.instanceUrl, this.name);
-				} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
-					await workspace.fs.writeFile(file.uri, res.remoteContent);
-					await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
-				} else if(res.action === ConflictAction.nothing) {
-					console.log('No changes detected on ' + file.name);
-				} else {
-					console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
-				}
-			});
-		});
+	public async sendFiles(): Promise<void> {
+		console.log('Module ' + this.name + ' sending files');
+		await this.sendFilesPromise(this.getTrackedFiles());
+		await this.sendSubModulesPromise();
+	}
+
+	private async sendFilesPromise(files: CustomFile[]) {
+		const promises = [];
+		for(const file of files) {
+			promises.push(this.fileAction(file));
+		}
+		return await Promise.all(promises);
+	}
+
+	private async fileAction(file: CustomFile) {
+		const res = await HashService.checkForConflict(file, this.instanceUrl, this.name, this.globalState);
+		if(res.action === ConflictAction.conflict && res.remoteContent) {
+			await this.notifyAndSetConflict(file, res.remoteContent);
+		} else if(res.action === ConflictAction.sendFile) {
+			await file.sendFile(this.instanceUrl, this.name);
+		} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
+			await workspace.fs.writeFile(file.uri, res.remoteContent);
+			await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
+		} else if(res.action === ConflictAction.nothing) {
+			console.log('No changes detected on ' + file.name);
+		} else {
+			console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
+		}
+	}
+
+	private async sendSubModulesPromise() {
+		const promises = [];
+		for(const mod of this.subModules.values()) {
+			promises.push(async () => await mod.sendFiles());
+		}
+		return Promise.all(promises);
 	}
 
 	private async notifyAndSetConflict(file: CustomFile, remoteContent: Uint8Array) {

@@ -321,13 +321,13 @@ export class SimpliciteInstanceController {
 	}
 
 	public async sendAllFiles(): Promise<void> {
+		const promises = [];
 		for(const instance of this.instances.values()) {
 			for(const module of instance.modules.values()) {
-				module.sendFiles().then(async () => {
-					await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-				});
+				promises.push(module.sendFiles());
 			}
 		}
+		Promise.all(promises).then(async () => await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler'));
 	}
 
 	public async sendModuleFilesOnCommand(moduleName: string, instanceUrl: string) {

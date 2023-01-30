@@ -42,10 +42,9 @@ function getApplyCommands(simpliciteInstanceController: SimpliciteInstanceContro
 			const instance = simpliciteInstanceController.instances.get(url);
 			if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
 			for(const module of instance.modules.values()) {
-				module.sendFiles().then(async () => {
-					await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-				});
+				await module.sendFiles();
 			}
+			await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 			await prompt.addElement('url', url);
 		} catch(e) {
 			console.error(e);
@@ -57,16 +56,15 @@ function getApplyCommands(simpliciteInstanceController: SimpliciteInstanceContro
 		try {
 			let module: Module | undefined;
 			if(info) {
-				module = module;
+				module = info.module;
 			} else {
 				const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
 				const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
 				module = simpliciteInstanceController.instances.get(instanceUrl)?.modules.get(moduleName);
 			}
 			if(module) {
-				module.sendFiles().then(async () => {
-					await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
-				});
+				await module.sendFiles();
+				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 				await prompt.addElement('url', module.instanceUrl);
 				await prompt.addElement('name', module.name);
 			}

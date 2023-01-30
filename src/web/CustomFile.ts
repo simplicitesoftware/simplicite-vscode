@@ -1,6 +1,6 @@
 'use strict';
 
-import { Memento, Uri, window, workspace } from 'vscode';
+import { commands, Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { HashService } from './HashService';
 const buffer = require('buffer/').Buffer;
@@ -119,6 +119,7 @@ export class CustomFile {
 	public async saveFileAsTracked() {
 		const lowerPath = this.uri.path.toLowerCase();
 		await this._globalState.update(lowerPath, true);
+		await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 	}
 
 	public getTrackedStatus() {
