@@ -134,7 +134,11 @@ export class SimpliciteInstance {
 	}
 
 	public async setModulesDevInfo(devInfo: DevInfo) {
-		this.modules.forEach(async (m: Module | ApiModule) => await m.setModuleDevInfo(devInfo, this.app));
+		const promises = [];
+		for(const m of this.modules.values()) {
+			promises.push(m.setModuleDevInfo(devInfo, this.app));
+		}
+		return await Promise.all(promises);
 	}
 
 	// BACKEND COMPILATION

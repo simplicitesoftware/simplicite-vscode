@@ -9,9 +9,10 @@ export interface CustomMessage {
 	button: string;
 }
 
-export interface UrlAndName {
+export interface ModulePomInfo {
 	instanceUrl: string;
 	name: string;
+	subModules: string[]
 }
 
 export interface ModuleInfo {
@@ -48,7 +49,7 @@ export interface ApiModuleSave {
 
 export interface SessionIdSave {
 	sessionId: string;
-	apiModules: Array<UrlAndName>
+	apiModules: Array<ModulePomInfo>
 }
 
 export enum ConflictAction {
