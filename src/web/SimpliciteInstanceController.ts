@@ -3,7 +3,7 @@
 import { SimpliciteInstance } from './SimpliciteInstance';
 import { workspace, Memento, Uri, RelativePattern, commands, window } from 'vscode';
 import { parseStringPromise } from 'xml2js';
-import { ApiModuleSave, FileInstance, ModuleInfo, UrlAndName } from './interfaces';
+import { ApiModuleSave, FileInstance, ModuleInfo, ModulePomInfo } from './interfaces';
 import { Prompt } from './Prompt';
 import { DevInfo } from './DevInfo';
 import { ApiModule } from './ApiModule';
@@ -11,6 +11,7 @@ import { WorkspaceController } from './WorkspaceController';
 import { Module } from './Module';
 import { BarItem } from './BarItem';
 import { resolve } from 'url';
+import { HashService } from './HashService';
 
 export class SimpliciteInstanceController {
 	private prompt: Prompt;
@@ -68,14 +69,13 @@ export class SimpliciteInstanceController {
 
 	private async applyLoginValues(instance: SimpliciteInstance) {
 		if(!this.devInfo) this.devInfo = await instance.getDevInfo();
-		if (this.devInfo) await instance.setModulesDevInfo(this.devInfo);
+		if (this.devInfo) instance.setModulesDevInfo(this.devInfo).finally(async () => await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree'));
 		const authenticationValues: Array<{instanceUrl: string, authtoken: string}> = this._globalState.get(AUTHENTICATION_STORAGE) || [];
 		const index = authenticationValues.findIndex((pair: {instanceUrl: string, authtoken: string}) => pair.instanceUrl === instance.app.parameters.url);
 		if(index === -1) authenticationValues.push({instanceUrl: instance.app.parameters.url, authtoken: instance.app.authtoken});
 		else authenticationValues[index].authtoken = instance.app.authtoken;
 		await this._globalState.update(AUTHENTICATION_STORAGE, authenticationValues);
 		this.barItem.show(Array.from(this.instances.values()));
-		await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 	}
 
 	private async deleteToken(instanceUrl: string) {
@@ -92,7 +92,7 @@ export class SimpliciteInstanceController {
 			}
 			resolve(null);
 		});
-		logoutAll.then(async () => {
+		logoutAll.finally(async () => {
 			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 		});
 	}
@@ -147,9 +147,11 @@ export class SimpliciteInstanceController {
 	}
 
 	private async getModulesRecursive(wkUri: Uri, list: Map<string, ModuleInfo[]>, parentModuleInfo: ModuleInfo | null): Promise<void> {
-		const res = await this.getModuleUrlAndNameFromWorkspace(wkUri);
+		const pom = await this.getModulePom(wkUri);
+		if(!pom) return;
+		const res = await this.getModuleInfo(pom);
 		if(res) {
-			const moduleInfo = {name: res.name, wkUri: wkUri, modules: []};
+			const moduleInfo: ModuleInfo = {name: res.name, wkUri: wkUri, modules: []};
 			if(!parentModuleInfo) {
 				if(!list.has(res.instanceUrl)) list.set(res.instanceUrl, [moduleInfo]);
 				else list.get(res.instanceUrl)?.push(moduleInfo);
@@ -157,24 +159,41 @@ export class SimpliciteInstanceController {
 				parentModuleInfo.modules.push(moduleInfo);
 			}
 			// look for pom.xml in subfolders
-			const relativePattern = new RelativePattern(wkUri, '**/pom.xml');
-			const files = await workspace.findFiles(relativePattern);
-			for(const file of files) {
-				if(file.scheme === 'file' && file.path !== wkUri.path + '/pom.xml') {
-					await this.getModulesRecursive(Uri.parse(file.path.replace('/pom.xml', '')), list, moduleInfo);
+			for(const mod of res.subModules) {
+				const relativePattern = new RelativePattern(wkUri, `**${mod}/pom.xml`);
+				const files = await workspace.findFiles(relativePattern);
+				for(const file of files) {
+					if(file.scheme === 'file' && file.path !== wkUri.path + '/pom.xml') {
+						await this.getModulesRecursive(Uri.parse(file.path.replace('/pom.xml', '')), list, moduleInfo);
+					}
 				}
 			}
 		}
 	}
 
-	// returns an array with the instance url and moduleName
-	private async getModuleUrlAndNameFromWorkspace(wkUri: Uri): Promise<UrlAndName | null> {
+	private async getModulePom(wkUri: Uri) {
 		const relativePattern = new RelativePattern(wkUri, 'pom.xml');
 		const file = await workspace.findFiles(relativePattern);
 		if (file.length === 0) return null;
 		const pom = (await workspace.openTextDocument(file[0])).getText();
 		const res = await parseStringPromise(pom);
-		return {instanceUrl: res.project.properties[0]['simplicite.url'][0], name: res.project['name'][0]};
+		return res;
+	}
+
+	// returns an array with the instance url and moduleName
+	private async getModuleInfo(pom: any): Promise<ModulePomInfo | null> {
+		return {
+			instanceUrl: pom.project.properties[0]['simplicite.url'][0], 
+			name: pom.project['name'][0],
+			subModules: this.getSubmodulesFromPom(pom)
+		};
+	}
+
+	private getSubmodulesFromPom(pom: any): string[] {
+		if(pom.project.modules && pom.project.modules.length > 0) {
+			return pom.project.modules[0].module;
+		}
+		return [];
 	}
 
 	// api module states : is it already in workspace (might not be if workspace folder is empty)
@@ -276,7 +295,7 @@ export class SimpliciteInstanceController {
 		
 		saved.splice(index, 1);
 		await this._globalState.update(API_MODULES, saved);
-		const clearFiles: UrlAndName[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
+		const clearFiles: any[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
 		clearFiles.push({name: moduleName, instanceUrl: instanceUrl});
 		await this._globalState.update(API_MODULE_CLEAR_FILES, clearFiles);
 		console.log(`Removed persistence of module ${moduleName} from ${instanceUrl}, clearing files on next VS Code start`);
@@ -284,7 +303,7 @@ export class SimpliciteInstanceController {
 
 	private async clearApiModulesFiles(): Promise<void> {
 		return new Promise(async (resolve) => {
-			const clearFiles: UrlAndName[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
+			const clearFiles: any[] = this._globalState.get(API_MODULE_CLEAR_FILES) || [];
 			clearFiles.forEach((value) => {
 				ApiModule.deleteFiles(value.instanceUrl, value.name);
 			});
@@ -306,6 +325,14 @@ export class SimpliciteInstanceController {
 				this.barItem.show(Array.from(this.instances.values()));
 			}
 		}
+	}
+
+	public deleteAllHashes() {
+		this.instances.forEach((value) => {
+			value.modules.forEach((modValue) => {
+				modValue.deleteHashes();
+			});
+		});
 	}
 
 	// FILES
