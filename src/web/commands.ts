@@ -194,6 +194,7 @@ function getOtherCommands(prompt: Prompt, globalState: Memento, simpliciteInstan
 					await globalState.update(file.uri.path.toLowerCase(), undefined);
 				}
 			}
+			simpliciteInstanceController.deleteAllHashes();
 			try {
 				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true});
 			} catch(e: any) {

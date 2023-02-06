@@ -72,6 +72,11 @@ export class HashService {
     private static getStateId(instance: string, module: string) {
         return `simplicite_${instance}_${module}`;
     }
+
+    public static deleteModuleHashe(instance: string, module: string, globalState: Memento) {
+        const stateId = HashService.getStateId(instance, module);
+        globalState.update(stateId, undefined);
+    }
 }
 
 interface FileHash {
