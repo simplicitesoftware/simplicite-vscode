@@ -325,6 +325,8 @@ export class SimpliciteInstanceController {
 				this.barItem.show(Array.from(this.instances.values()));
 			}
 		}
+		await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+		await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
 	}
 
 	public deleteAllHashes() {

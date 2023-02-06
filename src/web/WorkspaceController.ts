@@ -76,7 +76,7 @@ export class WorkspaceController {
 					await simpliciteInstanceController.loginAll();
 				}
 			});
-			promise.finally(await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree'));
+			promise.finally(async () => await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree'));
 		});
 	}
 

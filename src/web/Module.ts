@@ -1,6 +1,6 @@
 'use strict';
 
-import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
+import { workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { CustomFile } from './CustomFile';
 import { HashService } from './HashService';
