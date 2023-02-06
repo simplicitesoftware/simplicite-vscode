@@ -29,9 +29,9 @@ export const initGlobalValues = function(storagePath: string): void {
     
 	global.SHOW_SIMPLICITE_COMMAND_ID = 'simplicite-vscode-tools.showSimpliciteCommands';
 
-	global.SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
+	global.SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.xml', '.txt', '.yaml'];
     
-	global.EXCLUDED_FILES = ['BUILD', 'README', '.xml', '.min.', '/Theme/', '/files/', '/target/', '.json']; // todo
+	global.EXCLUDED_FILES = ['.min.js', '.xml', '.min.', 'Theme', 'files', 'target', '.json', 'target', 'others']; // todo
 
 	global.STORAGE_PATH = storagePath + '/';
 

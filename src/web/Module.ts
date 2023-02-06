@@ -59,16 +59,12 @@ export class Module {
 
 	// FILES
 	async initFiles(app: any, globalState: Memento, wkUri: Uri, ignoredModules: string[]) {
-		const relativePattern = new RelativePattern(wkUri, '**/*');
-		let files: Uri[] = []; 
-		if(ignoredModules.length) {
-			const excludePattern = this.generateExcludePattern(wkUri, ignoredModules);
-			files = await workspace.findFiles(relativePattern, excludePattern);
-		} else {
-			files = await workspace.findFiles(relativePattern);
-		}
-		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
-		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
+		const relativePattern = this.generateIncludePattern(wkUri);
+		const excludePattern = this.generateExcludePattern(wkUri, ignoredModules);
+		let files: Uri[] = []; 	
+		files = await workspace.findFiles(relativePattern, excludePattern);
+		// files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
+		// files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase();
 			this.files.set(lowerCasePath, new CustomFile(uri, app, globalState));
@@ -77,13 +73,35 @@ export class Module {
 		console.log(`Initialized ${this.files.size} files for module ${this.name}`);
 	}
 
+	private generateIncludePattern(wkUri: Uri): RelativePattern {
+		let patternString = '**/*{';
+		for(let i = 0; i < SUPPORTED_FILES.length; i++) {
+			patternString += `${SUPPORTED_FILES[i]}`;
+			if(i !== SUPPORTED_FILES.length - 1) patternString += ',';
+		}
+		patternString += '}';
+		console.log('include pattern');
+		console.log(patternString);
+		return new RelativePattern(wkUri, patternString);
+	}
+
 	private generateExcludePattern(wkUri: Uri, ignoredModules: string[]): RelativePattern {
 		let patternString = '**/{';
 		for(let i = 0; i < ignoredModules.length; i++) {
 			patternString += `${ignoredModules[i]}`;
 			if(i !== ignoredModules.length - 1) patternString += ',';
 		}
-		patternString += '}/**';
+		//patternString += ',*.xml';
+		if(ignoredModules.length) {
+			patternString += ',';
+		}
+		for(let i = 0; i < EXCLUDED_FILES.length; i++) {
+			patternString += `*${EXCLUDED_FILES[i]}`;
+			if(i !== EXCLUDED_FILES.length - 1) patternString += ',';
+		}
+		patternString += '}';
+		console.log('exclude pattern');
+		console.log(patternString);
 		return new RelativePattern(wkUri, patternString);
 	}
 
@@ -161,6 +179,11 @@ export class Module {
 			promises.push(sendModule(mod));
 		}
 		return await Promise.all(promises);
+	}
+
+	public deleteHashes() {
+		HashService.deleteModuleHashe(this.instanceUrl, this.name, this.globalState);
+		this.subModules.forEach((mod) => mod.deleteHashes());
 	}
 
 	private async notifyAndSetConflict(file: CustomFile, remoteContent: Uint8Array) {
