@@ -55,10 +55,16 @@ Built the vsix file:
 vsce package
 ```
 
-or buins **and** ublish the vsix file to the registry:
+or builds **and** publish the vsix file to the registry:
 
 ```bash
 vsce publish
+```
+
+publish as **pre-release**
+
+```bash
+vsce publish --pre-release
 ```
 
 To the *open vsx* registry
