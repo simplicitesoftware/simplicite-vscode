@@ -6,6 +6,7 @@ import { workspace, Uri, Memento } from 'vscode';
 import { Buffer } from 'buffer';
 import { DevInfo } from './DevInfo';
 import { ApiModuleSave } from './interfaces';
+import { WorkspaceController } from './WorkspaceController';
 
 // Api module does not have persistence over VS Code instances
 export class ApiModule extends Module {
@@ -22,6 +23,19 @@ export class ApiModule extends Module {
 		this._app = app;
 		this._globalState = globalState;
 	}
+
+	static async buildApi(name: string, instanceUrl: string, app: any, globalState: Memento, devInfo: any, wkUri: Uri | undefined, createProject: boolean): Promise<ApiModule> {
+		const apiModule = new ApiModule(name, instanceUrl, app, globalState, workspace.name);
+		// if project has already been created
+		if(wkUri) {
+			await apiModule.initFiles(app, globalState, wkUri, []);
+		} else if(createProject) {
+			apiModule.setModuleDevInfo(devInfo, app)
+			.then(() => apiModule.createProject(devInfo, name)
+			.then(() => WorkspaceController.addWorkspaceFolder(apiModule.apiModuleName)));
+		}
+		return apiModule;
+	}
 	
 	public static getApiModuleName (moduleName: string, instanceUrl: string) {
 		let withoutHttp = instanceUrl.replace('https://', '');
@@ -32,10 +46,10 @@ export class ApiModule extends Module {
 		return moduleName + '@' + withoutHttp;
 	}
 	
-	public async createProject(devInfo: DevInfo): Promise<boolean> {
+	public async createProject(devInfo: DevInfo, moduleName: string): Promise<boolean> {
 		const mdl = await this._app.getBusinessObject('Module');
 		// look for module row_id
-		const ms = await mdl.search({ mdl_name: ''} );
+		const ms = await mdl.search({ mdl_name: moduleName} );
 		const m = ms[0];
 		await this.createFiles(devInfo);
 		const pom = await mdl.print('Module-MavenModule', m.row_id);
@@ -71,22 +85,6 @@ export class ApiModule extends Module {
 			console.error(e);
 			return undefined;
 		}
-	}
-
-	public async saveApiModule(): Promise<void> {
-		const saved: ApiModuleSave[] = this._globalState.get(API_MODULES) || [];
-		const index = saved.findIndex((ams: ApiModuleSave) => ams.instanceUrl === this._instanceUrl && ams.moduleName === this.name);
-		let logActionMsg: String;
-		const ams: ApiModuleSave = {moduleName: this.name, instanceUrl: this._instanceUrl, workspaceName: this.workspaceName/*, sessionId: env.sessionId*/}; 
-		if(index !== -1) {
-			saved[index] = ams;
-			logActionMsg = 'Updated';
-		} else {
-			saved.push(ams);
-			logActionMsg = 'Added';
-		} 
-		console.log(`${logActionMsg} persistence of module ${this.name} from ${this._instanceUrl} in the workspace ${this.workspaceName}`);
-		await this._globalState.update(API_MODULES, saved);
 	}
 
 	public static deleteFiles(instanceUrl: string, moduleName: string) {

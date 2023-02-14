@@ -18,9 +18,7 @@ export async function activate(context: ExtensionContext): Promise<any> {
 	initGlobalValues(context.globalStorageUri.path);
 	
 	const globalState = context.globalState;
-	if(debug.activeDebugSession) {
-		console.log('Api modules stored in memento', globalState.get(API_MODULES, []));
-	}
+
 	const prompt = new Prompt(globalState);
 
 	const barItem = new BarItem();
@@ -56,21 +54,6 @@ export async function activate(context: ExtensionContext): Promise<any> {
 // handling this case only on desktop where memento values are shared over VS Code instances
 export function deactivate() {
 	console.log('Simplicite VS Code extension deactivate');
-	// if(env.appHost === 'desktop') {
-	// 	await workspace.fs.delete(SESSION_ID_JSON);
-	// }
-	//globalState.update(API_MODULES, undefined);
-	// session is closing, remove sessionId so the module can initiate in another instance
-	// const savedMod = globalState.get(API_MODULES, []);
-	// savedMod.forEach((ams: ApiModuleSave) => {
-	// 	if(ams.sessionId === env.sessionId) ams.sessionId = undefined;
-	// });
-	// try {
-	// 	await globalState.update(API_MODULES, savedMod);
-	// 	console.log('Successfully updated globalState on deactivate');
-	// } catch(e) {
-	// 	console.error('Unable to update globalState on deactivate');
-	// }
 }
 
 

@@ -44,7 +44,7 @@ export interface FileInstance {
 export interface ApiModuleSave {
 	moduleName: string;
 	instanceUrl: string;
-	workspaceName: string | undefined;
+	//workspaceName: string | undefined;
 }
 
 export interface SessionIdSave {

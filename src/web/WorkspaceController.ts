@@ -72,6 +72,7 @@ export class WorkspaceController {
 					});
 				}
 				if (event.added.length > 0) {
+					simpliciteInstanceController.instances = new Map();
 					await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
 					await simpliciteInstanceController.loginAll();
 				}

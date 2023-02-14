@@ -5,6 +5,7 @@ import { DevInfo } from './DevInfo';
 import { CustomFile } from './CustomFile';
 import { HashService } from './HashService';
 import { ConflictAction } from './interfaces';
+import { ApiModule } from './ApiModule';
 
 export class Module {
 	moduleDevInfo: any;
@@ -37,15 +38,17 @@ export class Module {
 		return false;
 	}
 
-	public async setModuleDevInfo(devInfo: DevInfo, app: any) {
+	public async setModuleDevInfo(devInfo: DevInfo, app: any): Promise<void> {
 		this.moduleDevInfo = await this.getModuleDevInfo(app);
+		console.log("Fetched module dev info for " + this.name);
+		this.files.forEach((f: CustomFile) => {
+			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
+		});
 		// get subModules module dev info
 		for(const sMod of this.subModules.values()) {
 			await sMod.setModuleDevInfo(devInfo, app);
 		}
-		this.files.forEach((f: CustomFile) => {
-			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
-		});
+		return;
 	}
 
 	private async getModuleDevInfo(app: any) {

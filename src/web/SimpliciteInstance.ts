@@ -2,9 +2,9 @@
 
 import { Module } from './Module';
 import { ApiModule } from './ApiModule';
-import { ModuleInfo } from './interfaces';
+import { ApiModuleSave, ModuleInfo } from './interfaces';
 import simplicite from 'simplicite';
-import { commands, Memento, window } from 'vscode';
+import { commands, Memento, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { CustomFile } from './CustomFile';
 
@@ -34,20 +34,33 @@ export class SimpliciteInstance {
 		const subModulesCreator = async(minfo: ModuleInfo) => {
 			const subModules: Map<string, Module> = new Map();
 			for(const mod of minfo.modules) {
-				const subMod = await Module.build(mod.name, this.app.parameters.url, this._globalState, this.app, mod.wkUri, this.getSubModuleNames(mod));
-				subMod.subModules = await subModulesCreator(mod); 
-				subModules.set(mod.name, subMod);
+				const subMod = await this.buildModule(minfo);
+				if(subMod) {
+					subMod.subModules = await subModulesCreator(mod); 
+					subModules.set(mod.name, subMod);
+				}
 			}
 			return subModules;
 		};
 
 		const modules: Map<string, Module> = new Map();
 		for(const minfo of moduleInfos) {
-			const module = await Module.build(minfo.name, this.app.parameters.url, this._globalState, this.app, minfo.wkUri, this.getSubModuleNames(minfo));
-			module.subModules = await subModulesCreator(minfo);
-			modules.set(minfo.name, module);
+			const module = await this.buildModule(minfo);
+			if(module) {
+				module.subModules = await subModulesCreator(minfo);
+				modules.set(minfo.name, module);
+			}
 		}
 		this.modules = modules;
+	}
+
+	private async buildModule(minfo: ModuleInfo): Promise<Module | undefined> {
+		const reg = new RegExp('^.*([A-Za-z0-9_-]+@[A-Za-z0-9-_\.]+)$');
+		if(!reg.test(minfo.wkUri.path)) {
+			return await Module.build(minfo.name, this.app.parameters.url, this._globalState, this.app, minfo.wkUri, this.getSubModuleNames(minfo));
+		} else {
+			return await ApiModule.buildApi(minfo.name, this.app.parameters.url, this.app, this._globalState, undefined, minfo.wkUri, false);
+		}
 	}
 
 	private getSubModuleNames(module: ModuleInfo): string[] {
@@ -61,6 +74,16 @@ export class SimpliciteInstance {
 		list.forEach(a => {
 			if(a.instanceUrl === this.app.parameters.url) this.app.authtoken = a.authtoken;
 		});
+	}
+
+	public async createApiModule(moduleName: string, devInfo: any): Promise<boolean> {
+		try {
+			this.modules.set(moduleName, await ApiModule.buildApi(moduleName, this.app.parameters.url, this.app, this._globalState, devInfo, undefined, true));
+			return true;
+		} catch(e) {
+			console.log(e);
+			return false;
+		}
 	}
 
 	async login(): Promise<void> {
@@ -138,7 +161,8 @@ export class SimpliciteInstance {
 		for(const m of this.modules.values()) {
 			promises.push(m.setModuleDevInfo(devInfo, this.app));
 		}
-		return await Promise.all(promises);
+		await Promise.all(promises);
+		return;
 	}
 
 	// BACKEND COMPILATION

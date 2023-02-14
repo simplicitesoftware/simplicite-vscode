@@ -59,14 +59,14 @@ function getApplyCommands(simpliciteInstanceController: SimpliciteInstanceContro
 				module = info.module;
 			} else {
 				const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
-				const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
+				const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name', instanceUrl);
 				module = simpliciteInstanceController.getModule(moduleName, instanceUrl);
 			}
 			if(module) {
 				await module.sendFiles();
 				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 				await prompt.addElement('url', module.instanceUrl);
-				await prompt.addElement('name', module.name);
+				await prompt.addElement('name', module.name, module.instanceUrl);
 			}
 		} catch(e) {
 			console.error(e);
@@ -82,28 +82,28 @@ function getAuthenticationCommands(simpliciteInstanceController: SimpliciteInsta
 		await simpliciteInstanceController.loginAll();
 	});
 
-  const logout = commands.registerCommand('simplicite-vscode-tools.logout', async () => {
+  	const logout = commands.registerCommand('simplicite-vscode-tools.logout', async () => {
 		await simpliciteInstanceController.logoutAll();
 	});
 	
 	const logIntoInstance = commands.registerCommand('simplicite-vscode-tools.logIntoInstance', async function () {
-    try {
-      const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
-      await simpliciteInstanceController.loginInstance(instanceUrl);
-			await prompt.addElement(PromptValue.url, instanceUrl);
-    } catch(e) {
-      console.error(e);
-    }
+		try {
+			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
+			const res = await simpliciteInstanceController.loginInstance(instanceUrl);
+			if(res) await prompt.addElement(PromptValue.url, instanceUrl);
+		} catch(e) {
+			console.error(e);
+		}
 	});
 
 	const logoutFromInstance = commands.registerCommand('simplicite-vscode-tools.logoutFromInstance', async function () {
 		try {
-      const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
-      await simpliciteInstanceController.logoutInstance(instanceUrl);
-			await prompt.addElement(PromptValue.url, instanceUrl);
+			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
+			const res = await simpliciteInstanceController.logoutInstance(instanceUrl);
+			if(res) await prompt.addElement(PromptValue.url, instanceUrl);
 		} catch(e) {
-      console.error(e);
-    }
+      		console.error(e);
+    	}
 	});
 
 	return [login, logout, logIntoInstance, logoutFromInstance];
@@ -138,11 +138,11 @@ function getApiModuleCommands(prompt: Prompt, simpliciteInstanceController: Simp
 		try {
  			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name', instanceUrl);
 			const res = await simpliciteInstanceController.createApiModule(instanceUrl, moduleName);
 			if (res) {
 				await prompt.addElement(PromptValue.url, instanceUrl);
-				await prompt.addElement(PromptValue.name, moduleName);
+				await prompt.addElement(PromptValue.name, moduleName, instanceUrl);
 			}
 		} catch(e) {
 			console.error(e);
@@ -153,11 +153,11 @@ function getApiModuleCommands(prompt: Prompt, simpliciteInstanceController: Simp
 		try {
 			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name', instanceUrl);
 			const res = await simpliciteInstanceController.removeApiModule(moduleName, instanceUrl);
 			if(res) {
 				await prompt.addElement(PromptValue.url, instanceUrl);
-				await prompt.addElement(PromptValue.name, moduleName);
+				await prompt.addElement(PromptValue.name, moduleName, instanceUrl);
 			}
 		} catch(e: any) {
 			console.error(e);
@@ -187,7 +187,6 @@ function getOtherCommands(prompt: Prompt, globalState: Memento, simpliciteInstan
 
 	const resetExtensionData = commands.registerCommand('simplicite-vscode-tools.resetExtensionData', async () => {
 		try {
-			await globalState.update(API_MODULES, undefined);
 			await globalState.update(AUTHENTICATION_STORAGE, undefined);
 			for (const instance of simpliciteInstanceController.instances.values()) {
 				for(let file of instance.getTrackedFiles()) {
@@ -237,8 +236,7 @@ function getPrivateCommands(globalState: Memento, simpliciteInstanceController: 
 	// inconstant behavior in debug env, need to test on production
 	const nodeEnv = process.env.NODE_ENV === 'production' ? 'production' : 'development';    
 	commands.executeCommand('setContext', 'simplicite-vscode-tools.NODE_ENV', nodeEnv);
-	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {		
-		const _savedModules = globalState.get(API_MODULES);
+	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {
 		const _authenticationStorage = globalState.get(AUTHENTICATION_STORAGE);
 		const _trackedFiles = [];
 		for (const instance of simpliciteInstanceController.instances.values()) {
