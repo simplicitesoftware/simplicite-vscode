@@ -34,7 +34,7 @@ export class SimpliciteInstance {
 		const subModulesCreator = async(minfo: ModuleInfo) => {
 			const subModules: Map<string, Module> = new Map();
 			for(const mod of minfo.modules) {
-				const subMod = await this.buildModule(minfo);
+				const subMod = await this.buildModule(mod);
 				if(subMod) {
 					subMod.subModules = await subModulesCreator(mod); 
 					subModules.set(mod.name, subMod);
