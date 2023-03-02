@@ -11,23 +11,21 @@ export class QuickPick {
 		{index: 9, label: 'Others'}
 	];
 
-	excludedCommand: String[];
-	constructor(subscriptions: Disposable[]) {
-		this.excludedCommand = ['copy logical name', 'copy physical name', 'copy json name', 'double click trigger command', 
-			'Simplicite: Track file', 'Simplicite: Untrack file', 'Simplicite: Refresh the Module Info tree view', 'Simplicite: Refresh the File Handler tree view', 'Simplicite: Debug'
-		];
-		subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await this.quickPickEntry()));
-	}
+	static excludedCommand = [
+		'copy logical name', 'copy physical name', 'copy json name', 'double click trigger command', 
+		'Simplicite: Track file', 'Simplicite: Untrack file', 'Simplicite: Refresh the Module Info tree view', 
+		'Simplicite: Refresh the File Handler tree view', 'Simplicite: Debug'
+	];
 
-	private getSeperatorFromIndex(index: number) {
+	private static getSeperatorFromIndex(index: number) {
 		return QuickPick.separatorCoordinates.find(val => val.index === index);
 	}
 
-	commandListQuickPick(commandList: Array<Command>): CustomItem[] {
+	static commandListQuickPick(commandList: Array<Command>): CustomItem[] {
 		const preparedList = [];
 		let i = 0;
 		for (const command of commandList) {
-			const separator = this.getSeperatorFromIndex(i);
+			const separator = QuickPick.getSeperatorFromIndex(i);
 			if(separator) {
 				preparedList.push({ label: separator.label, kind: QuickPickItemKind.Separator});
 			}
@@ -39,7 +37,7 @@ export class QuickPick {
 		return preparedList;
 	}
 
-	async quickPickEntry(): Promise<void> { // entry point called by command
+	static async quickPickEntry(): Promise<void> { // entry point called by command
 		try {
 			const simpliciteExtension = extensions.getExtension(EXTENSION_ID);
 			if (simpliciteExtension === undefined) {
