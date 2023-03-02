@@ -103,6 +103,7 @@ export class CustomFile {
 			const res = await obj.update(null, { inlineDocuments: true });
 			const lowerPath = this.uri.path.toLowerCase();
 			await this._globalState.update(lowerPath, undefined);
+			await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 			if (!res) {
 				const msg = this.uri.path;
 				console.error('Simplicite: Cannot synchronize ' + msg);
@@ -113,7 +114,6 @@ export class CustomFile {
 			window.showErrorMessage(e.message);
 			console.error(e.message);
 		}
-		await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 	}
 
 	public async saveFileAsTracked() {

@@ -14,7 +14,6 @@ import { BarItem } from './BarItem';
 export class SimpliciteInstanceController {
 	private prompt: Prompt;
 	private _globalState: Memento;
-	private apiModuleReset: boolean;
 	private barItem: BarItem;
 	devInfo: DevInfo | undefined;
 	instances: Map<string, SimpliciteInstance>;
@@ -23,7 +22,6 @@ export class SimpliciteInstanceController {
 		this._globalState = globalState;
 		this.devInfo = undefined;
 		this.instances = new Map();
-		this.apiModuleReset = false;
 		this.barItem = barItem;
 	}
 

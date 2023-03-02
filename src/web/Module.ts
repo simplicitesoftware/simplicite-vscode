@@ -166,8 +166,12 @@ export class Module {
 		} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
 			await workspace.fs.writeFile(file.uri, res.remoteContent);
 			await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
+			const lowerPath = file.uri.path.toLowerCase();
+			await this.globalState.update(lowerPath, undefined);
 		} else if(res.action === ConflictAction.nothing) {
 			console.log('No changes detected on ' + file.name);
+			const lowerPath = file.uri.path.toLowerCase();
+			await this.globalState.update(lowerPath, undefined);
 		} else {
 			console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
 		}
@@ -208,6 +212,8 @@ export class Module {
 					await file.sendFile(this.instanceUrl, this.name);
 					await workspace.fs.delete(tempFile);
 				}
+				const lowerPath = file.uri.path.toLowerCase();
+				await this.globalState.update(lowerPath, undefined);
 			}
 		});
 	}
