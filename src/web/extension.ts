@@ -1,6 +1,6 @@
 'use strict';
 
-import { ExtensionContext, env, debug, Disposable, window, workspace, commands } from 'vscode';
+import { ExtensionContext, env, debug, Disposable, window, workspace, commands, Task, tasks } from 'vscode';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -12,6 +12,11 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
 import { completionProviderService } from './CompletionService';
+// import { UnitTestTaskProvider } from './UnitTestTaskProvider';
+
+let fileTreeProvider: Disposable | undefined;
+let moduleInfoTreeProvider: Disposable | undefined;
+let unitTestTaskDisposible: Disposable | undefined;
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	console.log('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
@@ -21,17 +26,19 @@ export async function activate(context: ExtensionContext): Promise<any> {
 
 	const prompt = new Prompt(globalState);
 
+	context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await QuickPick.quickPickEntry()));
+
 	const barItem = new BarItem();
 	barItem.show([]);
 
 	const moduleInfoTree = new ModuleInfoTree(context.extensionUri.path);
 	const fileTree = new FileTree(context.extensionUri.path);
-	window.registerTreeDataProvider('simpliciteFile', fileTree);
+	fileTreeProvider = window.registerTreeDataProvider('simpliciteFile', fileTree);
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
 	const publicCommand = initCommands(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
 
-	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
+	moduleInfoTreeProvider = window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
 	try {
 		await simpliciteInstanceController.initAll();
@@ -39,8 +46,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		console.error(e);
 	}
 
-	new QuickPick(context.subscriptions);
+	// add quick pick to subscriptions
 
+	// unitTestTaskDisposible =  tasks.registerTaskProvider("simplicite", new UnitTestTaskProvider(simpliciteInstanceController));
 	fileService(simpliciteInstanceController);
 	
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
@@ -51,8 +59,16 @@ export async function activate(context: ExtensionContext): Promise<any> {
 }
 
 // renderer process (which handles the memento) is unreliable at this point
-// handling this case only on desktop where memento values are shared over VS Code instances
 export function deactivate() {
+	if(fileTreeProvider) {
+		fileTreeProvider.dispose();
+	}
+	if(moduleInfoTreeProvider) {
+		moduleInfoTreeProvider.dispose();
+	}
+	if(unitTestTaskDisposible) {
+		unitTestTaskDisposible.dispose();
+	}
 	console.log('Simplicite VS Code extension deactivate');
 }
 
