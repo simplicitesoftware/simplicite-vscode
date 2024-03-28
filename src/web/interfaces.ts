@@ -1,7 +1,7 @@
 'use strict';
 
 import { Uri } from 'vscode';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { Module } from './Module';
 
 export interface CustomMessage {
@@ -9,9 +9,10 @@ export interface CustomMessage {
 	button: string;
 }
 
-export interface UrlAndName {
+export interface ModulePomInfo {
 	instanceUrl: string;
 	name: string;
+	subModules: string[]
 }
 
 export interface ModuleInfo {
@@ -36,19 +37,19 @@ export interface InstanceModules {
 }
 
 export interface FileInstance {
-	file: File;
+	file: CustomFile;
 	url: string;
 }
 
 export interface ApiModuleSave {
 	moduleName: string;
 	instanceUrl: string;
-	workspaceName: string | undefined;
+	//workspaceName: string | undefined;
 }
 
 export interface SessionIdSave {
 	sessionId: string;
-	apiModules: Array<UrlAndName>
+	apiModules: Array<ModulePomInfo>
 }
 
 export enum ConflictAction {

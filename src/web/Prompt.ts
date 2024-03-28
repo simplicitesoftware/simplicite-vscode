@@ -1,69 +1,81 @@
 'use strict';
 
-import { Memento, window } from 'vscode';
+import { Memento, QuickPickItem, ThemeIcon, window } from 'vscode';
 
 export class Prompt {
-	promptValues: PromptCached;
+	instances: Map<string, Instance>;
 	private _globalState: Memento;
 	constructor(globalState: Memento) {
 		this._globalState = globalState;
-		this.promptValues = this.getPromptValues();
+		this.instances = this.getPromptValues();
 	}
 	
-	getPromptValues(): PromptCached {
-		const savedValues: PromptCached | undefined = this._globalState.get(PROMPT_CACHE);
-		return savedValues ? savedValues : new PromptCached();
+	getPromptValues(): Map<string, Instance> {
+		const savedValues: Object | undefined = this._globalState.get(PROMPT_CACHE);
+		if(savedValues) return new Map(Object.entries(savedValues));
+		return new Map();
 	}
 	
 	async savePromptValues() {
-		await this._globalState.update(PROMPT_CACHE, this.promptValues);
+		await this._globalState.update(PROMPT_CACHE, Object.fromEntries(this.instances));
 	}
 	
-	private getValuesList(attributeName: string) {
+	private getValuesList(attributeName: string, instanceUrl?: string): PromptItem[] {
 		// breaks are shown as useless after the return statement, but they are mandatory for some reason otherwise it returns every case
+		const quickPickItems: PromptItem[] = [];
 		switch(attributeName) {
 		case 'url':
-			return this.promptValues.instanceUrls;
-			break;
-		case 'apiName':
-			return this.promptValues.apiModuleNames;
+			if(this.instances) {
+				this.instances.forEach((_inst, key) => quickPickItems.push(new PromptItem(key)));
+				return quickPickItems;
+			} else {
+				return [];
+			}
 			break;
 		case 'name':
-			return this.promptValues.moduleNames;
+			if(instanceUrl) {
+				const instance = this.instances.get(instanceUrl);
+				if(instance) {
+					instance.modules.forEach((modName) => quickPickItems.push(new PromptItem(modName)));
+					return quickPickItems;
+				}
+			}
+			return quickPickItems;
 			break;
 		default:
-			return [];
+			return quickPickItems;
 		}
+		return quickPickItems;
 	}
 	
-	private async setValuesList(attributeName: string, values: string[]) {
-		switch(attributeName) {
-		case 'url':
-			this.promptValues.instanceUrls = values;
-			break;
-		case 'apiName':
-			this.promptValues.apiModuleNames = values;
-			break;
-		case 'name':
-			this.promptValues.moduleNames = values;
-			break;
-		}
+	private async setValuesList(_attributeName: string, _values: string[]) {
+		//switch(attributeName) {
+		// case 'url':
+		// 	this.promptValues.instances = values;
+		// 	break;
+		// case 'apiName':
+		// 	this.promptValues.apiModuleNames = values;
+		// 	break;
+		// case 'name':
+		// 	this.promptValues.moduleNames = values;
+		// 	break;
+		// }
 		await this.savePromptValues();
 	}
 	/*
 	* attributesName values are: 'url', 'apiName', 'name'
 	*/
-	async getUserSelectedValue(attributeName: string, title: string, placeHolder: string): Promise<string> {
+	async getUserSelectedValue(attributeName: string, title: string, placeHolder: string, instanceUrl?: string): Promise<string> {
 		return new Promise((resolve, reject) => {
-			const quickPick = window.createQuickPick();
-			quickPick.items = this.getValuesList(attributeName).map(choice => ({ label: choice }));
+			const quickPick = window.createQuickPick<PromptItem>();
+			quickPick.items = this.getValuesList(attributeName, instanceUrl);
 			quickPick.title = title;
 			quickPick.placeholder = placeHolder;
 			
 			quickPick.onDidChangeValue(() => {
 				// inject proposed values with current input
-				if (!this.getValuesList(attributeName).includes(quickPick.value)) {
-					quickPick.items = [quickPick.value, ...this.getValuesList(attributeName)].map(label => ({ label }));
+				if (!this.getValuesList(attributeName, instanceUrl).filter((item) => item.label.includes(quickPick.value))) {
+					quickPick.items = [new PromptItem(quickPick.value) , ...this.getValuesList(attributeName, instanceUrl)];
 				}
 				// remove item where label === '' so it won't show a void item
 				const cleanItems = [];
@@ -77,9 +89,14 @@ export class Prompt {
 			let isValidate = false;
 			let value = '';
 			quickPick.onDidAccept(() => {
-				const selection = quickPick.activeItems[0];
 				isValidate = true;
-				value = selection.label;
+				if(quickPick.selectedItems.length > 0) {
+					value = quickPick.selectedItems[0].label;
+				} else if(quickPick.value !==  '') {
+					value = quickPick.value;
+				} else {
+					console.warn('Prompt error: no value has been found');
+				}
 				quickPick.hide();
 			});
 			
@@ -92,24 +109,29 @@ export class Prompt {
 		});
 	}
 	
-	async addElement(attributeName: string, value: string) {
-		if (!this.getValuesList(attributeName).includes(value)) {
-			this.getValuesList(attributeName).push(value);
-			await this.savePromptValues();
-		} 
+	async addElement(attributeName: string, value: string, instanceUrl?: string) {
+		if(attributeName === 'url') {
+			if(!this.instances.has(value)) this.instances.set(value, {modules: []});
+		} else if (attributeName === 'name' && instanceUrl) {
+			const instance = this.instances.get(instanceUrl);
+			if(instance && !instance.modules.includes(value)) {
+				instance.modules.push(value);
+			}
+		}
+		await this.savePromptValues();
 	}
 	
 	removeElement(attributeName: string, removeValue: string) {
 		const newValues: string[] = [];
 		for (const value of this.getValuesList(attributeName)) {
-			if(value !== removeValue) newValues.push(value);
+			if(value.label !== removeValue) newValues.push(value.label);
 		}
 		this.setValuesList(attributeName, newValues);
 	}
 	
 	resetValues() {
-		this.promptValues = new PromptCached();
-		this.savePromptValues();
+		this.instances = new Map();
+		this._globalState.update(PROMPT_CACHE, undefined);
 	}
 
 	async simpleInput(title: string, placeHolder: string, isPassword: boolean | void) {
@@ -123,19 +145,20 @@ export class Prompt {
 	}
 }
 
-class PromptCached {
-	instanceUrls: string[];
-	moduleNames: string[];
-	apiModuleNames: string[];
-	constructor() {
-		this.instanceUrls = [];
-		this.moduleNames = [];
-		this.apiModuleNames = [];
-	}
+interface Instance {
+	modules: string[]
 }
 
 export enum PromptValue {
 	url = 'url',
 	apiName = 'apiName',
 	name = 'name'
+}
+
+class PromptItem implements QuickPickItem {
+
+	label: string;
+	constructor(label: string) {
+		this.label = label;
+	}
 }

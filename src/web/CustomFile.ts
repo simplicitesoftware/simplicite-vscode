@@ -1,11 +1,11 @@
 'use strict';
 
-import { Memento, Uri, window, workspace } from 'vscode';
+import { commands, Memento, Uri, window, workspace } from 'vscode';
 import { DevInfo } from './DevInfo';
 import { HashService } from './HashService';
 const buffer = require('buffer/').Buffer;
 
-export class File {
+export class CustomFile {
 	uri: Uri;
 	name: string;
 	type: string | undefined;
@@ -17,8 +17,8 @@ export class File {
 	private _globalState: Memento;
 	constructor(uri: Uri, app: any, globalState: Memento) {
 		this.uri = uri;
-		this.name = File.computeFileNameFromPath(uri.path);
-		this.extension = File.computeFileExtensionFromPath(uri.path); // format ex: ".java"
+		this.name = CustomFile.computeFileNameFromPath(uri.path);
+		this.extension = CustomFile.computeFileExtensionFromPath(uri.path); // format ex: ".java"
 		this._app = app;
 		this._globalState = globalState;
 		this.rowId = '';
@@ -97,32 +97,39 @@ export class File {
 			const doc = obj.getFieldDocument(this.scriptField);
 			if (doc === undefined) throw new Error('No document returned, cannot update content');
 			
-			const content = await File.getContent(this.uri);
+			const content = await CustomFile.getContent(this.uri);
 			doc.setContentFromText(content);
 			obj.setFieldValue(this.scriptField, doc);
 			const res = await obj.update(null, { inlineDocuments: true });
 			const lowerPath = this.uri.path.toLowerCase();
 			await this._globalState.update(lowerPath, undefined);
+			await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 			if (!res) {
 				const msg = this.uri.path;
 				console.error('Simplicite: Cannot synchronize ' + msg);
 				window.showErrorMessage(msg);
 			}
-			console.log(`${this.name} has been successfully applied`);
+			console.log(`${CustomFile.legibleFileName(this.uri.path)} has been successfully applied`);
 		} catch(e: any) {
 			window.showErrorMessage(e.message);
 			console.error(e.message);
 		}
-		await HashService.updateFileHash(instance, module, this.uri, this._globalState);
 	}
 
 	public async saveFileAsTracked() {
 		const lowerPath = this.uri.path.toLowerCase();
 		await this._globalState.update(lowerPath, true);
+		await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
 	}
 
 	public getTrackedStatus() {
 		const lowerPath = this.uri.path.toLowerCase();
 		return this._globalState.get(lowerPath) ? true : false;
+	}
+
+	public static legibleFileName(filePath: string) {
+		const decomposedPath = filePath.split('/');
+		const index = decomposedPath.length - 1;
+		return decomposedPath[index - 2] + '/' + decomposedPath[index - 1] + '/' + decomposedPath[index];
 	}
 }

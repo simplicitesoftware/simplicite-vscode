@@ -63,18 +63,21 @@ export class WorkspaceController {
 	
 	public static async workspaceFolderChangeListener(simpliciteInstanceController: SimpliciteInstanceController) {
 		workspace.onDidChangeWorkspaceFolders(async (event: WorkspaceFoldersChangeEvent) => {
-			if (event.removed.length > 0) {
-				event.removed.forEach(async (elem) => {
-					const res = this.getFolderApiInstanceUrl(elem.name, simpliciteInstanceController);
-					if(res && res.url) await simpliciteInstanceController.removeApiModule(res.moduleName, res.url);
-					else await simpliciteInstanceController.removeModule(elem.name);
-				});
-			}
-			if (event.added.length > 0) {
-				await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
-				await simpliciteInstanceController.loginAll();
-			}
-			await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree');
+			const promise = new Promise(async () => {
+				if (event.removed.length > 0) {
+					event.removed.forEach(async (elem) => {
+						const res = this.getFolderApiInstanceUrl(elem.name, simpliciteInstanceController);
+						if(res && res.url) await simpliciteInstanceController.removeApiModule(res.moduleName, res.url);
+						else await simpliciteInstanceController.removeModule(elem.name);
+					});
+				}
+				if (event.added.length > 0) {
+					simpliciteInstanceController.instances = new Map();
+					await simpliciteInstanceController.setSimpliciteInstancesFromWorkspace();
+					await simpliciteInstanceController.loginAll();
+				}
+			});
+			promise.finally(async () => await commands.executeCommand('simplicite-vscode-tools.refreshModuleTree'));
 		});
 	}
 

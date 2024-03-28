@@ -1,6 +1,6 @@
 'use strict';
 
-import { ExtensionContext, env, debug, Disposable, window, workspace } from 'vscode';
+import { ExtensionContext, env, debug, Disposable, window, workspace, commands, Task, tasks } from 'vscode';
 import { BarItem } from './BarItem';
 import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { QuickPick } from './QuickPick';
@@ -12,42 +12,33 @@ import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 import { Prompt } from './Prompt';
 import { WorkspaceController } from './WorkspaceController';
 import { completionProviderService } from './CompletionService';
+// import { UnitTestTaskProvider } from './UnitTestTaskProvider';
+
+let fileTreeProvider: Disposable | undefined;
+let moduleInfoTreeProvider: Disposable | undefined;
+let unitTestTaskDisposible: Disposable | undefined;
 
 export async function activate(context: ExtensionContext): Promise<any> {
 	console.log('Starting extension on ' + env.appName + ' hosted on ' + env.appHost);
 	initGlobalValues(context.globalStorageUri.path);
 	
 	const globalState = context.globalState;
-	if(debug.activeDebugSession) {
-		console.log('Api modules stored in memento', globalState.get(API_MODULES, []));
-	}
+
 	const prompt = new Prompt(globalState);
+
+	context.subscriptions.push(commands.registerCommand(SHOW_SIMPLICITE_COMMAND_ID, async () => await QuickPick.quickPickEntry()));
 
 	const barItem = new BarItem();
 	barItem.show([]);
 
 	const moduleInfoTree = new ModuleInfoTree(context.extensionUri.path);
 	const fileTree = new FileTree(context.extensionUri.path);
-	
-	// register file tree
-	let fileTreeDisposable: Disposable | undefined = undefined;
-	// listen for settings change
-	workspace.onDidChangeConfiguration(event => {
-        let sendFileOnSave = event.affectsConfiguration("simplicite-vscode-tools.api.sendFileOnSave");
-		console.log("Configuration changed, simplicite-vscode-tools.api.sendFileOnSave: " + sendFileOnSave);
-		if(!sendFileOnSave) {
-			fileTreeDisposable = window.registerTreeDataProvider('simpliciteFile', fileTree);
-		} else {
-			if(fileTreeDisposable) {
-				fileTreeDisposable.dispose();
-			}
-		}
-    });
+	fileTreeProvider = window.registerTreeDataProvider('simpliciteFile', fileTree);
 
 	const simpliciteInstanceController = new SimpliciteInstanceController(prompt, globalState, barItem);
 	const publicCommand = initCommands(context, simpliciteInstanceController, prompt, context.globalState, fileTree, moduleInfoTree);
 
-	window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
+	moduleInfoTreeProvider = window.registerTreeDataProvider('simpliciteModuleInfo', moduleInfoTree);
 
 	try {
 		await simpliciteInstanceController.initAll();
@@ -55,8 +46,9 @@ export async function activate(context: ExtensionContext): Promise<any> {
 		console.error(e);
 	}
 
-	new QuickPick(context.subscriptions);
+	// add quick pick to subscriptions
 
+	// unitTestTaskDisposible =  tasks.registerTaskProvider("simplicite", new UnitTestTaskProvider(simpliciteInstanceController));
 	fileService(simpliciteInstanceController);
 	
 	await WorkspaceController.workspaceFolderChangeListener(simpliciteInstanceController);
@@ -67,24 +59,17 @@ export async function activate(context: ExtensionContext): Promise<any> {
 }
 
 // renderer process (which handles the memento) is unreliable at this point
-// handling this case only on desktop where memento values are shared over VS Code instances
 export function deactivate() {
+	if(fileTreeProvider) {
+		fileTreeProvider.dispose();
+	}
+	if(moduleInfoTreeProvider) {
+		moduleInfoTreeProvider.dispose();
+	}
+	if(unitTestTaskDisposible) {
+		unitTestTaskDisposible.dispose();
+	}
 	console.log('Simplicite VS Code extension deactivate');
-	// if(env.appHost === 'desktop') {
-	// 	await workspace.fs.delete(SESSION_ID_JSON);
-	// }
-	//globalState.update(API_MODULES, undefined);
-	// session is closing, remove sessionId so the module can initiate in another instance
-	// const savedMod = globalState.get(API_MODULES, []);
-	// savedMod.forEach((ams: ApiModuleSave) => {
-	// 	if(ams.sessionId === env.sessionId) ams.sessionId = undefined;
-	// });
-	// try {
-	// 	await globalState.update(API_MODULES, savedMod);
-	// 	console.log('Successfully updated globalState on deactivate');
-	// } catch(e) {
-	// 	console.error('Unable to update globalState on deactivate');
-	// }
 }
 
 

@@ -11,7 +11,6 @@ declare global { // has to be declared to asign value globally, these value are 
 	var EXCLUDED_FILES: string[];
 	var STORAGE_PATH: string;
 	var AUTHENTICATION_STORAGE: string;
-	var API_MODULES: string;
 	var PROMPT_CACHE: string;
 	var API_MODULE_ADDED_IN_EMPTY_WK: string;
 	// cannot delete files as long as they are in a workspace (resource is busy)
@@ -29,15 +28,13 @@ export const initGlobalValues = function(storagePath: string): void {
     
 	global.SHOW_SIMPLICITE_COMMAND_ID = 'simplicite-vscode-tools.showSimpliciteCommands';
 
-	global.SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.md', '.xml', '.txt', '.yaml'];
+	global.SUPPORTED_FILES = ['.java', '.css', '.less', '.js', '.html', '.xml', '.txt', '.yaml'];
     
-	global.EXCLUDED_FILES = ['BUILD', 'README', '.xml', '.min.', '/Theme/', '/files/', '/target/', '.json']; // todo
+	global.EXCLUDED_FILES = ['.min.js', '.xml', '.min.', 'Theme', 'files', 'target', '.json', 'target', 'others']; // todo
 
 	global.STORAGE_PATH = storagePath + '/';
 
 	global.AUTHENTICATION_STORAGE = 'simplicite_authentication';
-
-	global.API_MODULES = 'simplicite_api_modules';
 
 	global.PROMPT_CACHE = 'simplicite-prompt-cache';
 

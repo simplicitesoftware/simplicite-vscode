@@ -1,14 +1,15 @@
 'use strict';
 
-import { WorkspaceFolder, workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
+import { workspace, RelativePattern, Uri, Memento, commands, window } from 'vscode';
 import { DevInfo } from './DevInfo';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { HashService } from './HashService';
 import { ConflictAction } from './interfaces';
+import { ApiModule } from './ApiModule';
 
 export class Module {
 	moduleDevInfo: any;
-	files: Map<string, File>;
+	files: Map<string, CustomFile>;
 	name: string;
 	instanceUrl: string;
 	globalState: Memento;
@@ -24,9 +25,9 @@ export class Module {
 		this.subModules = new Map();
 	}
 
-	static async build(name: string, instanceUrl: string, globalState: Memento, app: any, wkUri: Uri): Promise<Module> {
+	static async build(name: string, instanceUrl: string, globalState: Memento, app: any, wkUri: Uri, ignoredModules: string[]): Promise<Module> {
 		const module = new Module(name, instanceUrl, globalState);
-		await module.initFiles(app, globalState, wkUri);
+		await module.initFiles(app, globalState, wkUri, ignoredModules);
 		return module;
 	}
 
@@ -37,15 +38,17 @@ export class Module {
 		return false;
 	}
 
-	public async setModuleDevInfo(devInfo: DevInfo, app: any) {
+	public async setModuleDevInfo(devInfo: DevInfo, app: any): Promise<void> {
 		this.moduleDevInfo = await this.getModuleDevInfo(app);
+		console.log("Fetched module dev info for " + this.name);
+		this.files.forEach((f: CustomFile) => {
+			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
+		});
 		// get subModules module dev info
 		for(const sMod of this.subModules.values()) {
 			await sMod.setModuleDevInfo(devInfo, app);
 		}
-		this.files.forEach((f: File) => {
-			f.setInfoFromModuleDevInfo(this.moduleDevInfo, devInfo);
-		});
+		return;
 	}
 
 	private async getModuleDevInfo(app: any) {
@@ -58,62 +61,139 @@ export class Module {
 	}
 
 	// FILES
-	async initFiles(app: any, globalState: Memento, wkUri: Uri) {
-		const relativePattern = new RelativePattern(wkUri, '**/*');
-		let files = await workspace.findFiles(relativePattern);
-		files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
-		files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
+	async initFiles(app: any, globalState: Memento, wkUri: Uri, ignoredModules: string[]) {
+		const relativePattern = this.generateIncludePattern(wkUri);
+		const excludePattern = this.generateExcludePattern(wkUri, ignoredModules);
+		let files: Uri[] = []; 	
+		files = await workspace.findFiles(relativePattern, excludePattern);
+		// files = files.filter((uri: Uri) => this.isStringInTemplate(uri, SUPPORTED_FILES)); // filter on accepted file extension
+		// files = files.filter((uri: Uri) => !this.isStringInTemplate(uri, EXCLUDED_FILES)); // some files need to be ignored (such as pom.xml, readme.md etc...)
 		files.forEach((uri: Uri) => {
 			const lowerCasePath = uri.path.toLowerCase();
-			this.files.set(lowerCasePath, new File(uri, app, globalState));
+			this.files.set(lowerCasePath, new CustomFile(uri, app, globalState));
 		});
-		if(this.files.size === 0) console.warn(`No file(s) found in module ${this.name}`);
 		await HashService.saveFilesHash(this.instanceUrl, this.name, Array.from(this.files.values()), this.globalState);
 		console.log(`Initialized ${this.files.size} files for module ${this.name}`);
 	}
 
-	public getFileFromPath(uri: Uri): File | undefined {
+	private generateIncludePattern(wkUri: Uri): RelativePattern {
+		let patternString = '**/*{';
+		for(let i = 0; i < SUPPORTED_FILES.length; i++) {
+			patternString += `${SUPPORTED_FILES[i]}`;
+			if(i !== SUPPORTED_FILES.length - 1) patternString += ',';
+		}
+		patternString += '}';
+		console.log('include pattern');
+		console.log(patternString);
+		return new RelativePattern(wkUri, patternString);
+	}
+
+	private generateExcludePattern(wkUri: Uri, ignoredModules: string[]): RelativePattern {
+		let patternString = '**/{';
+		for(let i = 0; i < ignoredModules.length; i++) {
+			patternString += `${ignoredModules[i]}`;
+			if(i !== ignoredModules.length - 1) patternString += ',';
+		}
+		//patternString += ',*.xml';
+		if(ignoredModules.length) {
+			patternString += ',';
+		}
+		for(let i = 0; i < EXCLUDED_FILES.length; i++) {
+			patternString += `*${EXCLUDED_FILES[i]}`;
+			if(i !== EXCLUDED_FILES.length - 1) patternString += ',';
+		}
+		patternString += '}';
+		console.log('exclude pattern');
+		console.log(patternString);
+		return new RelativePattern(wkUri, patternString);
+	}
+
+	private getFileFromUri(uri: Uri): CustomFile | undefined {
 		const lowerCasePath = uri.path.toLowerCase();
 		return this.files.get(lowerCasePath);
 	}
 
+	public getFileFromUriRecursive(fileUri: Uri): CustomFile | undefined {
+		let file = this.getFileFromUri(fileUri);
+		if(!file) {
+			for(const sub of this.subModules.values()) {
+				file = sub.getFileFromUriRecursive(fileUri);
+				if(file) return file;
+			}
+		}
+		return file;
+	}
+
 	public getFilesPathAsArray(): string[] {
 		const files: string[] = [];
-		this.files.forEach((file: File) => {
+		this.files.forEach((file: CustomFile) => {
 			files.push(file.uri.path);
 		});
 		return files;
 	}
 
-	public getTrackedFiles(): File[] {
-		const fileList: File[] = [];
-		this.files.forEach((file: File) => {
+	public getTrackedFiles(): CustomFile[] {
+		const fileList: CustomFile[] = [];
+		this.files.forEach((file: CustomFile) => {
 			if(file.getTrackedStatus()) fileList.push(file);
 		});
 		return fileList;
 	}
 
-	public async sendFiles() {
-		const files = this.getTrackedFiles();
-		files.forEach(async (file) => {
-			HashService.checkForConflict(file, this.instanceUrl, this.name, this.globalState).then(async (res) => {
-				if(res.action === ConflictAction.conflict && res.remoteContent) {
-					await this.notifyAndSetConflict(file, res.remoteContent);
-				} else if(res.action === ConflictAction.sendFile) {
-					await file.sendFile(this.instanceUrl, this.name);
-				} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
-					await workspace.fs.writeFile(file.uri, res.remoteContent);
-					await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
-				} else if(res.action === ConflictAction.nothing) {
-					console.log('No changes detected on ' + file.name);
-				} else {
-					console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
-				}
-			});
-		});
+	public async sendFiles(): Promise<void> {
+		const trackedFiles = this.getTrackedFiles();
+		if(trackedFiles.length) {
+			console.log('Module ' + this.name + ' sending files');
+			await this.sendFilesPromise(trackedFiles);
+		}
+		await this.sendSubModulesPromise();
 	}
 
-	private async notifyAndSetConflict(file: File, remoteContent: Uint8Array) {
+	private async sendFilesPromise(files: CustomFile[]) {
+		const promises = [];
+		for(const file of files) {
+			promises.push(this.fileAction(file));
+		}
+		return await Promise.all(promises);
+	}
+
+	private async fileAction(file: CustomFile) {
+		const res = await HashService.checkForConflict(file, this.instanceUrl, this.name, this.globalState);
+		if(res.action === ConflictAction.conflict && res.remoteContent) {
+			await this.notifyAndSetConflict(file, res.remoteContent);
+		} else if(res.action === ConflictAction.sendFile) {
+			await file.sendFile(this.instanceUrl, this.name);
+		} else if(res.action === ConflictAction.fetchRemote && res.remoteContent) {
+			await workspace.fs.writeFile(file.uri, res.remoteContent);
+			await HashService.updateFileHash(this.instanceUrl, this.name, file.uri, this.globalState);
+			const lowerPath = file.uri.path.toLowerCase();
+			await this.globalState.update(lowerPath, undefined);
+		} else if(res.action === ConflictAction.nothing) {
+			console.log('No changes detected on ' + file.name);
+			const lowerPath = file.uri.path.toLowerCase();
+			await this.globalState.update(lowerPath, undefined);
+		} else {
+			console.error('Unable to send file ' + file.name + '. Conflict action' + res.action);
+		}
+	}
+
+	private async sendSubModulesPromise() {
+		const promises = [];
+		const sendModule = async function(mod: Module) {
+			await mod.sendFiles();
+		}; 
+		for(const mod of this.subModules.values()) {
+			promises.push(sendModule(mod));
+		}
+		return await Promise.all(promises);
+	}
+
+	public deleteHashes() {
+		HashService.deleteModuleHashe(this.instanceUrl, this.name, this.globalState);
+		this.subModules.forEach((mod) => mod.deleteHashes());
+	}
+
+	private async notifyAndSetConflict(file: CustomFile, remoteContent: Uint8Array) {
 		const tempFile = Uri.file(STORAGE_PATH + 'remoteFile.java');
 		await workspace.fs.writeFile(tempFile, remoteContent);
 		await commands.executeCommand('vscode.diff', Uri.file(file.uri.path), tempFile);
@@ -132,6 +212,8 @@ export class Module {
 					await file.sendFile(this.instanceUrl, this.name);
 					await workspace.fs.delete(tempFile);
 				}
+				const lowerPath = file.uri.path.toLowerCase();
+				await this.globalState.update(lowerPath, undefined);
 			}
 		});
 	}

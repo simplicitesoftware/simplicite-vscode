@@ -1,13 +1,13 @@
 'use strict';
 
 import { Memento, Uri, window } from 'vscode';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { ConflictAction } from './interfaces';
 const MD5 = require('md5.js');
 
 export class HashService {
     
-    public static async saveFilesHash(instance: string, module: string, files: File[], globalState: Memento) {
+    public static async saveFilesHash(instance: string, module: string, files: CustomFile[], globalState: Memento) {
         const filesHash: FileHash[] = [];
         for(const file of files) {
             filesHash.push({path: file.uri.path, hash: await HashService.computeFileHash(file.uri)});
@@ -39,7 +39,7 @@ export class HashService {
     }
 
     // returns true if there is a conflict, otherwise returns false
-    public static async checkForConflict(file: File, instance: string, module: string, globalState: Memento): Promise<ConflictReturn> {
+    public static async checkForConflict(file: CustomFile, instance: string, module: string, globalState: Memento): Promise<ConflictReturn> {
         
         const localHash = HashService.getFileHash(instance, module, file.uri, globalState);
         const currentHash = await HashService.computeFileHash(file.uri);
@@ -64,13 +64,18 @@ export class HashService {
     }
 
     private static async computeFileHash(uri: Uri): Promise<string> {
-        const content = (await File.getContent(uri));
+        const content = (await CustomFile.getContent(uri));
         const hash = new MD5().update(content.toString()).digest('hex');
         return hash;
     }
 
     private static getStateId(instance: string, module: string) {
         return `simplicite_${instance}_${module}`;
+    }
+
+    public static deleteModuleHashe(instance: string, module: string, globalState: Memento) {
+        const stateId = HashService.getStateId(instance, module);
+        globalState.update(stateId, undefined);
     }
 }
 

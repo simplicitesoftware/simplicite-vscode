@@ -3,7 +3,7 @@
 import { CompletionItem, CompletionItemProvider, TextDocument, Position, ProviderResult, CompletionList, CancellationToken, CompletionContext, CompletionItemKind, window, Disposable, languages, ExtensionContext } from 'vscode';
 import { Completion, DevInfo, DevInfoObject } from './DevInfo';
 import { removeFileExtension } from './utils';
-import { File } from './File';
+import { CustomFile } from './CustomFile';
 import { SimpliciteInstanceController } from './SimpliciteInstanceController';
 
 let completionProvider: Disposable | undefined = undefined;
@@ -20,7 +20,7 @@ const prodiverMaker = async function (simpliciteInstanceController: SimpliciteIn
     try {
         if(!window.activeTextEditor) return undefined;
         const fileUri = window.activeTextEditor.document.uri;
-        simpliciteInstanceController.simpliciteInstances.forEach(instance => {
+        simpliciteInstanceController.instances.forEach(instance => {
             instance.modules.forEach(module => {
                 module.files.forEach(file => {
                     if(file.uri.path.toLowerCase() === fileUri.path.toLowerCase()) {
@@ -38,7 +38,7 @@ const prodiverMaker = async function (simpliciteInstanceController: SimpliciteIn
     }
 };
 
-function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context: ExtensionContext, file: File): Disposable {
+function completionProviderHandler(devInfo: DevInfo, moduleDevInfo: any, context: ExtensionContext, file: CustomFile): Disposable {
 	const devCompletionProvider = new CompletionProvider(devInfo, moduleDevInfo, file);
 	const completionProvider = languages.registerCompletionItemProvider(TEMPLATE, devCompletionProvider, '"');
 	context.subscriptions.push(completionProvider);
@@ -50,8 +50,8 @@ class CompletionProvider implements CompletionItemProvider {
 	private _completionItems: CustomCompletionItem[];
 	private _currentObjectInfo: any;
 	private _genericObjectDevInfo?: DevInfoObject;
-	private _file: File;
-	constructor(devInfo: DevInfo, moduleDevInfo: any, file: File,) {
+	private _file: CustomFile;
+	constructor(devInfo: DevInfo, moduleDevInfo: any, file: CustomFile) {
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		this._currentObjectInfo = moduleDevInfo[file.type!];
 		this._genericObjectDevInfo = this._getDevInfoGenericObjectInfo(file.type, devInfo);

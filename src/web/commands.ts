@@ -8,13 +8,14 @@ import { ModuleInfoTree } from './treeView/ModuleInfoTree';
 import { compileJava } from './utils';
 import { FileItem, ModuleItem } from './treeView/treeViewClasses';
 import { FileTree } from './treeView/FileTree';
+import { Module } from './Module';
 
 // Commands are added in extension.ts into the vscode context
 // Commands also need to to be declared as contributions in the package.json
 
 // ------------------------------
 // Apply commands
-export const initCommands = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, fileTree: FileTree | undefined, moduleInfoTree: ModuleInfoTree) {
+export const initCommands = function (context: ExtensionContext, simpliciteInstanceController: SimpliciteInstanceController, prompt: Prompt, globalState: Memento, fileTree: FileTree, moduleInfoTree: ModuleInfoTree) {
 
 	const publicCommand = new Array().concat(getApplyCommands(simpliciteInstanceController, prompt),
 		getAuthenticationCommands(simpliciteInstanceController, prompt),
@@ -37,27 +38,36 @@ function getApplyCommands(simpliciteInstanceController: SimpliciteInstanceContro
 
 	const applySpecificInstance = commands.registerCommand('simplicite-vscode-tools.applySpecificInstance', async function () {
 		try {
-			const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
-			await simpliciteInstanceController.sendInstanceFilesOnCommand(instanceUrl);
-			await prompt.addElement('url', instanceUrl);
+			const url = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
+			const instance = simpliciteInstanceController.instances.get(url);
+			if (!instance) throw new Error('Cannot send files. ' + url + ' is not a known instance');
+			for(const module of instance.modules.values()) {
+				await module.sendFiles();
+			}
+			await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+			await prompt.addElement('url', url);
 		} catch(e) {
 			console.error(e);
 		}
 	});
 	
+	// todo test
 	const applySpecificModule = commands.registerCommand('simplicite-vscode-tools.applySpecificModule', async function (info: ModuleItem) {
 		try {
-			let instanceUrl;
-			let moduleName;
+			let module: Module | undefined;
 			if(info) {
-				instanceUrl = info.description;
-				moduleName = info.apiName ? info.apiName : info.label;
+				module = info.module;
+			} else {
+				const instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
+				const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name', instanceUrl);
+				module = simpliciteInstanceController.getModule(moduleName, instanceUrl);
 			}
-			if(!instanceUrl) instanceUrl = await prompt.getUserSelectedValue('url' ,'Simplicite: Type in the instance url', 'instance url');
-			if(!moduleName) moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type in the module name', 'module name');
-			await simpliciteInstanceController.sendModuleFilesOnCommand(moduleName, instanceUrl);
-			await prompt.addElement('url', instanceUrl);
-			await prompt.addElement('name', moduleName);
+			if(module) {
+				await module.sendFiles();
+				await commands.executeCommand('simplicite-vscode-tools.refreshFileHandler');
+				await prompt.addElement('url', module.instanceUrl);
+				await prompt.addElement('name', module.name, module.instanceUrl);
+			}
 		} catch(e) {
 			console.error(e);
 		}
@@ -72,52 +82,52 @@ function getAuthenticationCommands(simpliciteInstanceController: SimpliciteInsta
 		await simpliciteInstanceController.loginAll();
 	});
 
-  const logout = commands.registerCommand('simplicite-vscode-tools.logout', async () => {
+  	const logout = commands.registerCommand('simplicite-vscode-tools.logout', async () => {
 		await simpliciteInstanceController.logoutAll();
 	});
 	
 	const logIntoInstance = commands.registerCommand('simplicite-vscode-tools.logIntoInstance', async function () {
-    try {
-      const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
-      await simpliciteInstanceController.loginInstance(instanceUrl);
-			await prompt.addElement(PromptValue.url, instanceUrl);
-    } catch(e) {
-      console.error(e);
-    }
+		try {
+			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
+			const res = await simpliciteInstanceController.loginInstance(instanceUrl);
+			if(res) await prompt.addElement(PromptValue.url, instanceUrl);
+		} catch(e) {
+			console.error(e);
+		}
 	});
 
 	const logoutFromInstance = commands.registerCommand('simplicite-vscode-tools.logoutFromInstance', async function () {
 		try {
-      const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
-      await simpliciteInstanceController.logoutInstance(instanceUrl);
-			await prompt.addElement(PromptValue.url, instanceUrl);
+			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the url of the Simplicité instance', 'instance url');
+			const res = await simpliciteInstanceController.logoutInstance(instanceUrl);
+			if(res) await prompt.addElement(PromptValue.url, instanceUrl);
 		} catch(e) {
-      console.error(e);
-    }
+      		console.error(e);
+    	}
 	});
 
 	return [login, logout, logIntoInstance, logoutFromInstance];
 }
 
-function getTreeViewCommands(simpliciteInstanceController: SimpliciteInstanceController, moduleInfoTree: ModuleInfoTree, fileTree: FileTree | undefined, globalState: Memento) {
+function getTreeViewCommands(simpliciteInstanceController: SimpliciteInstanceController, moduleInfoTree: ModuleInfoTree, fileTree: FileTree, globalState: Memento) {
 	const refreshModuleTree = commands.registerCommand('simplicite-vscode-tools.refreshModuleTree', async function () {
 		moduleInfoTree.refresh(simpliciteInstanceController.devInfo, simpliciteInstanceController.getAllModules());
 	});
 	
 	const refreshFileHandler = commands.registerCommand('simplicite-vscode-tools.refreshFileHandler', async function () {
-		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
+		fileTree.refresh(simpliciteInstanceController.getAllModules());
 	});
 
 	const setTrackedFile = commands.registerCommand('simplicite-vscode-tools.trackFile', (info: FileItem) => {
 		const lowerPath = info.resourceUri.path.toLowerCase();
 		globalState.update(lowerPath, true);
-		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
+		fileTree.refresh(simpliciteInstanceController.getAllModules());
 	});
 
 	const unsetTrackedFile = commands.registerCommand('simplicite-vscode-tools.untrackFile', (info) => {
 		const lowerPath = info.resourceUri.path.toLowerCase();
 		globalState.update(lowerPath, undefined);
-		if(fileTree) fileTree.refresh(Array.from(simpliciteInstanceController.simpliciteInstances.values()));
+		fileTree.refresh(simpliciteInstanceController.getAllModules());
 	});
 
 	return [refreshModuleTree, refreshFileHandler, setTrackedFile, unsetTrackedFile];
@@ -128,11 +138,11 @@ function getApiModuleCommands(prompt: Prompt, simpliciteInstanceController: Simp
 		try {
  			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name', instanceUrl);
 			const res = await simpliciteInstanceController.createApiModule(instanceUrl, moduleName);
 			if (res) {
 				await prompt.addElement(PromptValue.url, instanceUrl);
-				await prompt.addElement(PromptValue.name, moduleName);
+				await prompt.addElement(PromptValue.name, moduleName, instanceUrl);
 			}
 		} catch(e) {
 			console.error(e);
@@ -143,11 +153,11 @@ function getApiModuleCommands(prompt: Prompt, simpliciteInstanceController: Simp
 		try {
 			const instanceUrl = await prompt.getUserSelectedValue('url', 'Simplicite: Type the name of the instance base URL', 'instance url'); 
 	 		if (!isHttpsUri(instanceUrl) && !isHttpUri(instanceUrl)) throw new Error(instanceUrl + ' is not a valid url');
-			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name');
+			const moduleName = await prompt.getUserSelectedValue('name', 'Simplicite: Type the name of the module', 'module name', instanceUrl);
 			const res = await simpliciteInstanceController.removeApiModule(moduleName, instanceUrl);
 			if(res) {
 				await prompt.addElement(PromptValue.url, instanceUrl);
-				await prompt.addElement(PromptValue.name, moduleName);
+				await prompt.addElement(PromptValue.name, moduleName, instanceUrl);
 			}
 		} catch(e: any) {
 			console.error(e);
@@ -177,13 +187,13 @@ function getOtherCommands(prompt: Prompt, globalState: Memento, simpliciteInstan
 
 	const resetExtensionData = commands.registerCommand('simplicite-vscode-tools.resetExtensionData', async () => {
 		try {
-			await globalState.update(API_MODULES, undefined);
 			await globalState.update(AUTHENTICATION_STORAGE, undefined);
-			for (const instance of simpliciteInstanceController.simpliciteInstances.values()) {
+			for (const instance of simpliciteInstanceController.instances.values()) {
 				for(let file of instance.getTrackedFiles()) {
 					await globalState.update(file.uri.path.toLowerCase(), undefined);
 				}
 			}
+			simpliciteInstanceController.deleteAllHashes();
 			try {
 				workspace.fs.delete(Uri.parse(STORAGE_PATH), {recursive: true});
 			} catch(e: any) {
@@ -226,11 +236,10 @@ function getPrivateCommands(globalState: Memento, simpliciteInstanceController: 
 	// inconstant behavior in debug env, need to test on production
 	const nodeEnv = process.env.NODE_ENV === 'production' ? 'production' : 'development';    
 	commands.executeCommand('setContext', 'simplicite-vscode-tools.NODE_ENV', nodeEnv);
-	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {		
-		const _savedModules = globalState.get(API_MODULES);
+	const debug = commands.registerCommand('simplicite-vscode-tools.debug', async () => {
 		const _authenticationStorage = globalState.get(AUTHENTICATION_STORAGE);
 		const _trackedFiles = [];
-		for (const instance of simpliciteInstanceController.simpliciteInstances.values()) {
+		for (const instance of simpliciteInstanceController.instances.values()) {
 			_trackedFiles.push(instance.getTrackedFiles());
 		}
 	});
