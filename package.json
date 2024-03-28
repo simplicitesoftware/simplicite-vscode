@@ -3,12 +3,12 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"license": "Apache-2.0",
 	"icon": "icon.png",
 	"engines": {
-		"vscode": "^1.75.0",
-		"node": ">=12"
+		"vscode": "^1.80.0",
+		"node": ">=18"
 	},
 	"repository": {
 		"type": "git",
