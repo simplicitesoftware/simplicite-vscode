@@ -9,38 +9,32 @@ All notable changes to the "simplicite-vscode" extension will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* * *
-
 [2.0.3]
-### Modified
-- updated logos
+-------
 
-* * *
+### Modified
+- Updated logos
 
 [2.0.2]
-### Fixed
-- conflict handler getting triggered when it should have not
+-------
 
-* * *
+### Fixed
+- Conflict handler getting triggered when it should have not
 
 [2.0.1]
---------
+-------
 
 ### Fixed
 - Submodules display the same name as the root module
 
-* * *
-
 [2.0.0]
---------
+-------
 
 ### Added
 - Support for application (multi-module project)
 
 ### Modified
 - Api modules should have a more consistent behavior
-
-* * *
 
 [1.0.21]
 --------
@@ -55,15 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Connexion prompt won't appear multiple time when instance is already connected
 
-* * *
-
 [1.0.20]
 --------
 
 ### Updated
 - Updated dependencies
-
-* * *
 
 [1.0.19]
 --------
@@ -74,15 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 - Updated dependencies
 
-* * *
-
 [1.0.18]
 --------
 
 ### Changed
 - Simplicite lib
-
-* * *
 
 [1.0.17]
 --------
@@ -96,8 +82,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Modified
 - Many internal refactors
 
-* * *
-
 [1.0.15]
 --------
 
@@ -107,15 +91,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed a bug that occured when the project folder name was different than the module name
 
-* * *
-
 [1.0.14]
 --------
 
 ### Added
 - Refresh tree view button and command
-
-* * *
 
 [1.0.13]
 --------
@@ -123,15 +103,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changes with simplicite npm lib
 
-* * *
-
 [1.0.11]
 --------
 
 ### Changed
 - Updated simplicite module
-
-* * *
 
 [1.0.10]
 --------
@@ -142,15 +118,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Readme character
 
-* * *
-
 [1.0.7]
 -------
 
 ### Added
 - Theia compatibility
-
-* * *
 
 [1.0.6]
 -------
@@ -160,8 +132,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Language Support for Java(TM) by Red Hat from the extension dependencies, because it is not yet supported on browsers.
-
-* * *
 
 [1.0.5]
 -------
@@ -173,23 +143,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Feature to track/untrack a file only with its file name, due to the implementation of the resource files that implies that some files have the same name.
 
-* * *
-
 [1.0.4]
 -------
 
 ### Changed
 - Mostly refactored some code.
 
-* * *
-
 [1.0.3]
 -------
 
 ### Added
 - Module info tree view copy label on double click.
-
-* * *
 
 [1.0.2]
 -------
@@ -200,8 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refresh tree view command and button.
 - Modified file list from bar item.
 
-* * *
-
 [1.0.1]
 -------
 
@@ -210,3 +172,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Apply changes features.
 - Automatic connexion.
 - Tree views.
+
+[1.0.0]
+-------
+
+Initial version
