@@ -4,11 +4,7 @@
 Simplicite VSCode tools
 =======================
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=simplicitesoftware_simplicite-vscode&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=simplicitesoftware_simplicite-vscode)
-
 Simplicite low code platform tools to make life easier for designers in an IDE environment.
-
-
 
 * * *
 
@@ -105,7 +101,6 @@ Key bindings
 ------------
 
 - `simplicite-vscode-tools.showSimpliciteCommands` : Open a Quick Pick menu displaying every command of the extension. The shortcut can be edited in *File > Preferences > Keyboard shortcuts > simplicite-vscode-tools.showSimpliciteCommands*.
-
 
 Known limitations :
 When initializing an api module in a VS Code instance on destkop and opening another instance will cause the api module to initialize in both instances. (workspace)
