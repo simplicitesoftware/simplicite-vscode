@@ -15,15 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Modified
 - updated logos
 
+* * *
+
 [2.0.2]
 ### Fixed
 - conflict handler getting triggered when it should have not
+
+* * *
 
 [2.0.1]
 --------
 
 ### Fixed
 - Submodules display the same name as the root module
+
+* * *
 
 [2.0.0]
 --------
@@ -34,12 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Modified
 - Api modules should have a more consistent behavior
 
-
-[1.1.0]
---------
-
-### Modified
-- Refactored code base for more a more stable extension
+* * *
 
 [1.0.21]
 --------
