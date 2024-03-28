@@ -3,7 +3,7 @@
 	"publisher": "simpliciteSoftware",
 	"displayName": "Simplicite VSCode tools",
 	"description": "Simplicite low code platform tools to make life easier for designers in an IDE environment",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"license": "Apache-2.0",
 	"icon": "icon.png",
 	"engines": {

@@ -1,4 +1,4 @@
-![Simplicit&eacute; Software](https://www.simplicite.io/resources/logos/logo250-grey.png)
+![Simplicit&eacute; Software](https://platform.simplicite.io/logos/logo250-grey.png)
 * * *
 
 Change Log
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Various code snippets
-- Completion on values typed in commands such as urls, modules name and api modules name. 
+- Completion on values typed in commands such as urls, modules name and api modules name.
 
 ### Changed
 - New behavior for api module => an api module in an undefined workspace will be deleted on vscode closing. While in a defined workspace, the module will persists.
@@ -142,7 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Feature to change Simplicite resource files such as *.css*, *.less*, *.js*, *.html*, *.md*, *.xml*, *.xml*, *.txt*, *.yaml*.
-- File icons in the file tree view. 
+- File icons in the file tree view.
 
 ### Removed
 - Feature to track/untrack a file only with its file name, due to the implementation of the resource files that implies that some files have the same name.
@@ -161,7 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -------
 
 ### Added
-- Module info tree view copy label on double click. 
+- Module info tree view copy label on double click.
 
 * * *
 
