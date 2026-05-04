@@ -1,0 +1,11 @@
+{
+    "single-title": false,
+    "heading-style": { "style": "setext_with_atx" },
+    "no-hard-tabs": { "code_blocks": false },
+    "line-length": { "line_length": 128, "code_block_line_length": 256, "tables": false },
+    "no-alt-text": false,
+    "no-duplicate-heading": { "siblings_only": true },
+    "emphasis-style": { "style": "underscore" },
+    "code-block-style": { "style": "fenced" },
+    "ul-style": { "style": "dash" }
+}
