@@ -49,6 +49,8 @@ export class CustomFile {
 
 	private getBusinessObjectInfo(moduleDevInfo: any): {type: string, id: string} {
 		for (const type in moduleDevInfo) {
+			if (!Array.isArray(moduleDevInfo[type]))
+				continue;
 			for(const devInfoObject of moduleDevInfo[type]) {
 				if (!devInfoObject.sourcepath) continue; // no sourcepath == no code file associated
 				if (this.uri.path.includes(devInfoObject.sourcepath)) return {type: type, id: devInfoObject.id};
