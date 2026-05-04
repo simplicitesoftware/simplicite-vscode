@@ -41,6 +41,6 @@ export async function compileJava(): Promise<void> {
 			window.showErrorMessage('Simplicite: Compilation cancelled');
 		}
 	} catch (e: any) {
-		window.showErrorMessage('Simplicite: An error occured during the compilation. ' + e.message);
+		window.showErrorMessage('Simplicite: An error occurred during the compilation. ' + e.message);
 	}
 }
