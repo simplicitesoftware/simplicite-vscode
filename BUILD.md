@@ -1,8 +1,8 @@
-![Simplicit&eacute; Software](https://platform.simplicite.io/logos/logo250-grey.png)
-* * *
+Build
+=====
 
 Prepare
-=======
+-------
 
 Look for updates:
 
@@ -16,14 +16,17 @@ Install dependencies:
 npm install
 ```
 
-Build
-=====
+Lint
+----
 
 Check syntax and rules:
 
 ```bash
 npm run lint
 ```
+
+Package
+-------
 
 Build and package :
 
@@ -32,7 +35,7 @@ npm run package
 ```
 
 Publish
-=====
+-------
 
 To the **vscode marketplace** registry
 --------------------------------------
@@ -43,7 +46,7 @@ Install or update the `vsce` CLI:
 npm <install|update> -g vsce
 ```
 
-Connect to the vsce API (you need an access token that you can create [here](https://dev.azure.com/simplicite/_usersSettings/tokens)):
+Connect to the vsce API (you need an access token that you can create [](https://dev.azure.com/simplicite/_usersSettings/tokens)):
 
 ```bash
 vsce login SimpliciteSoftware
@@ -67,7 +70,7 @@ publish as **pre-release**
 vsce publish --pre-release
 ```
 
-To the *open vsx* registry
+To the _open vsx_ registry
 --------------------------
 
 Install or update the `ovsx` CLI:
@@ -87,5 +90,3 @@ Publish the vsix file to the registry (you need an access token):
 ```bash
 ovsx publish simplicite-vscode-tools-<x.y.z>.vsix -p <token>
 ```
-
-
